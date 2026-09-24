@@ -3,6 +3,7 @@ import type { DatosGastoNuevo } from '@viajes/compartido';
 import {
   AnotarGasto,
   ConsultarDeudas,
+  RegistrarPago,
 } from '../../src/modulos/gastos/casos-de-uso/casosDeUsoGastos.js';
 import {
   DivisionArbitraria,
@@ -150,6 +151,52 @@ describe('CU21 y CU22: deudas propias', () => {
     expect((await consultar.ejecutar(VIAJE, TOMAS, 'deudor')).map((d) => d.contraparte.id)).toEqual(
       [ANA],
     );
+  });
+});
+
+describe('CU23: registrar pago', () => {
+  const pagar = (deudor: string, acreedorId: string, monto: number) =>
+    new RegistrarPago({
+      unidad,
+      viajes: new RepositorioViajesEnMemoria(unidad.confirmado),
+      saldos: {
+        deudas: async () => [],
+        obtenerPago: (v, id) => new ConsultaSaldosEnMemoria(unidad.confirmado).obtenerPago(v, id),
+      },
+      reloj: { ahora: () => new Date('2026-12-12T10:00:00Z') },
+    }).ejecutar(VIAJE, deudor, { acreedorId, monto });
+
+  it('resta el pago y devuelve el pago con el saldo que queda', async () => {
+    await anotar(ANA, {});
+    const r = await pagar(TOMAS, ANA, 100);
+    expect(r).toMatchObject({
+      saldo: 200,
+      pago: { monto: 100, registradoPor: { id: TOMAS }, fecha: '2026-12-12T10:00:00.000Z' },
+    });
+    expect(monto(TOMAS, ANA)).toBe(200);
+  });
+
+  it('RN-P1: sin deuda pendiente con ese acreedor, SIN_DEUDA_CON_ACREEDOR', async () => {
+    await expect(pagar(TOMAS, ANA, 100)).rejects.toMatchObject({
+      codigo: 'SIN_DEUDA_CON_ACREEDOR',
+    });
+    await anotar(ANA, {});
+    // El acreedor no puede "pagar" la deuda que tienen con él.
+    await expect(pagar(ANA, TOMAS, 100)).rejects.toMatchObject({
+      codigo: 'SIN_DEUDA_CON_ACREEDOR',
+    });
+    await pagar(TOMAS, ANA, 300);
+    await expect(pagar(TOMAS, ANA, 1)).rejects.toMatchObject({ codigo: 'SIN_DEUDA_CON_ACREEDOR' });
+  });
+
+  it('RN-P4: si supera el saldo no registra nada', async () => {
+    await anotar(ANA, {});
+    await expect(pagar(TOMAS, ANA, 301)).rejects.toMatchObject({
+      codigo: 'PAGO_EXCEDE_DEUDA',
+      detalles: { saldo: 300 },
+    });
+    expect(unidad.confirmado.pagos).toEqual([]);
+    expect(monto(TOMAS, ANA)).toBe(300);
   });
 });
 

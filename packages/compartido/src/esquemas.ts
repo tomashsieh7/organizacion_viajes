@@ -121,6 +121,13 @@ export const esquemaGastoNuevo = z
   });
 export type DatosGastoNuevo = z.input<typeof esquemaGastoNuevo>;
 
+/** CU23 (RN-P3): pago de una deuda propia; quien lo registra es siempre el deudor (P17). */
+export const esquemaPagoNuevo = z.object({
+  acreedorId: z.uuid('Elegí a quién le pagás'),
+  monto: montoEntero.positive('El monto tiene que ser mayor que cero'),
+});
+export type DatosPagoNuevo = z.input<typeof esquemaPagoNuevo>;
+
 export const esquemaConsultaDeudas = z.object({ rol: z.enum(['deudor', 'acreedor']) });
 
 export const esquemaFiltroEstado = z.object({ estado: z.enum(ESTADOS_PROPUESTA).optional() });

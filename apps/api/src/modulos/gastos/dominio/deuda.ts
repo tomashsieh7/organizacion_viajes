@@ -10,11 +10,22 @@ export interface DatosDeuda {
   ultimaActualizacion: Date;
 }
 
+export interface DatosPago {
+  id: string;
+  deudaId: string;
+  registradoPorId: string;
+  monto: Dinero;
+  fecha: Date;
+}
+
 /**
  * Saldo pendiente de un viajero con otro dentro de un viaje (P14). Es la experta en cómo cambia
- * su saldo: sumar lo que corresponde por un gasto y compensarse con la deuda en sentido opuesto.
+ * su saldo: sumar lo que corresponde por un gasto, compensarse con la deuda en sentido opuesto y
+ * restar los pagos, que forman parte de la deuda (relación "resta" del modelo conceptual).
  */
 export class Deuda {
+  private readonly pagosNuevos: DatosPago[] = [];
+
   private constructor(private datos: DatosDeuda) {}
 
   static reconstruir(datos: DatosDeuda): Deuda {
@@ -64,6 +75,59 @@ export class Deuda {
       monto: opuesta.monto.restar(comun),
       ultimaActualizacion: ahora,
     };
+  }
+
+  /**
+   * CU23 (RN-P3 a RN-P5, P17): resta un pago de la deuda. Solo lo registra el deudor, tiene que
+   * ser mayor que cero y no puede superar el saldo; el acreedor no lo confirma.
+   */
+  registrarPago(datos: {
+    id: string;
+    monto: Dinero;
+    registradoPorId: string;
+    ahora: Date;
+  }): DatosPago {
+    if (datos.registradoPorId !== this.deudorId) {
+      throw new ErrorDeDominio(
+        'PROHIBIDO',
+        'SOLO_EL_DEUDOR',
+        'Solo quien debe puede registrar el pago',
+      );
+    }
+    if (!datos.monto.esPositivo()) {
+      throw new ErrorDeDominio(
+        'VALIDACION',
+        'MONTO_INVALIDO',
+        'El monto tiene que ser mayor que cero',
+      );
+    }
+    if (datos.monto.esMayorQue(this.monto)) {
+      throw new ErrorDeDominio(
+        'REGLA_DE_NEGOCIO',
+        'PAGO_EXCEDE_DEUDA',
+        'El pago supera lo que se debe',
+        { saldo: this.monto.monto },
+      );
+    }
+    this.datos = {
+      ...this.datos,
+      monto: this.monto.restar(datos.monto),
+      ultimaActualizacion: datos.ahora,
+    };
+    const pago: DatosPago = {
+      id: datos.id,
+      deudaId: this.id,
+      registradoPorId: datos.registradoPorId,
+      monto: datos.monto,
+      fecha: datos.ahora,
+    };
+    this.pagosNuevos.push(pago);
+    return pago;
+  }
+
+  /** Pagos registrados desde que se cargó la deuda, para que el repositorio los guarde. */
+  pagosSinGuardar(): DatosPago[] {
+    return [...this.pagosNuevos];
   }
 
   aDatos(): DatosDeuda {

@@ -3,6 +3,7 @@ import type {
   DatosGastoNuevo,
   DeudaVista,
   GastoVista,
+  PagoRegistrado,
   RolEnDeuda,
 } from '@viajes/compartido';
 import type { Deuda } from './deuda.js';
@@ -26,6 +27,9 @@ export interface RepositorioDeudas {
    * mismo orden, para que dos gastos simultáneos no se bloqueen mutuamente.
    */
   obtenerParaModificar(viajeId: string, pares: ParDeViajeros[], moneda: string): Promise<Deuda[]>;
+  /** La deuda de ese par, bloqueada hasta el fin de la transacción; null si no existe. */
+  obtenerParaPagar(viajeId: string, par: ParDeViajeros, moneda: string): Promise<Deuda | null>;
+  /** Guarda el saldo de cada deuda y los pagos que se le registraron. */
   guardar(deudas: Deuda[]): Promise<void>;
 }
 
@@ -48,6 +52,7 @@ export interface ConsultaGastos {
 export interface ConsultaSaldos {
   /** CU21 y CU22: deudas con saldo pendiente donde el usuario es deudor o acreedor. */
   deudas(viajeId: string, usuarioId: string, rol: RolEnDeuda): Promise<DeudaVista[]>;
+  obtenerPago(viajeId: string, pagoId: string): Promise<PagoRegistrado | null>;
 }
 
 /** Elige la estrategia según el modo pedido; se arma en el punto de composición. */

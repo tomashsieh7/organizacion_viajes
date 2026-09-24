@@ -2,8 +2,10 @@ import type { InjectionKey } from 'vue';
 import type {
   CategoriaGasto,
   DatosGastoNuevo,
+  DatosPagoNuevo,
   DeudaVista,
   GastoVista,
+  RespuestaPago,
   RolEnDeuda,
 } from '@viajes/compartido';
 import { pedir } from './http';
@@ -13,6 +15,7 @@ export interface ClienteGastos {
   listar(viajeId: string): Promise<GastoVista[]>;
   anotar(viajeId: string, datos: DatosGastoNuevo): Promise<GastoVista>;
   deudas(viajeId: string, rol: RolEnDeuda): Promise<DeudaVista[]>;
+  pagar(viajeId: string, datos: DatosPagoNuevo): Promise<RespuestaPago>;
 }
 
 export const CLIENTE_GASTOS: InjectionKey<ClienteGastos> = Symbol('ClienteGastos');
@@ -33,5 +36,8 @@ export class ClienteGastosHttp implements ClienteGastos {
     return (
       await pedir<{ deudas: DeudaVista[] }>('GET', `/api/viajes/${viajeId}/deudas?rol=${rol}`)
     ).deudas;
+  }
+  pagar(viajeId: string, datos: DatosPagoNuevo) {
+    return pedir<RespuestaPago>('POST', `/api/viajes/${viajeId}/pagos`, datos);
   }
 }

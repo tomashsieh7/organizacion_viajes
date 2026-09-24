@@ -40,6 +40,10 @@ export const rutas: RouteRecordRaw[] = [
       { path: 'gastos', component: () => import('../vistas/GastosVista.vue') },
       { path: 'gastos/nuevo', component: () => import('../vistas/GastoFormularioVista.vue') },
       { path: 'saldos', component: () => import('../vistas/SaldosVista.vue') },
+      {
+        path: 'saldos/pagar/:acreedorId',
+        component: () => import('../vistas/PagoVista.vue'),
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/viajes' },

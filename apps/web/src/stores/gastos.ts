@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia';
 import { computed, inject, ref } from 'vue';
-import type { CategoriaGasto, DatosGastoNuevo, DeudaVista, GastoVista } from '@viajes/compartido';
+import type {
+  CategoriaGasto,
+  DatosGastoNuevo,
+  DatosPagoNuevo,
+  DeudaVista,
+  GastoVista,
+} from '@viajes/compartido';
 import { CLIENTE_GASTOS } from '../clientes/gastos';
 import { useViajeStore } from './viaje';
 
@@ -18,6 +24,8 @@ export const useGastosStore = defineStore('gastos', () => {
   const categorias = ref<CategoriaGasto[]>([]);
   const debo = ref<DeudaVista[]>([]);
   const meDeben = ref<DeudaVista[]>([]);
+  /** Confirmación del último pago, que muestra la sección de saldos una sola vez. */
+  const mensaje = ref('');
   const totalDebo = computed(() => debo.value.reduce((t, d) => t + d.monto, 0));
   const totalMeDeben = computed(() => meDeben.value.reduce((t, d) => t + d.monto, 0));
 
@@ -45,7 +53,16 @@ export const useGastosStore = defineStore('gastos', () => {
     return gasto;
   }
 
+  /** CU23: después de pagar vuelve a pedir las deudas, porque el pago las cambia (sección 7.2). */
+  async function pagar(datos: DatosPagoNuevo) {
+    const respuesta = await cliente!.pagar(viajeId(), datos);
+    await cargarDeudas();
+    return respuesta;
+  }
+
   return {
+    mensaje,
+    pagar,
     gastos,
     categorias,
     debo,

@@ -2,6 +2,7 @@ import type {
   CategoriaGasto,
   DeudaVista,
   GastoVista,
+  PagoRegistrado,
   PersonaVista,
   RolEnDeuda,
 } from '@viajes/compartido';
@@ -72,16 +73,20 @@ export class RepositorioDeudasPrisma implements RepositorioDeudas {
     const filas = await this.db.$queryRaw<FilaDeuda[]>`
       SELECT id, deudor_id, acreedor_id, monto, ultima_actualizacion
       FROM deuda WHERE id = ANY(${ids}::uuid[]) ORDER BY id FOR UPDATE`;
-    return filas.map((f) =>
-      Deuda.reconstruir({
-        id: f.id,
-        viajeId,
-        deudorId: f.deudor_id,
-        acreedorId: f.acreedor_id,
-        monto: Dinero.de(Number(f.monto), moneda),
-        ultimaActualizacion: f.ultima_actualizacion,
-      }),
-    );
+    return filas.map((f) => this.reconstruir(viajeId, f, moneda));
+  }
+
+  async obtenerParaPagar(
+    viajeId: string,
+    { deudorId, acreedorId }: ParDeViajeros,
+    moneda: string,
+  ): Promise<Deuda | null> {
+    const [f] = await this.db.$queryRaw<FilaDeuda[]>`
+      SELECT id, deudor_id, acreedor_id, monto, ultima_actualizacion FROM deuda
+      WHERE viaje_id = ${viajeId}::uuid AND deudor_id = ${deudorId}::uuid
+        AND acreedor_id = ${acreedorId}::uuid
+      FOR UPDATE`;
+    return f ? this.reconstruir(viajeId, f, moneda) : null;
   }
 
   async guardar(deudas: Deuda[]): Promise<void> {
@@ -91,7 +96,25 @@ export class RepositorioDeudasPrisma implements RepositorioDeudas {
         where: { id },
         data: { monto: BigInt(monto.monto), ultimaActualizacion },
       });
+      const pagos = d.pagosSinGuardar();
+      if (pagos.length > 0) {
+        await this.db.pago.createMany({
+          data: pagos.map((p) => ({ ...p, monto: BigInt(p.monto.monto) })),
+          skipDuplicates: true,
+        });
+      }
     }
+  }
+
+  private reconstruir(viajeId: string, f: FilaDeuda, moneda: string): Deuda {
+    return Deuda.reconstruir({
+      id: f.id,
+      viajeId,
+      deudorId: f.deudor_id,
+      acreedorId: f.acreedor_id,
+      monto: Dinero.de(Number(f.monto), moneda),
+      ultimaActualizacion: f.ultima_actualizacion,
+    });
   }
 }
 
@@ -165,6 +188,20 @@ export class ConsultaGastosPrisma implements ConsultaGastos {
   }
 }
 
+const aPago = (p: {
+  id: string;
+  monto: bigint;
+  fecha: Date;
+  registradoPor: PersonaVista;
+}): PagoRegistrado => ({
+  id: p.id,
+  monto: Number(p.monto),
+  fecha: p.fecha.toISOString(),
+  registradoPor: persona(p.registradoPor),
+});
+
+const INCLUIR_PAGO = { registradoPor: PERSONA } as const;
+
 export class ConsultaSaldosPrisma implements ConsultaSaldos {
   constructor(private readonly db: ClientePrisma) {}
 
@@ -175,7 +212,11 @@ export class ConsultaSaldosPrisma implements ConsultaSaldos {
         monto: { gt: 0 },
         ...(rol === 'deudor' ? { deudorId: usuarioId } : { acreedorId: usuarioId }),
       },
-      include: { deudor: PERSONA, acreedor: PERSONA },
+      include: {
+        deudor: PERSONA,
+        acreedor: PERSONA,
+        pagos: { include: INCLUIR_PAGO, orderBy: [{ fecha: 'desc' }, { id: 'desc' }] },
+      },
       orderBy: [{ monto: 'desc' }, { id: 'asc' }],
     });
     return filas.map((f) => ({
@@ -183,6 +224,15 @@ export class ConsultaSaldosPrisma implements ConsultaSaldos {
       contraparte: persona(rol === 'deudor' ? f.acreedor : f.deudor),
       monto: Number(f.monto),
       ultimaActualizacion: f.ultimaActualizacion.toISOString(),
+      pagos: f.pagos.map(aPago),
     }));
+  }
+
+  async obtenerPago(viajeId: string, pagoId: string): Promise<PagoRegistrado | null> {
+    const p = await this.db.pago.findFirst({
+      where: { id: pagoId, deuda: { viajeId } },
+      include: INCLUIR_PAGO,
+    });
+    return p ? aPago(p) : null;
   }
 }

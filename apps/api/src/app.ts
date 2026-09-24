@@ -47,7 +47,7 @@ export function crearApp(c: Contenedor): Express {
   // La guarda se aplica solo a esas rutas; el resto sigue de largo al router de viaje.
   const guardaSaldos = [exigirSesion, accesoSaldos(c.viajes.consultarAcceso)];
   api.use('/viajes/:viajeId', rutasDelViajeConSaldos(c.viajes.consultar, guardaSaldos));
-  api.use('/viajes/:viajeId', rutasDeSaldos(c.gastos.deudas, guardaSaldos));
+  api.use('/viajes/:viajeId', rutasDeSaldos(c.gastos, guardaSaldos));
 
   // Rutas dentro de un viaje: la sesión y la membresía activa se verifican una sola vez (RN-X1).
   const viaje = express.Router({ mergeParams: true });

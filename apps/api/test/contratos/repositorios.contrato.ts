@@ -717,6 +717,44 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       });
     });
 
+    it('obtenerParaPagar devuelve la deuda del par y guardar registra sus pagos', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      const par = { deudorId: tomas, acreedorId: ana };
+      expect(await r.deudasGastos.obtenerParaPagar(viaje, par, 'ARS')).toBeNull();
+      await e.deuda(viaje, tomas, ana, 1000);
+
+      const deuda = (await r.deudasGastos.obtenerParaPagar(viaje, par, 'ARS'))!;
+      expect(deuda.monto.monto).toBe(1000);
+      const primero = deuda.registrarPago({
+        id: crypto.randomUUID(),
+        monto: Dinero.de(300, 'ARS'),
+        registradoPorId: tomas,
+        ahora: AHORA,
+      });
+      const segundo = deuda.registrarPago({
+        id: crypto.randomUUID(),
+        monto: Dinero.de(200, 'ARS'),
+        registradoPorId: tomas,
+        ahora: new Date(AHORA.getTime() + 1000),
+      });
+      await r.deudasGastos.guardar([deuda]);
+
+      expect(await e.montoDeuda(viaje, tomas, ana)).toBe(500);
+      const persona = { id: tomas, nombre: 'Tomás', apodo: null };
+      const [vista] = await r.consultaSaldos.deudas(viaje, ana, 'acreedor');
+      expect(vista?.pagos).toEqual([
+        { id: segundo.id, monto: 200, fecha: '2026-12-11T20:00:01.000Z', registradoPor: persona },
+        { id: primero.id, monto: 300, fecha: AHORA.toISOString(), registradoPor: persona },
+      ]);
+      expect(await r.consultaSaldos.obtenerPago(viaje, primero.id)).toEqual(vista?.pagos[1]);
+      expect(await r.consultaSaldos.obtenerPago(await e.viaje(ana), primero.id)).toBeNull();
+      // Guardar de nuevo la misma deuda no duplica los pagos.
+      await r.deudasGastos.guardar([deuda]);
+      expect((await r.consultaSaldos.deudas(viaje, tomas, 'deudor'))[0]?.pagos).toHaveLength(2);
+    });
+
     it('ConsultaSaldos lista solo deudas con saldo, como deudor o como acreedor', async () => {
       const ana = await e.usuario('Ana');
       const tomas = await e.usuario('Tomás');

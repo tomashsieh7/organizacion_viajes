@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import FilaSaldo from '../componentes/gastos/FilaSaldo.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useGastosStore } from '../stores/gastos';
+import { useSesionStore } from '../stores/sesion';
 import { useViajeStore } from '../stores/viaje';
 import { formatearMonto } from '../utiles/formato';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();
+const miId = useSesionStore().usuario?.id ?? '';
 const pestana = ref<'debo' | 'meDeben'>('debo');
 const error = ref('');
 // Hasta que llegan las deudas no se muestran las que quedaron de otra visita, que pueden estar viejas.
@@ -23,11 +25,14 @@ onMounted(async () => {
     cargado.value = true;
   }
 });
+// La confirmación del pago se muestra una sola vez.
+onBeforeUnmount(() => (gastos.mensaje = ''));
 </script>
 
 <template>
   <section>
     <h2>Saldos</h2>
+    <AvisoMensaje v-if="gastos.mensaje" tipo="exito">{{ gastos.mensaje }}</AvisoMensaje>
     <p v-if="!cargado">Cargando…</p>
     <div v-else class="pestanas" role="tablist">
       <button
@@ -59,7 +64,15 @@ onMounted(async () => {
             :key="d.id"
             :deuda="d"
             :moneda="viaje.actual!.moneda"
-          />
+            :mi-id="miId"
+          >
+            <RouterLink
+              class="boton boton--principal"
+              :to="`/viajes/${viaje.actual!.id}/saldos/pagar/${d.contraparte.id}`"
+            >
+              Pagar
+            </RouterLink>
+          </FilaSaldo>
         </ul>
       </template>
       <template v-else>
@@ -70,6 +83,7 @@ onMounted(async () => {
             :key="d.id"
             :deuda="d"
             :moneda="viaje.actual!.moneda"
+            :mi-id="miId"
           />
         </ul>
       </template>

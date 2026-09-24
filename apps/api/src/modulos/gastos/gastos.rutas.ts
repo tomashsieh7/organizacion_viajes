@@ -1,17 +1,19 @@
 import { Router, type RequestHandler } from 'express';
-import { esquemaConsultaDeudas, esquemaGastoNuevo } from '@viajes/compartido';
+import { esquemaConsultaDeudas, esquemaGastoNuevo, esquemaPagoNuevo } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../compartido/errores.js';
 import { validar } from '../../middlewares/validar.js';
 import type {
   AnotarGasto,
   ConsultarDeudas,
   ConsultarGastos,
+  RegistrarPago,
 } from './casos-de-uso/casosDeUsoGastos.js';
 
 export interface DependenciasRutasGastos {
   anotar: AnotarGasto;
   consultar: ConsultarGastos;
   deudas: ConsultarDeudas;
+  pagar: RegistrarPago;
 }
 
 const viajeId = (req: { params: Record<string, string | string[] | undefined> }) =>
@@ -43,10 +45,13 @@ export function rutasDeGastos(deps: DependenciasRutasGastos): Router {
 }
 
 /**
- * CU21 y CU22: deudas propias. Reciben la guarda de acceso a saldos (RN-E6), que se aplica solo
- * a estas rutas: las demás siguen exigiendo participar del viaje.
+ * CU21 a CU23: deudas propias y pagos. Reciben la guarda de acceso a saldos (RN-E6), que se
+ * aplica solo a estas rutas: las demás siguen exigiendo participar del viaje.
  */
-export function rutasDeSaldos(deudas: ConsultarDeudas, guarda: RequestHandler[]): Router {
+export function rutasDeSaldos(
+  deps: Pick<DependenciasRutasGastos, 'deudas' | 'pagar'>,
+  guarda: RequestHandler[],
+): Router {
   const router = Router({ mergeParams: true });
 
   router.get('/deudas', ...guarda, async (req, res) => {
@@ -55,8 +60,13 @@ export function rutasDeSaldos(deudas: ConsultarDeudas, guarda: RequestHandler[])
       throw new ErrorDeDominio('VALIDACION', 'VALIDACION', 'Indicá rol=deudor o rol=acreedor');
     }
     res.json({
-      deudas: await deudas.ejecutar(viajeId(req), req.usuarioId ?? '', consulta.data.rol),
+      deudas: await deps.deudas.ejecutar(viajeId(req), req.usuarioId ?? '', consulta.data.rol),
     });
+  });
+
+  // P17: quien llama es siempre el deudor; el pago se aplica sin confirmación del acreedor.
+  router.post('/pagos', ...guarda, validar(esquemaPagoNuevo), async (req, res) => {
+    res.status(201).json(await deps.pagar.ejecutar(viajeId(req), req.usuarioId ?? '', req.body));
   });
 
   return router;

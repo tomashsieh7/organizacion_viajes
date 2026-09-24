@@ -31,7 +31,7 @@ const secciones = computed(() =>
 
 /** Con acceso solo a saldos, cualquier otra sección lleva a la de saldos. */
 async function exigirSeccionPermitida() {
-  if (soloSaldos.value && store.actual && !route.path.endsWith('/saldos')) {
+  if (soloSaldos.value && store.actual && !/\/saldos(\/|$)/.test(route.path)) {
     await router.replace(`/viajes/${store.actual.id}/saldos`);
   }
 }

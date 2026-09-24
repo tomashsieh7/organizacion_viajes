@@ -8,6 +8,7 @@ import {
   type CategoriaGasto,
   type DeudaVista,
   type GastoVista,
+  type PagoRegistrado,
   type RolEnDeuda,
   type AvisoAdminCambiado,
   type AvisoMembresiaFinalizada,
@@ -103,6 +104,7 @@ export interface BaseEnMemoria {
   viajes: DatosViaje[];
   categorias: CategoriaGasto[];
   gastos: DatosGasto[];
+  pagos: { id: string; deudaId: string; registradoPorId: string; monto: number; fecha: Date }[];
   deudas: {
     viajeId: string;
     deudorId: string;
@@ -132,6 +134,7 @@ export function baseVacia(): BaseEnMemoria {
       { id: '00000000-0000-4000-8000-000000000002', codigo: 'TRANSPORTE', nombre: 'Transporte' },
     ],
     gastos: [],
+    pagos: [],
     deudas: [],
     mensajes: [],
     propuestas: [],
@@ -776,12 +779,38 @@ export class RepositorioDeudasEnMemoria implements RepositorioDeudas {
       );
   }
 
+  async obtenerParaPagar(
+    viajeId: string,
+    par: ParDeViajeros,
+    moneda: string,
+  ): Promise<Deuda | null> {
+    const f = this.base.deudas.find(
+      (d) =>
+        d.viajeId === viajeId && d.deudorId === par.deudorId && d.acreedorId === par.acreedorId,
+    );
+    if (!f) return null;
+    f.id ??= crypto.randomUUID();
+    return Deuda.reconstruir({
+      id: f.id,
+      viajeId,
+      deudorId: f.deudorId,
+      acreedorId: f.acreedorId,
+      monto: Dinero.de(f.monto, moneda),
+      ultimaActualizacion: f.ultimaActualizacion ?? new Date(0),
+    });
+  }
+
   async guardar(deudas: Deuda[]): Promise<void> {
     for (const d of deudas) {
       const datos = d.aDatos();
       const fila = this.base.deudas.find((f) => f.id === datos.id)!;
       fila.monto = datos.monto.monto;
       fila.ultimaActualizacion = datos.ultimaActualizacion;
+      for (const p of d.pagosSinGuardar()) {
+        if (!this.base.pagos.some((x) => x.id === p.id)) {
+          this.base.pagos.push({ ...p, monto: p.monto.monto });
+        }
+      }
     }
   }
 }
@@ -838,6 +867,22 @@ export class ConsultaGastosEnMemoria implements ConsultaGastos {
 export class ConsultaSaldosEnMemoria implements ConsultaSaldos {
   constructor(private readonly base: BaseEnMemoria) {}
 
+  private pago(p: BaseEnMemoria['pagos'][number]): PagoRegistrado {
+    const u = this.base.usuarios.find((x) => x.id === p.registradoPorId);
+    return {
+      id: p.id,
+      monto: p.monto,
+      fecha: p.fecha.toISOString(),
+      registradoPor: { id: p.registradoPorId, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null },
+    };
+  }
+
+  async obtenerPago(viajeId: string, pagoId: string): Promise<PagoRegistrado | null> {
+    const p = this.base.pagos.find((x) => x.id === pagoId);
+    const deuda = this.base.deudas.find((d) => d.id === p?.deudaId);
+    return p && deuda?.viajeId === viajeId ? this.pago(p) : null;
+  }
+
   async deudas(viajeId: string, usuarioId: string, rol: RolEnDeuda): Promise<DeudaVista[]> {
     return this.base.deudas
       .filter(
@@ -855,6 +900,10 @@ export class ConsultaSaldosEnMemoria implements ConsultaSaldos {
           contraparte: { id: otro, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null },
           monto: d.monto,
           ultimaActualizacion: (d.ultimaActualizacion ?? new Date(0)).toISOString(),
+          pagos: this.base.pagos
+            .filter((p) => p.deudaId === d.id)
+            .sort((a, b) => b.fecha.getTime() - a.fecha.getTime() || (a.id < b.id ? 1 : -1))
+            .map((p) => this.pago(p)),
         };
       });
   }

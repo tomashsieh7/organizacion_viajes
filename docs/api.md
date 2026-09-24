@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Estado al cierre de F7. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
+Estado al cierre de F8. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
 
 ## Convenciones
 
@@ -136,7 +136,8 @@ Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exig
 | `GET /api/categorias-gasto` | Con sesión | — | `200 { categorias: [{ id, codigo, nombre }] }` | — |
 | `GET /api/viajes/:viajeId/gastos` | Participante | — | `200 { gastos }`, del más reciente al más viejo | — |
 | `POST /api/viajes/:viajeId/gastos` | Participante | `{ titulo, categoriaId, monto, pagadoPorId?, deudores, modoDivision, partes? }` | `201 { gasto }` | 422 `SUMA_NO_COINCIDE` (con `detalles: { total, suma, diferencia }`), `PAGADOR_NO_PARTICIPANTE`, `DEUDOR_NO_PARTICIPANTE` (con `detalles: { usuarios }`) y `CATEGORIA_INEXISTENTE`; 400 `PARTES_NO_COINCIDEN` si las partes no son exactamente de los deudores |
-| `GET /api/viajes/:viajeId/deudas?rol=deudor\|acreedor` | Participante, o exparticipante con saldos pendientes | `rol` obligatorio | `200 { deudas: [{ id, contraparte: { id, nombre, apodo }, monto, ultimaActualizacion }] }`, solo con saldo mayor que cero | 400 si falta `rol` |
+| `GET /api/viajes/:viajeId/deudas?rol=deudor\|acreedor` | Participante, o exparticipante con saldos pendientes | `rol` obligatorio | `200 { deudas: [{ id, contraparte: { id, nombre, apodo }, monto, ultimaActualizacion, pagos }] }`, solo con saldo mayor que cero | 400 si falta `rol` |
+| `POST /api/viajes/:viajeId/pagos` | El deudor, participante o exparticipante con saldos pendientes | `{ acreedorId, monto }`; monto mayor que cero | `201 { pago, saldo }`, con el saldo que queda con ese acreedor | 404 `SIN_DEUDA_CON_ACREEDOR`, 422 `PAGO_EXCEDE_DEUDA` con `detalles: { saldo }` |
 
 **Cuerpo de `POST …/gastos`:**
 - **Montos:** enteros en la unidad mínima de la moneda; `monto` mayor que cero.
@@ -150,3 +151,9 @@ Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exig
 - **Concurrencia:** todo ocurre en una transacción, con las filas de deuda bloqueadas siempre en el mismo orden.
 
 **Vista de un gasto:** `gasto` es `{ id, titulo, categoria, monto, modoDivision, pagadoPor, registradoPor, creadoEn, partes: [{ usuario, monto }] }`. Las partes vienen de mayor a menor monto.
+
+**Pagos:**
+- **Quién paga:** quien llama es siempre el deudor. El pago se aplica sin confirmación del acreedor y no se puede deshacer.
+- **Concurrencia:** la fila de la deuda se bloquea, así dos pagos simultáneos no superan juntos el saldo. El segundo recibe `PAGO_EXCEDE_DEUDA` con el saldo actualizado.
+- **Pago exacto:** deja el saldo en cero, y la deuda deja de aparecer en las listas de los dos.
+- **Datos:** `pago` es `{ id, monto, fecha, registradoPor: { id, nombre, apodo } }`. `pagos` en cada deuda lista su historial, del más reciente al más viejo.

@@ -145,3 +145,46 @@ describe('RN-E6: tipo de acceso', () => {
     expect(tipoDeAcceso('RETIRADA', false)).toBeNull();
   });
 });
+
+describe('Deuda.registrarPago (RN-P3 a RN-P5, P17)', () => {
+  const pagar = (d: Deuda, monto: number, quien = 'tomas') =>
+    d.registrarPago({ id: `p${monto}`, monto: ars(monto), registradoPorId: quien, ahora: AHORA });
+
+  it('un pago parcial resta el monto, actualiza la fecha y queda para guardar', () => {
+    const d = deuda('tomas', 'ana', 1_000);
+    const pago = pagar(d, 300);
+    expect(d.aDatos()).toMatchObject({ monto: ars(700), ultimaActualizacion: AHORA });
+    expect(pago).toEqual({
+      id: 'p300',
+      deudaId: 'tomas-ana',
+      registradoPorId: 'tomas',
+      monto: ars(300),
+      fecha: AHORA,
+    });
+    expect(d.pagosSinGuardar()).toEqual([pago]);
+  });
+
+  it('el pago exacto deja el saldo en cero', () => {
+    const d = deuda('tomas', 'ana', 1_000);
+    pagar(d, 1_000);
+    expect(d.monto.esCero()).toBe(true);
+  });
+
+  it('RN-P4: un pago mayor que la deuda se rechaza con el saldo y no cambia nada', () => {
+    const d = deuda('tomas', 'ana', 1_000);
+    expect(() => pagar(d, 1_001)).toThrow(
+      expect.objectContaining({ codigo: 'PAGO_EXCEDE_DEUDA', detalles: { saldo: 1_000 } }),
+    );
+    expect(d.monto.monto).toBe(1_000);
+    expect(d.pagosSinGuardar()).toEqual([]);
+  });
+
+  it('P17: solo el deudor registra el pago, y tiene que ser mayor que cero', () => {
+    expect(() => pagar(deuda('tomas', 'ana', 1_000), 100, 'ana')).toThrow(
+      expect.objectContaining({ codigo: 'SOLO_EL_DEUDOR' }),
+    );
+    expect(() => pagar(deuda('tomas', 'ana', 1_000), 0)).toThrow(
+      expect.objectContaining({ codigo: 'MONTO_INVALIDO' }),
+    );
+  });
+});

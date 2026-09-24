@@ -696,3 +696,60 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F7 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada de cierre de F7, la entrada sobre los avisos de seguridad de Prisma y esta entrada en `LOG.md`.
+
+## 2026-09-24 02:41 — Inicio de F8: pagos
+
+- **Acción:** comienza la fase F8 de `PLAN.md`: registrar pagos parciales o totales de una deuda propia (CU23, RN-P1 a RN-P6, P17), con la fila de deuda bloqueada (D18), y mostrar el historial de pagos en los saldos del deudor y del acreedor.
+
+## 2026-09-24 02:50 — F8 terminada: pagos
+
+- **Acción:** se implementa F8 completa, backend y frontend.
+- **Archivos creados:**
+  - Backend: `pagos.bd.test.ts`.
+  - Frontend:
+    - vista `PagoVista` y componente `AvisoExcedeDeuda`;
+    - pruebas de `PagoVista`.
+- **Archivos modificados:**
+  - Paquete compartido: `contratos.ts` (`PagoRegistrado`, `RespuestaPago` y `pagos` en `DeudaVista`) y `esquemas.ts` (`esquemaPagoNuevo`).
+  - Backend:
+    - `deuda.ts` (`Deuda.registrarPago()` y los pagos sin guardar);
+    - puertos, casos de uso (`RegistrarPago`), infraestructura Prisma y rutas del módulo de gastos;
+    - `app.ts` y `contenedor.ts`;
+    - los soportes en memoria, los contratos de repositorios y las pruebas unitarias de gastos.
+  - Frontend: el cliente y el store de gastos, `FilaSaldo` (historial y acciones), `SaldosVista`, el router, `ViajeLayout` (la pantalla de pago también vale con acceso solo a saldos) y los clientes falsos.
+  - Documentación: `docs/api.md`.
+- **Decisiones:**
+  - **Pago dentro del agregado:** el pago es parte del agregado `Deuda` (la relación "resta" del modelo conceptual). `Deuda.registrarPago()` aplica las reglas y guarda el pago como pendiente; el repositorio persiste el saldo y los pagos juntos, en la misma transacción.
+  - **Reglas que aplica `Deuda`:** quien registra el pago tiene que ser el deudor (P17), el monto tiene que ser mayor que cero y no puede superar el saldo (RN-P4, con el saldo en los detalles). La API ya usa a quien llama como deudor; la regla del dominio protege a cualquier otro uso.
+  - **Bloqueo (D18):** `obtenerParaPagar` toma la fila de la deuda con `SELECT … FOR UPDATE`. Dos pagos simultáneos se ordenan y el segundo ve el saldo actualizado. Se agregó una prueba que falla si se quita el bloqueo.
+  - **Acceso:** `POST …/pagos` usa la misma guarda que las deudas (RN-E6), así un exparticipante con saldo pendiente puede pagar. Al saldar, pierde también ese acceso.
+  - **Pantalla de pago:**
+    - muestra lo que se debe (RN-P2) y avisa mientras se escribe si el monto supera la deuda, sin dejar pagar;
+    - el botón "Pagar el total" completa el monto;
+    - si la API responde que el pago excede la deuda porque otro pago cambió el saldo, vuelve a leer las deudas y muestra el saldo nuevo;
+    - al terminar vuelve a los saldos con una confirmación que se muestra una sola vez.
+  - **Historial (RN-P6):** cada fila de saldo muestra sus pagos, desde los dos lados, con quién los registró y cuándo. El botón "Pagar" aparece solo en las deudas propias.
+- **Errores encontrados y corregidos:**
+  - **Pago total:** en el recorrido manual, pagar el total dejaba la pantalla sin navegar. El pago vaciaba la lista de deudas antes de armar la confirmación, que buscaba el nombre en esa deuda. Ahora el nombre se toma antes de pagar, y se agregó la prueba del pago total que faltaba.
+  - **Código cortado:** una edición de la vista de pago cortó el comienzo de una función. Lo detectó la compilación y se restauró.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 415 pruebas: 341 del backend y 74 del frontend. Entre ellas:
+    - pago parcial;
+    - pago exacto: el saldo queda en cero y la deuda desaparece de las dos listas;
+    - pago mayor que la deuda: 422 sin cambios en la base;
+    - pago registrado por alguien que no es el deudor: rechazado;
+    - pago de un exparticipante con saldo pendiente: aceptado, y al saldar pierde el acceso;
+    - dos pagos simultáneos que juntos superan el saldo: uno se registra y el otro recibe 422;
+    - el pago aparece en el historial de los dos con quién lo registró y cuándo;
+    - la invariante del saldo neto sigue pasando después de cada prueba.
+  - `npm run lint` pasa sin errores.
+  - **Recorrido manual en Chromium:**
+    - Tomás debe $1.000 a Ana; al escribir $1.200 ve el aviso y el botón se deshabilita.
+    - Paga $400 y ve "Todavía le debés $600,00 a Ana"; el pago aparece en el historial de los dos.
+    - Ana no tiene botón para pagar lo que le deben.
+    - Tomás paga el total con "Pagar el total" y la deuda queda saldada.
+
+## 2026-09-24 02:52 — Commit y push de F8
+
+- **Acción:** con autorización del usuario, se hace commit de F8 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F8, más esta entrada en `LOG.md`.

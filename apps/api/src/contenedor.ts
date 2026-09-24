@@ -53,6 +53,7 @@ import {
   AnotarGasto,
   ConsultarDeudas,
   ConsultarGastos,
+  RegistrarPago,
 } from './modulos/gastos/casos-de-uso/casosDeUsoGastos.js';
 import {
   DivisionArbitraria,
@@ -154,6 +155,7 @@ export interface Contenedor {
     anotar: AnotarGasto;
     consultar: ConsultarGastos;
     deudas: ConsultarDeudas;
+    pagar: RegistrarPago;
   };
   propuestas: {
     votar: Votar<ReposPropuestas>;
@@ -251,6 +253,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
 
   // Gastos
   const categorias = new ConsultaCategoriasPrisma(prisma);
+  const consultaSaldos = new ConsultaSaldosPrisma(prisma);
 
   // Chat
   const participacion = new ParticipacionSegunViajes(consultasViajes);
@@ -308,7 +311,15 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
         reloj,
       }),
       consultar: new ConsultarGastos(new ConsultaGastosPrisma(prisma), categorias),
-      deudas: new ConsultarDeudas(new ConsultaSaldosPrisma(prisma)),
+      deudas: new ConsultarDeudas(consultaSaldos),
+      pagar: new RegistrarPago({
+        unidad: new UnidadDeTrabajoPrisma<Pick<ReposGastos, 'deudas'>>(prisma, (tx) => ({
+          deudas: new RepositorioDeudasPrisma(tx),
+        })),
+        viajes: viajesSinBloqueo,
+        saldos: consultaSaldos,
+        reloj,
+      }),
     },
     chat: {
       unirse: new UnirseAlChat(participacion),

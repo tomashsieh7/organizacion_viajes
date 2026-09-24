@@ -255,12 +255,28 @@ export interface GastoVista {
   partes: { usuario: PersonaVista; monto: number }[];
 }
 
+/** Pago registrado sobre una deuda (RN-P6): quién lo registró y cuándo. */
+export interface PagoRegistrado {
+  id: string;
+  monto: number;
+  fecha: string;
+  registradoPor: PersonaVista;
+}
+
 /** Deuda pendiente con otro viajero (CU21 y CU22); `contraparte` es el acreedor o el deudor. */
 export interface DeudaVista {
   id: string;
   contraparte: PersonaVista;
   monto: number;
   ultimaActualizacion: string;
+  /** Pagos hechos sobre esta deuda, del más reciente al más viejo. */
+  pagos: PagoRegistrado[];
+}
+
+/** CU23: el pago y el saldo que queda con ese acreedor. */
+export interface RespuestaPago {
+  pago: PagoRegistrado;
+  saldo: number;
 }
 
 export type RolEnDeuda = 'deudor' | 'acreedor';
