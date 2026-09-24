@@ -808,3 +808,9 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F9 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada de cierre de F9, más esta entrada en `LOG.md`.
+
+## 2026-09-24 17:06 — Pull request del MVP
+
+- **Acción:** a pedido del usuario, se abre un pull request con todo el MVP (F0 a F9).
+- **Rama base:** el repositorio tenía una sola rama, `claude/elegant-maxwell-60322c`, que además era la principal, así que no había base contra la cual comparar. Con acuerdo del usuario se creó `main` en el commit `283a81a` ("Actualizar diagramas con las decisiones del plan"), el último antes del código, para que el PR muestre toda la implementación. Se descartó basarla en el primer commit (`f11f1b5`), que habría mezclado en el PR los ajustes del plan y de los diagramas.
+- **Archivos:** esta entrada en `LOG.md`.
