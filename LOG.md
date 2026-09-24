@@ -844,3 +844,12 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Estado previo:** el CI pasa en sus tres trabajos, el PR no tiene conflictos y no hay revisiones ni comentarios pendientes. Esta entrada se agrega antes del merge para que quede en el mismo historial que llega a `main`. El merge se hace solo si el CI del commit que la contiene pasa.
 - **Método:** commit de merge, elegido por el usuario. Conserva en `main` los commits de cada fase, que son los que cita este registro. Se descartaron el squash, que junta todo en un commit y pierde esas referencias, y el rebase, que copia los commits con otros identificadores.
 - **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-09-24 18:27 — Carga de los datos de ejemplo en la base de desarrollo
+
+- **Acción:** a pedido del usuario, se corrió `npm run db:reset` (`prisma migrate reset --force && prisma db seed`) contra la base de desarrollo, `viajes` en `localhost:5432`, para cargar los datos de ejemplo del README. Era el pendiente que figuraba en el PR del MVP.
+- **Autorización:** Prisma bloquea este comando cuando lo ejecuta un agente y pide el consentimiento explícito del usuario. Se le explicó al usuario que borraba de forma irreversible la base de desarrollo, que en ese momento tenía 43 usuarios, 21 viajes, 10 gastos y 5 mensajes de las pruebas manuales de las fases anteriores, y que nunca debe correrse contra producción. El usuario confirmó, y el comando se volvió a correr con ese consentimiento.
+- **Resultado:** se aplicó la migración `20260924032214_inicial` y se cargó la semilla: 4 usuarios, el viaje "Bariloche 2026" con sus 4 membresías, 2 gastos, 5 deudas, 6 monedas y 6 categorías.
+- **Verificación:** con la API levantada en el puerto 3000, `ana@ejemplo.com` inicia sesión con la contraseña del README y ve el viaje a Bariloche como Admin.
+- **Rama:** como el PR #1 ya estaba mergeado, antes de esta entrada `claude/elegant-maxwell-60322c` se adelantó hasta `main` (`b1c1d9d`), sin reescribir historia.
+- **Archivos:** esta entrada en `LOG.md`.
