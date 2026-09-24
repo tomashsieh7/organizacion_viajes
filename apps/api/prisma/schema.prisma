@@ -1,0 +1,326 @@
+// Esquema de la base de datos (sección 4 de PLAN.md).
+// Las restricciones CHECK y el índice parcial de Admin único que Prisma no expresa
+// se agregan a mano en la migración inicial.
+// Los montos son enteros en la unidad mínima de la moneda del viaje (D16), guardados como BIGINT.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generado/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TipoCredencial {
+  EMAIL_CONTRASENA
+
+  @@map("tipo_credencial")
+}
+
+enum RolMembresia {
+  ADMIN
+  VIAJERO
+
+  @@map("rol_membresia")
+}
+
+enum EstadoMembresia {
+  ACTIVA
+  ELIMINADA
+  RETIRADA
+
+  @@map("estado_membresia")
+}
+
+enum TipoPropuesta {
+  ACTIVIDAD
+  ALOJAMIENTO
+
+  @@map("tipo_propuesta")
+}
+
+enum EstadoPropuesta {
+  PENDIENTE
+  CONFIRMADA
+  DENEGADA
+  CANCELADA
+
+  @@map("estado_propuesta")
+}
+
+enum ValorVoto {
+  A_FAVOR
+  EN_CONTRA
+
+  @@map("valor_voto")
+}
+
+enum ModoDivision {
+  IGUALES
+  ARBITRARIA
+
+  @@map("modo_division")
+}
+
+model Usuario {
+  id       String   @id @default(uuid()) @db.Uuid
+  nombre   String
+  apodo    String?
+  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+
+  credenciales        Credencial[]
+  sesiones            Sesion[]
+  membresias          Membresia[]
+  viajesCreados       Viaje[]      @relation("ViajeCreador")
+  propuestas          Propuesta[]  @relation("PropuestaAutor")
+  propuestasResueltas Propuesta[]  @relation("PropuestaResolutor")
+  votos               Voto[]
+  mensajes            Mensaje[]
+  gastosPagados       Gasto[]      @relation("GastoPagador")
+  gastosRegistrados   Gasto[]      @relation("GastoRegistrador")
+  partes              GastoParte[]
+  deudasComoDeudor    Deuda[]      @relation("DeudaDeudor")
+  deudasComoAcreedor  Deuda[]      @relation("DeudaAcreedor")
+  pagosRegistrados    Pago[]
+
+  @@map("usuario")
+}
+
+model Credencial {
+  id            String         @id @default(uuid()) @db.Uuid
+  usuarioId     String         @map("usuario_id") @db.Uuid
+  tipo          TipoCredencial
+  identificador String
+  secretoHash   String?        @map("secreto_hash")
+  verificadaEn  DateTime?      @map("verificada_en") @db.Timestamptz(3)
+  creadaEn      DateTime       @default(now()) @map("creada_en") @db.Timestamptz(3)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@unique([tipo, identificador])
+  @@index([usuarioId])
+  @@map("credencial")
+}
+
+model Sesion {
+  id         String    @id @default(uuid()) @db.Uuid
+  usuarioId  String    @map("usuario_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  creadaEn   DateTime  @default(now()) @map("creada_en") @db.Timestamptz(3)
+  expiraEn   DateTime  @map("expira_en") @db.Timestamptz(3)
+  revocadaEn DateTime? @map("revocada_en") @db.Timestamptz(3)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
+  @@map("sesion")
+}
+
+model Moneda {
+  codigo    String @id @db.VarChar(3)
+  nombre    String
+  decimales Int
+
+  viajes Viaje[]
+
+  @@map("moneda")
+}
+
+model Viaje {
+  id           String   @id @default(uuid()) @db.Uuid
+  nombre       String
+  destino      String
+  fechaInicio  DateTime @map("fecha_inicio") @db.Date
+  fechaFin     DateTime @map("fecha_fin") @db.Date
+  monedaCodigo String   @map("moneda_codigo") @db.VarChar(3)
+  creadoPorId  String   @map("creado_por_id") @db.Uuid
+  creadoEn     DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+
+  moneda     Moneda      @relation(fields: [monedaCodigo], references: [codigo])
+  creadoPor  Usuario     @relation("ViajeCreador", fields: [creadoPorId], references: [id])
+  membresias Membresia[]
+  propuestas Propuesta[]
+  mensajes   Mensaje[]
+  gastos     Gasto[]
+  deudas     Deuda[]
+
+  @@map("viaje")
+}
+
+model Membresia {
+  viajeId      String          @map("viaje_id") @db.Uuid
+  usuarioId    String          @map("usuario_id") @db.Uuid
+  rol          RolMembresia
+  estado       EstadoMembresia @default(ACTIVA)
+  bajaConDeuda Boolean         @default(false) @map("baja_con_deuda")
+  altaEn       DateTime        @default(now()) @map("alta_en") @db.Timestamptz(3)
+  bajaEn       DateTime?       @map("baja_en") @db.Timestamptz(3)
+
+  viaje   Viaje   @relation(fields: [viajeId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@id([viajeId, usuarioId])
+  @@index([usuarioId])
+  @@map("membresia")
+}
+
+model Propuesta {
+  id            String          @id @default(uuid()) @db.Uuid
+  viajeId       String          @map("viaje_id") @db.Uuid
+  autorId       String          @map("autor_id") @db.Uuid
+  tipo          TipoPropuesta
+  descripcion   String
+  precio        BigInt?
+  ubicacion     String
+  latitud       Float?
+  longitud      Float?
+  estado        EstadoPropuesta @default(PENDIENTE)
+  resueltaPorId String?         @map("resuelta_por_id") @db.Uuid
+  resueltaEn    DateTime?       @map("resuelta_en") @db.Timestamptz(3)
+  creadaEn      DateTime        @default(now()) @map("creada_en") @db.Timestamptz(3)
+
+  viaje       Viaje        @relation(fields: [viajeId], references: [id])
+  autor       Usuario      @relation("PropuestaAutor", fields: [autorId], references: [id])
+  resueltaPor Usuario?     @relation("PropuestaResolutor", fields: [resueltaPorId], references: [id])
+  actividad   Actividad?
+  alojamiento Alojamiento?
+  votos       Voto[]
+
+  @@index([viajeId, tipo, estado])
+  @@map("propuesta")
+}
+
+model Actividad {
+  propuestaId     String   @id @map("propuesta_id") @db.Uuid
+  titulo          String
+  fecha           DateTime @db.Date
+  horaInicio      DateTime @map("hora_inicio") @db.Time(0)
+  duracionMin     Int      @map("duracion_min")
+  alternativaDeId String?  @map("alternativa_de_id") @db.Uuid
+
+  propuesta     Propuesta   @relation(fields: [propuestaId], references: [id])
+  alternativaDe Actividad?  @relation("Alternativas", fields: [alternativaDeId], references: [propuestaId])
+  alternativas  Actividad[] @relation("Alternativas")
+
+  @@index([alternativaDeId])
+  @@map("actividad")
+}
+
+model Alojamiento {
+  propuestaId String   @id @map("propuesta_id") @db.Uuid
+  nombre      String
+  fechaDesde  DateTime @map("fecha_desde") @db.Date
+  fechaHasta  DateTime @map("fecha_hasta") @db.Date
+
+  propuesta Propuesta @relation(fields: [propuestaId], references: [id])
+
+  @@map("alojamiento")
+}
+
+model Voto {
+  propuestaId String    @map("propuesta_id") @db.Uuid
+  usuarioId   String    @map("usuario_id") @db.Uuid
+  valor       ValorVoto
+  emitidoEn   DateTime  @default(now()) @map("emitido_en") @db.Timestamptz(3)
+
+  propuesta Propuesta @relation(fields: [propuestaId], references: [id])
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
+
+  @@id([propuestaId, usuarioId])
+  @@index([usuarioId])
+  @@map("voto")
+}
+
+model Mensaje {
+  id        String   @id @default(uuid()) @db.Uuid
+  viajeId   String   @map("viaje_id") @db.Uuid
+  autorId   String   @map("autor_id") @db.Uuid
+  contenido String
+  enviadoEn DateTime @default(now()) @map("enviado_en") @db.Timestamptz(3)
+
+  viaje Viaje   @relation(fields: [viajeId], references: [id])
+  autor Usuario @relation(fields: [autorId], references: [id])
+
+  @@index([viajeId, enviadoEn])
+  @@map("mensaje")
+}
+
+model CategoriaGasto {
+  id     String @id @default(uuid()) @db.Uuid
+  codigo String @unique
+  nombre String
+
+  gastos Gasto[]
+
+  @@map("categoria_gasto")
+}
+
+model Gasto {
+  id              String       @id @default(uuid()) @db.Uuid
+  viajeId         String       @map("viaje_id") @db.Uuid
+  pagadoPorId     String       @map("pagado_por_id") @db.Uuid
+  registradoPorId String       @map("registrado_por_id") @db.Uuid
+  categoriaId     String       @map("categoria_id") @db.Uuid
+  titulo          String
+  monto           BigInt
+  modoDivision    ModoDivision @map("modo_division")
+  creadoEn        DateTime     @default(now()) @map("creado_en") @db.Timestamptz(3)
+
+  viaje         Viaje          @relation(fields: [viajeId], references: [id])
+  pagadoPor     Usuario        @relation("GastoPagador", fields: [pagadoPorId], references: [id])
+  registradoPor Usuario        @relation("GastoRegistrador", fields: [registradoPorId], references: [id])
+  categoria     CategoriaGasto @relation(fields: [categoriaId], references: [id])
+  partes        GastoParte[]
+
+  @@index([viajeId])
+  @@map("gasto")
+}
+
+model GastoParte {
+  gastoId   String @map("gasto_id") @db.Uuid
+  usuarioId String @map("usuario_id") @db.Uuid
+  monto     BigInt
+
+  gasto   Gasto   @relation(fields: [gastoId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@id([gastoId, usuarioId])
+  @@index([usuarioId])
+  @@map("gasto_parte")
+}
+
+model Deuda {
+  id                  String   @id @default(uuid()) @db.Uuid
+  viajeId             String   @map("viaje_id") @db.Uuid
+  deudorId            String   @map("deudor_id") @db.Uuid
+  acreedorId          String   @map("acreedor_id") @db.Uuid
+  monto               BigInt   @default(0)
+  ultimaActualizacion DateTime @default(now()) @map("ultima_actualizacion") @db.Timestamptz(3)
+
+  viaje    Viaje   @relation(fields: [viajeId], references: [id])
+  deudor   Usuario @relation("DeudaDeudor", fields: [deudorId], references: [id])
+  acreedor Usuario @relation("DeudaAcreedor", fields: [acreedorId], references: [id])
+  pagos    Pago[]
+
+  @@unique([viajeId, deudorId, acreedorId])
+  @@index([deudorId])
+  @@index([acreedorId])
+  @@map("deuda")
+}
+
+model Pago {
+  id              String   @id @default(uuid()) @db.Uuid
+  deudaId         String   @map("deuda_id") @db.Uuid
+  registradoPorId String   @map("registrado_por_id") @db.Uuid
+  monto           BigInt
+  fecha           DateTime @default(now()) @db.Timestamptz(3)
+
+  deuda         Deuda   @relation(fields: [deudaId], references: [id])
+  registradoPor Usuario @relation(fields: [registradoPorId], references: [id])
+
+  @@index([deudaId])
+  @@map("pago")
+}

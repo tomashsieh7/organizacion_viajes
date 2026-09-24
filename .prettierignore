@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+package-lock.json
+docs/diagramas.drawio
+*.md
+apps/api/src/generado

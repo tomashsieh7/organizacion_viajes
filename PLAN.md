@@ -37,6 +37,8 @@ El MVP cubre las 23 historias de "Página-13" más tres casos agregados por deci
 
 El registro, el inicio y el cierre de sesión no figuran en los diagramas, pero todos los casos anteriores los necesitan para identificar al viajero; se implementan en F2 como soporte transversal según P3.
 
+**Revisión de F9.** Las rutas y pantallas de la tabla coinciden con lo implementado. La prueba `apps/api/test/unitarias/trazabilidad.test.ts` lee esta tabla y la sección 6, y falla si algún caso de uso o alguna regla no aparece en el nombre de al menos una prueba de `apps/*/test` o de `e2e/`. Los flujos de punta a punta de `e2e/` recorren CU01, CU02, CU04, CU10, CU13, CU16 a CU21, CU23 y CU24 en el navegador.
+
 ## 2. Arquitectura y estructura del repositorio
 
 ### 2.1 Vista general
@@ -151,7 +153,7 @@ El gateway de Socket.IO es otro adaptador de entrada, como el controlador, y usa
 │   │   │       ├── itinerario/        # cronograma y mapa (CU16, CU17)
 │   │   │       ├── chat/              # historial REST y gateway Socket.IO (CU19)
 │   │   │       └── gastos/            # gastos, deudas y pagos (CU20–CU23)
-│   │   │           # cada módulo: rutas/, controladores/, casos-de-uso/, dominio/, infraestructura/
+│   │   │           # cada módulo: <modulo>.rutas.ts (rutas y controlador, que es delgado), casos-de-uso/, dominio/, infraestructura/
 │   │   └── test/
 │   │       ├── unitarias/             # casos de uso con repositorios en memoria
 │   │       ├── contratos/             # pruebas de contrato de cada interfaz
@@ -195,7 +197,7 @@ Vue y Express están fijados por la consigna. El resto se decide acá; cada deci
 | D5 | Autenticación | Email y contraseña sin envío de correos (P3). Hash con argon2id mediante `@node-rs/argon2`. Sesiones guardadas en la base: token aleatorio de 256 bits en cookie `httpOnly`, `Secure` en producción y `SameSite=Lax`, del que la base guarda solo el hash, con vencimiento y revocación | argon2id es el algoritmo recomendado por OWASP y `@node-rs/argon2` trae binarios precompilados. Las sesiones en la base se pueden anular en el momento (cierre de sesión, sospecha de robo), a diferencia de un JWT, que vale hasta que expira. La cookie `httpOnly` no queda expuesta al JavaScript del navegador y Socket.IO la recibe en el handshake. | JWT en cookie: no se puede revocar antes de su vencimiento. `bcryptjs`: seguro con costo alto, pero argon2id resiste mejor ataques con hardware dedicado. Token en `localStorage`: expuesto a XSS. Proveedor externo (Auth0, Firebase): dependencia innecesaria para el MVP. |
 | D6 | Medidas de seguridad de la autenticación | Contraseña de 8 a 128 caracteres con rechazo de contraseñas comunes (lista local); email normalizado en minúsculas y sin espacios; mismo mensaje y mismo tiempo de respuesta con email existente o inexistente al ingresar; límite de 5 ingresos fallidos por email o por IP cada 15 minutos y límite general al registro (`express-rate-limit`); verificación del encabezado `Origin` en toda petición que modifica datos y en el handshake de Socket.IO; encabezados con `helmet`; CORS cerrado al propio origen; secretos en `.env`; nunca se registran contraseñas ni tokens en logs | Cubre fuerza bruta, enumeración de usuarios en el ingreso, CSRF y filtración de secretos, que son los riesgos principales de un ingreso con contraseña sin segundo factor. El mínimo de 8 caracteres lo pidió el usuario, y el rechazo de contraseñas comunes junto con el límite de intentos compensan un mínimo corto. | Mínimo de 12 caracteres: más robusto, descartado por decisión del usuario. Contador de intentos en la base: persistente entre reinicios, pero agrega escrituras en cada ingreso; para el MVP alcanza el almacenamiento en memoria del limitador. |
 | D7 | Extensibilidad de la autenticación | Identidad (`usuario`) separada de las formas de ingresar (`credencial`), interfaz `ProveedorAutenticacion` con la implementación `EmailContrasena` y búsqueda de usuarios por `buscarPorIdentificador(tipo, valor)` | Sumar teléfono u otro proveedor es agregar una implementación, sin tocar sesiones, permisos ni módulos de negocio, y una persona puede vincular varias credenciales a la misma cuenta. | Email y contraseña como columnas de `usuario`: más simple hoy, pero cada forma de ingreso nueva obligaría a modificar la tabla y el servicio de sesiones. |
-| D8 | Búsqueda de ubicaciones | Interfaz `BuscadorUbicaciones` con implementación sobre Nominatim (OpenStreetMap), más la opción de marcar el punto con un clic en el mapa | Proponer actividades exige coordenadas (P8). Nominatim es gratuito; se respeta su límite de uso con espera entre teclas y el clic en el mapa sirve de alternativa si el servicio falla. | Google Places: mejor autocompletado, pero con clave y facturación. |
+| D8 | Búsqueda de ubicaciones | Interfaz `BuscadorUbicaciones` en el frontend con implementación sobre Nominatim (OpenStreetMap), consultado directamente desde el navegador, más la opción de marcar el punto con un clic en el mapa | Proponer actividades exige coordenadas (P8). Nominatim es gratuito; se respeta su límite de uso con espera entre teclas y el clic en el mapa sirve de alternativa si el servicio falla. | Google Places: mejor autocompletado, pero con clave y facturación. |
 | D9 | Mapa | Leaflet con teselas de OpenStreetMap, usado directamente dentro de un componente Vue | Libre, sin clave ni facturación y suficiente para marcadores y polilíneas. | Google Maps JavaScript API: requiere clave con facturación. Mapbox GL: requiere token y es más pesado. |
 | D10 | Trazado del recorrido | Interfaz `ProveedorRecorrido` con la implementación `RecorridoEnLineaRecta`, que une los marcadores en orden cronológico (P20) | Cumple "traza el recorrido entre ellas según ese orden" sin servicios externos. El trazado por calles del Release 4 es otra implementación de la misma interfaz. | OpenRouteService u OSRM desde el MVP: clave o servidor sin garantías, y adelantan funcionalidad del Release 4. |
 | D11 | Chat en tiempo real | Socket.IO, una sala por viaje (`viaje:<id>`) | Resuelve reconexión automática, salas y confirmación de recepción. Las salas encajan con los canales por subgrupo del Release 3. | WebSocket nativo (`ws`): habría que implementar reconexión, salas y confirmaciones. Consultas periódicas o SSE: más latencia y, en SSE, un solo sentido. |
@@ -210,6 +212,8 @@ Vue y Express están fijados por la consigna. El resto se decide acá; cada deci
 | D20 | Estilos | CSS propio con variables y un puñado de componentes base (botón, campo, aviso, diálogo) | Las pantallas son formularios y listas; una librería de componentes agregaría peso y un sistema de diseño propio. | Vuetify o PrimeVue: aceleran pantallas complejas, pero imponen su sistema y aumentan el tamaño del paquete. |
 | D21 | Calidad de código | ESLint (con `eslint-plugin-vue`) y Prettier en `npm run lint` | Estándar en proyectos Vue con TypeScript. | Biome: soporte parcial de archivos `.vue`. |
 | D22 | Ubicación de las reglas de negocio | Modelo de dominio con comportamiento: entidades y objetos de valor que aplican las reglas de las que son expertos, y casos de uso que coordinan (sección 2.2.2) | Cumple el principio de experto en información de GRASP, evita repetir una misma regla en varios casos de uso y permite probar las reglas sin repositorios ni base. | Modelo anémico con toda la lógica en servicios: más directo al principio, pero dispersa reglas como la superposición o la resta de una deuda entre varios casos de uso. |
+| D23 | Versiones y herramientas de base (F0) | TypeScript 6, Express 5, Zod 4, Vue 3.5, Vue Router 5, Pinia 4, Vite 8 y Vitest 5, las versiones estables vigentes al empezar F0; `happy-dom` como entorno de pruebas de componentes; `concurrently` para levantar los tres paquetes en desarrollo; `tsx` para el backend en desarrollo; `process.loadEnvFile()` de Node para leer `.env`; el paquete compartido se compila a `dist` como módulo ES | Empezar con versiones vigentes evita migraciones durante el cuatrimestre. `happy-dom` es más liviano que `jsdom` y alcanza para montar componentes. `process.loadEnvFile()` viene con Node 22 y evita una dependencia. Compilar el paquete compartido permite que el backend compilado lo importe con Node sin transpilar en tiempo de ejecución. | `jsdom`: más completo pero más pesado. `dotenv`: dependencia innecesaria con Node 22. Importar el paquete compartido como TypeScript sin compilar: funciona en desarrollo pero no con `node dist/servidor.js`. |
+| D24 | Montos en la base y en el dominio (F1) | Columnas `BIGINT` en PostgreSQL y enteros seguros de JavaScript (`number`, hasta 2^53) en el dominio, con la conversión en los repositorios; el objeto de valor `Dinero` rechaza montos que no sean enteros seguros | Un `INTEGER` de 32 bits llega a unos 21 millones de pesos en centavos, un límite alcanzable para las deudas acumuladas de un viaje en pesos. `number` evita que `bigint` llegue al JSON de la API, que no lo serializa. | `INTEGER`: límite demasiado bajo. `bigint` de JavaScript en todo el dominio: obliga a convertir en cada respuesta y complica los cálculos. |
 
 ## 4. Modelo de datos
 
@@ -396,9 +400,10 @@ Todos los montos (`precio`, `gasto.monto`, `gasto_parte.monto`, `deuda.monto`, `
 |---|---|---|
 | `credencial` | `UNIQUE (tipo, identificador)`; el identificador se guarda normalizado | Una credencial identifica a una sola persona y el mismo email no se registra dos veces con distinta escritura (D6). |
 | `sesion` | `UNIQUE (token_hash)`; índice por `usuario_id` | Búsqueda de la sesión por el hash del token y revocación de todas las sesiones de un usuario. |
+| `moneda` | `CHECK (decimales BETWEEN 0 AND 4)` | Cantidad de decimales razonable para formatear montos. |
 | `viaje` | `CHECK (fecha_inicio <= fecha_fin)`; FK a `moneda` | Rango válido, del que dependen el mapa, el cronograma y P11. |
-| `membresia` | PK `(viaje_id, usuario_id)`; índice parcial único `(viaje_id) WHERE rol = 'ADMIN' AND estado = 'ACTIVA'` | Un viajero figura una sola vez por viaje, por lo que volver a agregarlo reactiva su membresía (P18), y cada viaje tiene un único Admin activo (P2, P5). |
-| `propuesta` | `CHECK` de que `latitud` y `longitud` sean ambas nulas o ambas no nulas; `CHECK (precio IS NULL OR precio >= 0)`; índice `(viaje_id, tipo, estado)` | Consistencia de coordenadas, precio opcional no negativo (P8) y consultas rápidas de actividades confirmadas. Que las actividades tengan coordenadas lo exige el caso de uso. |
+| `membresia` | PK `(viaje_id, usuario_id)`; índice parcial único `(viaje_id) WHERE rol = 'ADMIN' AND estado = 'ACTIVA'`; `CHECK` de que `baja_en` exista solo si la membresía no está activa | Un viajero figura una sola vez por viaje, por lo que volver a agregarlo reactiva su membresía (P18), cada viaje tiene un único Admin activo (P2, P5) y la fecha de baja es coherente con el estado. |
+| `propuesta` | `CHECK` de que `latitud` y `longitud` sean ambas nulas o ambas no nulas y estén en rango (±90 y ±180); `CHECK (precio IS NULL OR precio >= 0)`; índice `(viaje_id, tipo, estado)` | Consistencia de coordenadas, precio opcional no negativo (P8) y consultas rápidas de actividades confirmadas. Que las actividades tengan coordenadas lo exige el caso de uso. |
 | `actividad` | `CHECK (duracion_min > 0)`; FK `alternativa_de_id → actividad.propuesta_id` | Duración positiva y vínculo con la actividad original (P9). |
 | `alojamiento` | `CHECK (fecha_desde <= fecha_hasta)` | Rango válido. |
 | `voto` | PK `(propuesta_id, usuario_id)` | Un viajero tiene como mucho un voto por propuesta. |
@@ -443,7 +448,7 @@ Ninguna tabla borra filas de `usuario` ni de `membresia`: las bajas son lógicas
 
 | Método y ruta | Quién | Validaciones | Errores específicos |
 |---|---|---|---|
-| `POST /api/auth/registro` | Cualquiera | `email` válido (se normaliza), `password` de 8 a 128 caracteres y no incluida en la lista de contraseñas comunes, `nombre` obligatorio, `apodo` opcional | 409 `EMAIL_EN_USO`, 400 `CONTRASENA_COMUN` |
+| `POST /api/auth/registro` | Cualquiera | `email` válido (se normaliza), `password` de 8 a 128 caracteres y no incluida en la lista de contraseñas comunes, `nombre` obligatorio, `apodo` opcional; deja la sesión iniciada | 409 `EMAIL_EN_USO`, 400 `CONTRASENA_COMUN` |
 | `POST /api/auth/sesion` | Cualquiera | `email`, `password`; mismo mensaje y tiempo de respuesta exista o no el email | 401 `CREDENCIALES_INVALIDAS`, 429 `DEMASIADOS_INTENTOS` |
 | `DELETE /api/auth/sesion` | Con sesión | Revoca la sesión actual | — |
 | `GET /api/auth/yo` | Con sesión | Perfil del usuario | — |
@@ -454,13 +459,13 @@ Ninguna tabla borra filas de `usuario` ni de `membresia`: las bajas son lógicas
 |---|---|---|---|---|
 | CU01 | `POST /api/viajes` | Cualquier usuario con sesión; queda como Admin | `nombre` y `destino` obligatorios, `fecha_inicio <= fecha_fin`, `moneda_codigo` existente | 400 `RANGO_FECHAS_INVALIDO`, 422 `MONEDA_INEXISTENTE` |
 | — | `GET /api/monedas` | Con sesión | Lista de monedas disponibles | — |
-| — | `GET /api/viajes` | Con sesión | Viajes con membresía activa y viajes con acceso solo a saldos, marcados como tales | — |
-| — | `GET /api/viajes/:viajeId` | `accesoSaldos` | Datos del viaje y rol o tipo de acceso de quien consulta | — |
+| — | `GET /api/viajes` | Con sesión | Viajes con membresía activa; desde F7 suma los viajes con acceso solo a saldos, marcados como tales | — |
+| — | `GET /api/viajes/:viajeId` | Participante (desde F7, `accesoSaldos`) | Datos del viaje con su moneda, rol de quien consulta, su deuda pendiente (para el aviso de RN-E7) y la cantidad de participantes | — |
 | — | `GET /api/viajes/:viajeId/participantes` | Participante | Participantes activos con su rol | — |
 | CU02 | `POST /api/viajes/:viajeId/participantes` | Admin | `email` de un usuario registrado (P4); si tenía una membresía dada de baja, se reactiva con su historial (P18) | 404 `USUARIO_NO_REGISTRADO`, 409 `YA_ES_PARTICIPANTE` |
 | CU03 | `DELETE /api/viajes/:viajeId/participantes/:usuarioId` | Admin | El usuario es participante activo y no es el propio Admin | 409 `NO_PUEDE_ELIMINARSE_A_SI_MISMO`; la respuesta indica `bajaConDeuda` |
 | CU04 | `POST /api/viajes/:viajeId/salir` | Participante | Si quien sale es el Admin, `nuevoAdminId` es obligatorio y debe ser otro participante activo (CU24); si el Admin es el único participante, no puede salir (P5) | 400 `FALTA_SUCESOR`, 422 `SUCESOR_INVALIDO`, 409 `ADMIN_UNICO_PARTICIPANTE`; la respuesta indica la deuda pendiente, si la hay (P18) |
-| CU24 | `POST /api/viajes/:viajeId/administracion/traspaso` | Admin | `nuevoAdminId` es otro participante activo | 422 `SUCESOR_INVALIDO` |
+| CU24 | `POST /api/viajes/:viajeId/administracion/traspaso` | Admin | `nuevoAdminId` es otro participante activo; responde 204 | 422 `SUCESOR_INVALIDO` |
 
 ### 5.4 Propuestas: votos y transiciones comunes a alojamientos y actividades
 
@@ -487,14 +492,14 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 |---|---|---|---|---|
 | CU10 | `POST /api/viajes/:viajeId/actividades` | Participante | `titulo`, `fecha`, `hora_inicio`, `duracion_min > 0`, `ubicacion` con coordenadas y `descripcion` obligatorios; `precio >= 0` opcional (RN-A1, P8); fecha dentro del viaje (P11); sin superposición con actividades confirmadas (RN-A2) | 409 `SUPERPOSICION_HORARIA` con `detalles.conflictos`, 422 `FUERA_DEL_VIAJE` |
 | CU11 | `POST /api/viajes/:viajeId/actividades/:actividadId/alternativas` | Participante | Mismos campos y controles que CU10; la actividad elegida existe en el viaje y está `PENDIENTE`; si es a su vez una alternativa, la nueva se vincula a la original (P9) | 409 `ORIGINAL_NO_PENDIENTE`, 409 `SUPERPOSICION_HORARIA`, 422 `FUERA_DEL_VIAJE` |
-| — | `GET /api/viajes/:viajeId/actividades?estado=` | Participante | Cada actividad original con sus alternativas anidadas | — |
+| — | `GET /api/viajes/:viajeId/actividades?estado=` | Participante | Lista plana ordenada por fecha y hora; cada alternativa trae `alternativaDe` con el id y el título de la original, y el frontend las agrupa (ajustado en F4) | — |
 | CU18 | `GET /api/viajes/:viajeId/actividades/:actividadId` | Participante | — | — |
 
 ### 5.7 Seguir el itinerario
 
 | CU | Método y ruta | Quién | Validaciones | Respuesta y errores |
 |---|---|---|---|---|
-| CU16 | `GET /api/viajes/:viajeId/cronograma` | Participante | — | Todos los días del viaje; cada uno con sus actividades confirmadas ordenadas por hora (inicio, fin, título, ubicación, id para el enlace al mapa) y el alojamiento confirmado de esa noche, si lo hay (P21) |
+| CU16 | `GET /api/viajes/:viajeId/cronograma` | Participante | — | Todos los días del viaje; cada uno con sus actividades confirmadas ordenadas por hora (inicio, fin, título, ubicación, id para el enlace al mapa) y la lista de alojamientos confirmados de esa noche, vacía si no hay ninguno (P21; lista desde F5, porque nada impide confirmar dos alojamientos para la misma noche) |
 | CU17 | `GET /api/viajes/:viajeId/mapa?hoy=YYYY-MM-DD&dia=YYYY-MM-DD` | Participante | `hoy` obligatorio (fecha del dispositivo, P19); `dia` opcional y dentro del viaje | `{ dia, diasConActividad[], actividades[] ordenadas, recorrido[], aviso }`, con `aviso = SIN_ACTIVIDADES_CONFIRMADAS` cuando el día no tiene actividades; 422 `FUERA_DEL_VIAJE` |
 
 ### 5.8 Comunicarse
@@ -503,7 +508,7 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 |---|---|---|---|---|
 | CU19 | `GET /api/viajes/:viajeId/mensajes?antesDe=<id>&limite=50` | Participante | `limite` entre 1 y 100 | — |
 
-Eventos de Socket.IO (espacio de nombres `/chat`). El handshake verifica el encabezado `Origin` y la cookie de sesión; si alguno falla, la conexión se rechaza.
+Eventos de Socket.IO (espacio de nombres `/chat`, solo con transporte WebSocket desde F6, porque el primer pedido del transporte de sondeo no trae `Origin`). El handshake verifica el encabezado `Origin` y la cookie de sesión; si alguno falla, la conexión se rechaza. Cada evento vuelve a validar la sesión. El historial responde `{ mensajes, hayMas }` con los mensajes en orden cronológico.
 
 | Evento | Sentido | Carga | Reglas y errores |
 |---|---|---|---|
@@ -520,7 +525,7 @@ Eventos de Socket.IO (espacio de nombres `/chat`). El handshake verifica el enca
 |---|---|---|---|---|
 | — | `GET /api/categorias-gasto` | Con sesión | Lista de categorías | — |
 | CU20 | `POST /api/viajes/:viajeId/gastos` | Participante | `titulo`, `categoria_id` existente, `monto > 0`, `pagado_por_id` participante activo (por defecto, quien anota; P12), `deudores[]` con al menos un participante activo, que puede no incluir al pagador (P13), `modo_division ∈ {IGUALES, ARBITRARIA}`; en `ARBITRARIA`, `partes[]` con un monto por deudor cuya suma es igual al total | 422 `SUMA_NO_COINCIDE` con `detalles: { total, suma, diferencia }`, 422 `DEUDOR_NO_PARTICIPANTE`, 422 `PAGADOR_NO_PARTICIPANTE`, 422 `CATEGORIA_INEXISTENTE` |
-| — | `GET /api/viajes/:viajeId/gastos` | Participante | Gastos con sus partes, pagador y categoría | — |
+| — | `GET /api/viajes/:viajeId/gastos` | Participante | Gastos con sus partes (de mayor a menor monto, porque `gasto_parte` no guarda el orden de elección; ajustado en F7), pagador y categoría | — |
 | CU21 | `GET /api/viajes/:viajeId/deudas?rol=deudor` | `accesoSaldos` | Deudas con `monto > 0` donde quien llama es deudor, con acreedor, saldo, última actualización e historial de pagos | — |
 | CU22 | `GET /api/viajes/:viajeId/deudas?rol=acreedor` | `accesoSaldos` | Deudas con `monto > 0` donde quien llama es acreedor, con el mismo detalle | — |
 | CU23 | `POST /api/viajes/:viajeId/pagos` | `accesoSaldos`, solo el deudor (P17) | `acreedor_id` con deuda pendiente de quien llama, `monto > 0`, `monto <= saldo` | 404 `SIN_DEUDA_CON_ACREEDOR`, 422 `PAGO_EXCEDE_DEUDA` con `detalles: { saldo }` |
@@ -668,7 +673,7 @@ El cronograma y el mapa no usan store propio porque son vistas de solo lectura; 
 |---|---|---|---|---|
 | `/ingresar`, `/registrarse` | `IngresoVista`, `RegistroVista` | `FormularioCredenciales` (muestra los requisitos de contraseña) | `useSesionStore` | Soporte (P3) |
 | `/viajes` | `ViajesVista` | `TarjetaViaje` (marca los viajes con acceso solo a saldos), `DialogoNuevoViaje` (con selector de moneda) | `useViajeStore` | CU01 |
-| `/viajes/:viajeId/participantes` | `ParticipantesVista` | `ListaParticipantes`; para el Admin, `FormularioAgregarViajero`, `DialogoEliminarParticipante` (avisa si tiene deuda) y `DialogoTraspaso`; botón "Salir del grupo", que muestra la deuda propia y, si quien sale es el Admin, abre `DialogoTraspaso` para elegir sucesor | `useViajeStore` | CU02–CU04, CU24 |
+| `/viajes/:viajeId/participantes` | `ParticipantesVista` | `ListaParticipantes`; para el Admin, `FormularioAgregarViajero`, el diálogo de confirmación de eliminación (avisa que se conserva el historial) y `DialogoTraspaso`; botón "Salir del grupo", que abre `DialogoSalir`: muestra la deuda propia y, si quien sale es el Admin, pide el sucesor con `SelectorSucesor` | `useViajeStore` | CU02–CU04, CU24 |
 | `/viajes/:viajeId/alojamientos` | `AlojamientosVista` | `TarjetaPropuesta` (conteo, botones de voto y de desvoto, acciones del Admin según estado), filtro por estado | `usePropuestasStore` | CU06–CU09, CU25 |
 | `/viajes/:viajeId/alojamientos/nuevo` | `AlojamientoFormularioVista` | `CampoUbicacion` (buscador y clic en el mapa), `CampoRangoFechas` (limitado al viaje) | `usePropuestasStore` | CU05 |
 | `/viajes/:viajeId/actividades` | `ActividadesVista` | `TarjetaPropuesta` con `ListaAlternativas` anidada, botón "Proponer alternativa" en actividades pendientes | `usePropuestasStore` | CU12–CU15, CU26 |
@@ -714,28 +719,28 @@ F6 y F7 dependen solo de F2, así que pueden hacerse en cualquier orden respecto
 #### F0 — Base del repositorio
 
 - **Objetivo:** dejar un monorepo que compila, prueba y levanta frontend, backend y base de datos.
-- **Entregables:** `package.json` de raíz con workspaces y scripts (`dev`, `build`, `lint`, `test`, `db:reset`, `e2e`); `apps/api` con Express, `GET /api/salud`, `contenedor.ts` vacío, manejador de errores con el formato de D19 y la clase base de errores de dominio; `apps/web` con Vue, Vue Router, Pinia, el proxy de Vite y la inyección de clientes en `main.ts`; `packages/compartido` enlazado; configuración de TypeScript, ESLint, Prettier y Vitest con las carpetas de pruebas unitarias, de contrato y de integración; `docker-compose.yml` con una base para desarrollo y otra para pruebas; `.env.example`; `README.md` con los pasos para levantar el proyecto.
+- **Entregables:** `package.json` de raíz con workspaces y scripts (`dev`, `build`, `lint`, `test`, `format`; `db:reset` se agrega en F1 y `e2e` en F9, cuando existen Prisma y Playwright); `apps/api` con Express, `GET /api/salud`, `contenedor.ts` vacío, manejador de errores con el formato de D19 y la clase base de errores de dominio; `apps/web` con Vue, Vue Router, Pinia, el proxy de Vite y la inyección de clientes en `main.ts`; `packages/compartido` enlazado; configuración de TypeScript, ESLint, Prettier y Vitest con las carpetas de pruebas unitarias, de contrato y de integración; `docker-compose.yml` con una base para desarrollo y otra para pruebas; `.env.example`; `README.md` con los pasos para levantar el proyecto.
 - **Dependencias:** ninguna.
 - **Criterio de terminado:** en un clon limpio, `npm install`, `docker compose up -d` y `npm run dev` levantan todo; `curl localhost:3000/api/salud` devuelve `200 {"ok":true}`; la web responde en `localhost:5173`; `npm run lint`, `npm test` (una prueba de humo por aplicación) y `npm run build` terminan sin errores.
 
 #### F1 — Modelo de datos e infraestructura común
 
 - **Objetivo:** tener el esquema de la sección 4 aplicado en PostgreSQL, con datos de ejemplo y la infraestructura de transacciones que usan todos los módulos.
-- **Entregables:** `schema.prisma` con todas las tablas; migración inicial con SQL agregado para los `CHECK` y el índice parcial de Admin único; `seed.ts` con las seis categorías (alojamiento, transporte, comida, actividades, compras, otros), las monedas iniciales (ARS, USD, EUR, BRL, CLP, UYU) y un viaje de ejemplo con cuatro usuarios, propuestas en todos los estados, una actividad con alternativas, gastos en ambos modos, deudas y un pago; interfaz `UnidadDeTrabajo` con su implementación Prisma y una implementación en memoria, ambas con pruebas de contrato; objetos de valor `Dinero` (con `repartir()`), `RangoFechas` (con `contiene()` e `incluyeNoche()`) e `Intervalo` (con `seSuperponeCon()`); mecanismo de eventos de dominio.
+- **Entregables:** `schema.prisma` con todas las tablas; migración inicial con SQL agregado para los `CHECK` y el índice parcial de Admin único; script `db:reset` de raíz; configuración de Prisma 7 (`prisma.config.ts`, cliente generado en `src/generado/`, que no se versiona y se genera al instalar); `seed.ts` con las seis categorías (alojamiento, transporte, comida, actividades, compras, otros), las monedas iniciales (ARS, USD, EUR, BRL, CLP, UYU) y un viaje de ejemplo con cuatro usuarios, propuestas en todos los estados, una actividad con alternativas, gastos en ambos modos, deudas y un pago; interfaz `UnidadDeTrabajo` con su implementación Prisma y una implementación en memoria (esta última en `test/soporte`, porque solo la usan las pruebas), ambas con pruebas de contrato; pruebas separadas en dos proyectos de Vitest, uno rápido sin base y otro con la base de prueba (archivos `*.bd.test.ts`), que se prepara con `prisma migrate deploy`; objetos de valor `Dinero` (con `repartir()`), `RangoFechas` (con `contiene()` e `incluyeNoche()`) e `Intervalo` (con `seSuperponeCon()`); mecanismo de eventos de dominio.
 - **Dependencias:** F0.
 - **Criterio de terminado:** `npm run db:reset` aplica la migración y la semilla sin errores; pruebas de integración verifican que fallan un voto duplicado, una credencial duplicada, una deuda de un usuario consigo mismo, una deuda con monto negativo, un segundo Admin activo en el mismo viaje y un viaje con `fecha_inicio > fecha_fin`; las pruebas de contrato de `UnidadDeTrabajo` pasan para ambas implementaciones, incluida la reversión ante un error; pruebas unitarias de los tres objetos de valor cubren reparto con resto, bordes de rango e intervalos contiguos.
 
 #### F2 — Autenticación y gestión del grupo
 
 - **Objetivo:** que un usuario se registre de forma segura, cree un viaje y administre sus participantes y la administración.
-- **Entregables:** módulo `auth` con `ProveedorAutenticacion` y `EmailContrasena`, sesiones en la base y las medidas de D6 (RN-S1 a RN-S6); middlewares `autenticado`, `verificarOrigen`, `participanteActivo`, `soloAdmin` y `validar`; entidades `Viaje` y `Membresia` con sus reglas (creación del Admin, traspaso, baja, reactivación, tipo de acceso); módulo `viajes` con CU01 a CU04 y CU24 (RN-E1 a RN-E5, RN-E7, RN-E8, RN-T1 a RN-T4); `GET /api/monedas`; vistas de ingreso, registro, viajes, `ViajeLayout` y participantes con `DialogoTraspaso`; `useSesionStore` y `useViajeStore`; primera versión de `docs/api.md`.
+- **Entregables:** módulo `auth` con `ProveedorAutenticacion` y `EmailContrasena`, sesiones en la base y las medidas de D6 (RN-S1 a RN-S6); credenciales de ejemplo en la semilla; middlewares `autenticado`, `verificarOrigen`, `participanteActivo`, `soloAdmin` y `validar`; entidades `Viaje` y `Membresia` con sus reglas (creación del Admin, traspaso, baja, reactivación, tipo de acceso); módulo `viajes` con CU01 a CU04 y CU24 (RN-E1 a RN-E5, RN-E7, RN-E8, RN-T1 a RN-T4); `GET /api/monedas`; vistas de ingreso, registro, viajes, `ViajeLayout` y participantes con `DialogoTraspaso`; `useSesionStore` y `useViajeStore`; primera versión de `docs/api.md`.
 - **Dependencias:** F1.
 - **Criterio de terminado:** pruebas unitarias de `Viaje` y `Membresia` y de cada caso de uso con repositorios en memoria; pruebas de contrato de `ProveedorAutenticacion` y de los repositorios del módulo; pruebas de integración de cada endpoint de 5.2 y 5.3 con sus errores; pruebas de seguridad que verifican el bloqueo tras 5 intentos fallidos, el mismo mensaje con email existente e inexistente, la sesión inválida tras cerrar sesión, los atributos de la cookie y el rechazo de una petición con otro `Origin`; pruebas de baja con y sin deuda (insertando filas de `deuda` directamente) que verifican historial conservado, votos pendientes retirados y 403 en rutas del viaje; pruebas del traspaso que verifican que el viaje nunca queda sin Admin ni con dos, incluso con dos pedidos simultáneos; una prueba de componente verifica que las acciones de Admin no se muestran a un viajero común.
 
 #### F3 — Propuestas y alojamientos
 
 - **Objetivo:** proponer, votar, desvotar y resolver alojamientos, dejando listo el mecanismo común de propuestas.
-- **Entregables:** entidad `Propuesta` con su tabla de transiciones y las reglas de voto; módulo `propuestas` con `Votar`, `Desvotar` y `ResolverPropuesta` (RN-R1, RN-R2, RN-X3); módulo `alojamientos` con `ProponerAlojamiento` (CU05, RN-X4); interfaz `BuscadorUbicaciones` con la implementación Nominatim; componentes `TarjetaPropuesta` y `CampoUbicacion`; vistas de alojamientos; `usePropuestasStore`.
+- **Entregables:** entidad `Propuesta` con su tabla de transiciones y las reglas de voto; módulo `propuestas` con `Votar` (votar y desvotar) y `ResolverPropuesta` (RN-R1, RN-R2, RN-X3), con el punto de extensión `ReglaAlResolver` que F4 usa para sus políticas; módulo `alojamientos` con `ProponerAlojamiento` (CU05, RN-X4); interfaz `BuscadorUbicaciones` en el frontend con la implementación Nominatim; componentes `TarjetaPropuesta` y `CampoUbicacion`; vistas de alojamientos; `usePropuestasStore`.
 - **Dependencias:** F2.
 - **Criterio de terminado:** pruebas de CU05 a CU09 y CU25 que incluyen la matriz completa de transiciones (cada estado contra cada acción), el reemplazo de voto, el desvoto y la prohibición de votar o desvotar propuestas resueltas; alojamiento fuera de las fechas del viaje rechazado; pruebas de contrato de `BuscadorUbicaciones` con una implementación falsa; prueba de componente de `TarjetaPropuesta` para los dos roles.
 
@@ -777,7 +782,7 @@ F6 y F7 dependen solo de F2, así que pueden hacerse en cualquier orden respecto
 #### F9 — Pruebas de punta a punta y cierre
 
 - **Objetivo:** verificar los flujos completos en el navegador y cerrar la documentación.
-- **Entregables:** pruebas de Playwright en `e2e/` para seis flujos: registrarse, crear un viaje y agregar a un viajero; proponer una actividad que se superpone, ajustar el horario y guardarla; confirmarla y verla en el cronograma y en el mapa; anotar un gasto con división arbitraria y pagar parte de la deuda; conversar en el chat desde dos sesiones; transferir la administración y salir del grupo. `docs/api.md` completo y la tabla de trazabilidad revisada.
+- **Entregables:** script `e2e` de raíz y pruebas de Playwright en `e2e/` para seis flujos: registrarse, crear un viaje y agregar a un viajero; proponer una actividad que se superpone, ajustar el horario y guardarla; confirmarla y verla en el cronograma y en el mapa; anotar un gasto con división arbitraria y pagar parte de la deuda; conversar en el chat desde dos sesiones; transferir la administración y salir del grupo. `docs/api.md` completo y la tabla de trazabilidad revisada.
 - **Dependencias:** F2 a F8.
 - **Criterio de terminado:** `npm run e2e` pasa en Chromium; cada fila de la sección 1 y cada regla de la sección 6 aparece en el nombre de al menos una prueba (se verifica buscando los identificadores CU y RN en `apps/*/test` y `e2e/`).
 

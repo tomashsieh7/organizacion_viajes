@@ -225,3 +225,622 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de `docs/diagramas.drawio`, `PLAN.md` y `LOG.md` y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** ninguno nuevo.
+
+## 2026-09-24 00:08 — Inicio de F0: base del repositorio
+
+- **Acción:** comienza la fase F0 de `PLAN.md` (monorepo que compila, prueba y levanta frontend, backend y base de datos).
+- **Archivos:** se crearán los archivos de configuración de raíz, `apps/api`, `apps/web` y `packages/compartido`.
+- **Contexto del entorno:** Node 22.22 y npm 10.9 disponibles, registro de npm accesible, Docker instalado pero sin su servicio en ejecución, y PostgreSQL 16 instalado localmente.
+
+## 2026-09-24 00:12 — F0 terminada: base del repositorio
+
+- **Acción:** se armó el monorepo con los tres paquetes y se verificó el criterio de terminado de F0.
+- **Archivos creados:**
+  - **Raíz:** `package.json` (workspaces y scripts), `package-lock.json`, `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`, `.gitignore`, `.env.example`, `docker-compose.yml` y `README.md`.
+  - **`packages/compartido`:** `package.json`, `tsconfig.json` y `src/` con los contratos de la respuesta de error (D19) y de `/api/salud`.
+  - **`apps/api`:** `package.json`, dos `tsconfig` (uno para chequeo con pruebas y otro para compilar), `vitest.config.ts`, `src/app.ts`, `src/servidor.ts`, `src/config.ts`, `src/contenedor.ts`, `src/compartido/errores.ts`, `src/middlewares/manejarErrores.ts`, `src/modulos/salud/salud.rutas.ts` y pruebas en `test/unitarias` y `test/integracion`.
+  - **`apps/web`:** `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/main.ts`, `src/App.vue`, `src/router/index.ts`, `src/vistas/InicioVista.vue`, `src/clientes/salud.ts` y `test/InicioVista.test.ts`.
+- **Archivos modificados:** `PLAN.md` (desvíos de F0 y nueva decisión D23).
+- **Decisiones:**
+  - **Errores de dominio (D19):** `ErrorDeDominio` lleva una categoría del dominio (validación, no autenticado, prohibido, no encontrado, conflicto, regla de negocio, demasiados intentos). El middleware `manejarErrores` traduce esa categoría a HTTP con una tabla cerrada, así el dominio no conoce HTTP y cada código nuevo no obliga a tocar la traducción. Los errores inesperados responden 500 `ERROR_INTERNO` sin exponer detalles. Se descartó que cada error llevara su código HTTP, porque acoplaría el dominio a la capa web.
+  - **Módulo de salud:** es un solo archivo de rutas y no tiene la estructura de capas de los módulos de dominio, por el criterio contra la sobreingeniería (2.2.4 de `PLAN.md`), ya que no tiene reglas de negocio ni datos.
+  - **Frontend:** `InicioVista` depende de la interfaz `ClienteSalud`, que `main.ts` inyecta con `provide`; así se aplica la inversión de dependencias desde la primera pantalla y la prueba usa un cliente falso.
+  - **Chequeo de tipos:** `npm run lint` incluye el chequeo de tipos de cada paquete, porque la compilación del backend no revisa los archivos de prueba.
+  - **Versiones y herramientas:** se registran en D23.
+- **Desvíos del plan:** los scripts `db:reset` y `e2e` pasan a F1 y F9, cuando existen Prisma y Playwright, en lugar de dejar scripts de relleno que fallarían. Las carpetas vacías previstas (`stores`, `composables`, `test/contratos`) se crean cuando se usen, porque git no versiona carpetas vacías.
+- **Verificación del criterio de terminado:**
+  - `docker compose up -d` levanta las dos bases, que quedan saludables y aceptan conexiones en 5432 y 5433.
+  - `npm run dev` levanta todo. `curl localhost:3000/api/salud` y `curl localhost:5173/api/salud` (a través del proxy de Vite) devuelven `200 {"ok":true}`, y la web cargada en Chromium muestra "Servidor disponible".
+  - En un clon limpio, `npm ci`, `npm run build`, `npm test` (14 pruebas: 12 del backend y 2 del frontend) y `npm run lint` terminan sin errores.
+- **Entorno:** para verificar se inició el servicio de Docker de la sesión, que estaba detenido.
+
+## 2026-09-24 00:15 — Commit y push de F0
+
+- **Acción:** con autorización del usuario, se hace commit de F0 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada anterior, más esta entrada en `LOG.md`.
+
+## 2026-09-24 00:19 — Inicio de F1: modelo de datos e infraestructura común
+
+- **Acción:** comienza la fase F1 de `PLAN.md` (esquema de la sección 4 en PostgreSQL, semilla, `UnidadDeTrabajo` y objetos de valor).
+- **Decisión:** se usa Prisma 7.10, la última versión estable. Se descartó la 8.0, que es la que npm marca como `latest` pero todavía es candidata (`rc`), para no depender de una versión sin publicar como estable.
+
+## 2026-09-24 00:30 — F1 terminada: modelo de datos e infraestructura común
+
+- **Acción:** se implementó el esquema de la sección 4 de `PLAN.md` con Prisma 7.10 y se verificó el criterio de terminado de F1.
+- **Archivos creados** (en `apps/api`):
+  - **Base de datos:** `prisma.config.ts`, `prisma/schema.prisma`, `prisma/migrations/20260924032214_inicial/migration.sql` y `prisma/seed.ts`.
+  - **Código:** `src/compartido/valores/` (`dinero.ts`, `fecha.ts`, `rangoFechas.ts`, `intervalo.ts`), `src/compartido/unidadDeTrabajo.ts`, `src/compartido/eventos.ts`, `src/compartido/infraestructura/prisma.ts` y `src/compartido/infraestructura/unidadDeTrabajoPrisma.ts`.
+  - **Soporte de pruebas:** `test/soporte/` (unidad de trabajo en memoria, conexión y preparación de la base de prueba).
+  - **Pruebas:** `test/contratos/` (contrato de la unidad de trabajo y sus dos ejecuciones), `test/unitarias/` (`dinero`, `rangoFechas`, `intervalo`, `eventos`) y `test/integracion/restricciones.bd.test.ts`.
+- **Archivos modificados:** `apps/api/package.json` (scripts `generar`, `postinstall`, `db:migrar` y `db:reset`; dependencias de Prisma y `pg`), `apps/api/vitest.config.ts` (dos proyectos), `package.json` de raíz (`db:reset`), `.gitignore`, `.prettierignore` y `eslint.config.js` (ignoran el cliente generado), y `PLAN.md` (D24, restricciones agregadas en 4.3 y entregables de F1).
+- **Decisiones:**
+  - **Montos:** se guardan como `BIGINT` y el dominio los maneja como enteros seguros de JavaScript (D24).
+  - **Restricciones agregadas en la migración**, además de las previstas en 4.3: coherencia entre `estado` y `baja_en` en `membresia`, coordenadas dentro de rango en `propuesta` y cantidad de decimales en `moneda`. Se verificó con `prisma migrate diff` que Prisma no detecta diferencias por el índice parcial ni por los `CHECK`, así que las migraciones futuras no los borran.
+  - **Fechas:** los días calendario se representan como texto `YYYY-MM-DD` (`fecha.ts`), que se compara directamente y no depende de zonas horarias (D17). `Intervalo` usa minutos y es semiabierto, así dos actividades contiguas no se superponen.
+  - **Eventos de dominio:** `BusDeEventosEnMemoria` implementa el Observer previsto en 2.2.3; los eventos concretos llegan en F2 y F6.
+  - **Pruebas:** se separan en un proyecto rápido y otro con base (archivos `*.bd.test.ts`), que corre de a un archivo y vacía las tablas antes de cada prueba.
+  - **Semilla:** no incluye credenciales, porque el hash de contraseñas llega en F2 con el módulo de autenticación.
+- **Desvío del plan:** la base de prueba se prepara con `prisma migrate deploy` en lugar de `migrate reset`. Se descartó el reset porque Prisma lo bloquea cuando lo ejecuta un agente de IA y porque no hace falta: la base de prueba vive en memoria y cada prueba vacía las tablas.
+- **Consentimiento del usuario:** Prisma exige consentimiento explícito para `migrate reset` cuando lo ejecuta un agente. Se le pidió al usuario, indicando el comando, el motivo, que borra los datos en forma irreversible y que la base era la de desarrollo local del contenedor de la sesión. El usuario autorizó ("Sí, autorizo resetear la base de desarrollo local") y el comando se ejecutó solo sobre `localhost:5432/viajes`.
+- **Auditoría de dependencias:** `npm audit` reporta vulnerabilidades en `mysql2`, una dependencia de la línea de comandos de Prisma que solo se usa en desarrollo. No afecta a la aplicación, que usa PostgreSQL. Se descartó `npm audit fix --force` porque bajaría Prisma a la versión 6.
+- **Verificación del criterio de terminado:**
+  - `npm run db:reset` aplica la migración y la semilla sin errores. Quedan 4 usuarios y 9 propuestas en los cuatro estados, incluida una actividad con dos alternativas, 2 gastos (uno en partes iguales y otro arbitrario), 5 deudas, 1 pago, 6 categorías y 6 monedas.
+  - Una consulta SQL confirmó que el saldo neto de cada par de viajeros coincide con lo que surge de las partes de los gastos menos los pagos.
+  - `npm test` pasa 51 pruebas (49 del backend y 2 del frontend). Entre ellas:
+    - las de restricciones: voto y credencial duplicados, deuda consigo mismo y negativa, segundo Admin activo, rango de fechas invertido, email sin normalizar y coordenadas incompletas;
+    - el contrato de la unidad de trabajo para las dos implementaciones, incluida la reversión ante un error;
+    - las de los objetos de valor: reparto con resto, bordes de rango e intervalos contiguos y que pasan la medianoche.
+  - En un clon limpio, `npm ci` genera el cliente y `npm run build`, `npm test` y `npm run lint` terminan sin errores.
+
+## 2026-09-24 00:35 — Commit y push de F1
+
+- **Acción:** con autorización del usuario, se hace commit de F1 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F1, más esta entrada en `LOG.md`.
+
+## 2026-09-24 00:38 — Inicio de F2: autenticación y gestión del grupo
+
+- **Acción:** comienza la fase F2 de `PLAN.md`: registro, sesiones y medidas de seguridad (P3, D5, D6, D7), creación de viajes y gestión de participantes y de la administración (CU01 a CU04 y CU24), con sus pantallas.
+- **Dependencias nuevas:** `@node-rs/argon2` (hash argon2id con binarios precompilados, D5), `helmet` (encabezados de seguridad), `express-rate-limit` (límite de intentos, D6) y `cookie-parser` (lectura de la cookie de sesión) en el backend; `zod` en el paquete compartido, para que backend y frontend usen los mismos esquemas (D12).
+
+## 2026-09-24 00:53 — F2 terminada: autenticación y gestión del grupo
+
+- **Acción:** se implementaron el registro, las sesiones y las medidas de seguridad (P3, D5, D6, D7), la creación de viajes y la gestión de participantes y de la administración (CU01 a CU04 y CU24), con sus pantallas, y se verificó el criterio de terminado de F2.
+- **Archivos creados:**
+  - **Paquete compartido:** `esquemas.ts` (esquemas Zod de registro, ingreso, viaje nuevo, agregar viajero, salir y traspaso) y `contrasenasComunes.ts`; `contratos.ts` se amplió con los tipos de respuesta.
+  - **Backend, módulo `auth`:** `dominio/` (puertos, `EmailContrasena`, `ServicioDeSesiones`), `casos-de-uso/`, `infraestructura/` (argon2id, tokens, repositorios Prisma y buscador de usuarios) y `auth.rutas.ts`.
+  - **Backend, módulo `viajes`:** `dominio/` (agregado `Viaje` con `Membresia`, eventos y puertos), `casos-de-uso/`, `infraestructura/prisma.ts` y `viajes.rutas.ts`.
+  - **Backend, compartido:** `middlewares/` (`acceso.ts`, `seguridad.ts`, `validar.ts`), `compartido/reloj.ts`, `compartido/infraestructura/conversiones.ts` y `tipos/express.d.ts`.
+  - **Pruebas del backend:** `test/soporte/` (implementaciones en memoria, escenarios y cliente HTTP de prueba), `test/contratos/` (repositorios y `ProveedorAutenticacion`), `test/unitarias/` (`viaje`, `auth` y casos de uso de viajes) y `test/integracion/` (`auth.bd` y `viajes.bd`).
+  - **Frontend:** `clientes/` (`http`, `auth`, `viajes`), `stores/` (`sesion`, `viaje`), `componentes/base/` (`CampoFormulario`, `AvisoMensaje`, `DialogoModal`), `componentes/viajes/` (`DialogoNuevoViaje`, `ListaParticipantes`, `FormularioAgregarViajero`, `SelectorSucesor`, `DialogoTraspaso`, `DialogoSalir`), `vistas/` (`IngresoVista`, `RegistroVista`, `ViajesVista`, `ViajeLayout`, `ParticipantesVista`) y `utiles/formato.ts`, con sus pruebas en `test/`.
+  - **Documentación:** `docs/api.md`.
+- **Archivos modificados:** `app.ts`, `config.ts` (`DATABASE_URL`, `SESION_DIAS`), `contenedor.ts`, `compartido/infraestructura/prisma.ts`, la semilla (credenciales de ejemplo), el router, `App.vue` y `main.ts` del frontend, y `PLAN.md`. Se eliminaron `InicioVista.vue`, `clientes/salud.ts` y su prueba, porque la pantalla de inicio de F0 se reemplazó por la lista de viajes; `GET /api/salud` se mantiene.
+- **Decisiones:**
+  - **GRASP:** `Viaje` es el agregado experto en participantes y administración: agrega, elimina, reactiva, transfiere y da de baja, y registra eventos de dominio que el caso de uso publica recién después de confirmar la transacción. Los casos de uso cargan el viaje con `SELECT … FOR UPDATE`, así dos operaciones simultáneas sobre el mismo viaje se ejecutan de a una. Al guardar, las membresías que dejan de ser Admin se escriben antes que la del nuevo Admin, para no violar el índice de Admin único.
+  - **Interfaz del lado del consumidor:** el módulo de viajes necesita buscar usuarios por email, así que define la interfaz `BuscadorDeUsuarios` en su dominio y la implementa el módulo de autenticación. Así los viajes no dependen de las credenciales (inversión de dependencias).
+  - **Seguridad:** los tokens de sesión se guardan como hash SHA-256. Los contadores de intentos viven en memoria y se crean por instancia de la app. El registro tiene un límite de 10 por hora por IP. La lista de contraseñas comunes está en el paquete compartido, así el formulario las rechaza antes de enviar.
+  - **Registro:** deja la sesión iniciada (201 con cookie). Se descartó obligar a ingresar después de registrarse, porque es un paso más sin beneficio de seguridad.
+  - **Respuestas de la API:** `GET /api/viajes/:viajeId` incluye la deuda pendiente de quien consulta, que el diálogo de salida muestra antes de confirmar (RN-E7). Eliminar y salir responden `{ bajaConDeuda }` y el traspaso responde 204.
+  - **Frontend:** los stores obtienen sus clientes de API con `inject`, y las pruebas montan las vistas con clientes falsos. Los componentes base tienen nombres de dos palabras, como pide la regla de ESLint para Vue.
+  - **Estructura de módulos:** cada módulo tiene un archivo `<modulo>.rutas.ts` con rutas y controlador juntos, porque el controlador es una traducción delgada entre HTTP y casos de uso. Se descartó separarlos en carpetas propias por el criterio contra la sobreingeniería.
+- **Desvío del plan:** `GET /api/viajes` lista por ahora solo las membresías activas; los viajes con acceso solo a saldos (RN-E6) se suman en F7, junto con el middleware `accesoSaldos`.
+- **Entorno:** el servicio de Docker de la sesión se detuvo durante la fase y se volvió a iniciar. Además, la preparación de la base de prueba ahora explica el error si la base no está levantada.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 143 pruebas: 134 del backend (81 rápidas y 53 contra la base) y 9 del frontend. Entre ellas:
+    - las pruebas de cada endpoint de 5.2 y 5.3 con sus errores;
+    - las de seguridad: bloqueo tras 5 intentos fallidos, mismo mensaje con email existente e inexistente, sesión inválida tras cerrar sesión, atributos de la cookie, rechazo de otro `Origin`, encabezados de helmet y argon2id en la base;
+    - las de baja con y sin deuda: historial conservado, votos pendientes retirados y 403 posterior;
+    - la de dos traspasos simultáneos, que deja exactamente un Admin;
+    - los contratos de repositorios y de `ProveedorAutenticacion` para las implementaciones en memoria y en Prisma;
+    - la prueba de componente que oculta las acciones de Admin a un viajero común.
+  - `npm run lint` pasa sin errores, con chequeo de tipos.
+  - Recorrido manual en Chromium con `npm run dev`: dos personas se registran, Ana crea un viaje, agrega a Tomás por email escrito en mayúsculas, Tomás entra sin ver acciones de Admin, Ana lo elimina, Tomás ya no puede entrar, y Ana cierra sesión y la guarda de ruta la manda a ingresar.
+- **Pendiente para el usuario:** la base de desarrollo tiene los datos de ejemplo cargados antes de sumar las credenciales. Para ingresar con `ana@ejemplo.com` y la contraseña de ejemplo hay que ejecutar `npm run db:reset`, que borra la base de desarrollo; no se ejecutó sin autorización.
+
+## 2026-09-24 00:54 — Commit y push de F2
+
+- **Acción:** con autorización del usuario, se hace commit de F2 y push a `claude/elegant-maxwell-60322c`. No se reseteó la base de desarrollo, porque el usuario no respondió sobre eso.
+- **Archivos:** los de la entrada de cierre de F2, más esta entrada en `LOG.md`.
+
+## 2026-09-24 00:56 — Inicio de F3: propuestas y alojamientos
+
+- **Acción:** comienza la fase F3 de `PLAN.md`: mecanismo común de propuestas (votar, desvotar, confirmar, denegar y cancelar) y alojamientos (CU05 a CU09 y CU25), con el buscador de ubicaciones.
+- **Dependencias nuevas:** `leaflet` (D9) en el frontend.
+- **Entorno:** la red de la sesión bloquea `nominatim.openstreetmap.org` y `tile.openstreetmap.org`. El adaptador de Nominatim se prueba con respuestas simuladas, y en el navegador de la sesión el mapa se ve sin teselas; marcar un punto con un clic funciona igual.
+
+## 2026-09-24 01:10 — F3 terminada: propuestas y alojamientos
+
+- **Acción:** se implementaron el mecanismo común de propuestas (votar, desvotar, confirmar, denegar y cancelar) y los alojamientos (CU05 a CU09 y CU25), con el buscador de ubicaciones y el mapa para marcar puntos, y se verificó el criterio de terminado de F3.
+- **Archivos creados:**
+  - **Paquete compartido:** esquemas de voto, filtro por estado y alojamiento nuevo, y tipos `PropuestaVista`, `AlojamientoVista` y `RespuestaResolucion`.
+  - **Backend:**
+    - módulo `propuestas`: entidad `Propuesta` con su tabla de transiciones, puertos con `ReglaAlResolver`, casos de uso `Votar` y `ResolverPropuesta`, infraestructura Prisma y rutas;
+    - módulo `alojamientos`: puertos, casos de uso `ProponerAlojamiento` y `ConsultarAlojamientos`, infraestructura Prisma y rutas;
+    - objeto de valor `Coordenadas`.
+  - **Pruebas del backend:** `propuesta.test.ts`, `casosDeUsoPropuestas.test.ts`, `propuestas.bd.test.ts` y los contratos ampliados.
+  - **Frontend:**
+    - clientes `propuestas.ts` y `ubicaciones.ts` (`BuscadorUbicaciones` y adaptador de Nominatim);
+    - store `propuestas`;
+    - componentes `TarjetaPropuesta`, `MapaSelector` (Leaflet) y `CampoUbicacion`;
+    - vistas `AlojamientosVista` y `AlojamientoFormularioVista`;
+    - utilidad `aUnidadMinima`;
+    - pruebas de la tarjeta, del contrato del buscador, del formato de montos y de los stores de sesión y de propuestas.
+- **Archivos modificados:** `app.ts` y `contenedor.ts`; `viajes.rutas.ts` (rutas separadas en generales y de viaje); las implementaciones en memoria y los escenarios de prueba (la base en memoria guarda propuestas completas con sus votos); `eslint.config.js`; el router, el menú del viaje y `main.ts` del frontend; `docs/api.md`; y `PLAN.md` (D8 y entregables de F3).
+- **Decisiones:**
+  - **Punto de extensión de la resolución (abierto/cerrado):** `ResolverPropuesta` recibe una lista de `ReglaAlResolver` que se ejecutan dentro de la transacción. Es genérico sobre los repositorios de la transacción, así F4 suma las políticas de superposición y de opciones desde el punto de composición sin modificar este código.
+  - **Propuesta:** la entidad maneja solo lo común: estado, votos y resolución. Los datos propios de cada tipo los guarda el repositorio de su módulo.
+  - **Rutas:** todas las rutas dentro de un viaje se montan en un único router que verifica la sesión y la membresía una sola vez. Se descartó que cada módulo repitiera esos middlewares, porque cada petición haría las mismas consultas varias veces.
+  - **Buscador de ubicaciones:** vive en el frontend y consulta Nominatim desde el navegador. Espera 600 ms después de la última tecla, por el límite de uso de Nominatim, y ofrece marcar el punto con un clic si el servicio falla.
+  - **Mapa:** el marcador es un círculo de Leaflet, para no depender de las imágenes de íconos, que se rompen al empaquetar con Vite.
+  - **Precios:** se escriben en pesos y se convierten a la unidad mínima de la moneda. Se acepta "48000", "48000,50" y "48.000,50"; el punto se lee como separador de miles, como se escribe en castellano.
+  - **Lint:** la regla de variables sin usar ahora ignora las que se descartan al separar propiedades con `...resto`, que es un patrón válido.
+- **Errores encontrados y corregidos:**
+  - Al arrancar el entorno de desarrollo, la API se reinicia cuando termina de compilar el paquete compartido. Si la guarda de ruta consultaba la sesión en ese momento, la navegación inicial fallaba y la página quedaba en blanco. Ahora una falla al consultar la sesión se trata como sin sesión y se reintenta en la próxima navegación. Lo cubre una prueba nueva.
+  - El store de propuestas tomaba el viaje recién al cargar la lista, así que al entrar directo al formulario de alta enviaba la petición sin viaje. Ahora usa siempre el viaje abierto. Lo cubre una prueba nueva.
+- **Entorno:** la red de la sesión bloquea Nominatim y las teselas de OpenStreetMap. El adaptador de Nominatim se probó con una respuesta grabada, y en el recorrido manual el mapa se vio sin teselas, con el marcado por clic funcionando.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 201 pruebas: 175 del backend y 26 del frontend. Entre ellas:
+    - la matriz completa de transiciones, en la entidad y a través de la API;
+    - el reemplazo de voto, el desvoto y la prohibición de votar o desvotar propuestas resueltas;
+    - el rechazo de alojamientos fuera de las fechas del viaje;
+    - los contratos de los repositorios nuevos, en memoria y en Prisma;
+    - el contrato de `BuscadorUbicaciones` con una implementación falsa y con el adaptador de Nominatim;
+    - la prueba de componente de `TarjetaPropuesta` para los dos roles.
+  - `npm run lint` pasa sin errores.
+  - Recorrido manual en Chromium: Tomás propone un alojamiento marcando el punto en el mapa y con precio "48.000", que se muestra como $ 48.000,00. Tomás vota a favor, Ana vota en contra y lo confirma, y el filtro por estado funciona.
+
+## 2026-09-24 01:13 — Commit y push de F3
+
+- **Acción:** con autorización del usuario, se hace commit de F3 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F3, más esta entrada en `LOG.md`.
+
+## 2026-09-24 01:14 — Inicio de F4: actividades y alternativas
+
+- **Acción:** comienza la fase F4 de `PLAN.md`: proponer actividades y alternativas con control de superposición horaria (CU10, CU11, RN-A1 a RN-A3, RN-B1 a RN-B3), consultar una actividad (CU18), y resolverlas con el mecanismo de F3 sumando las políticas de superposición y de opciones como reglas inyectadas (RN-R3, RN-R4). CU12 a CU15 y CU26 reutilizan los endpoints de propuestas.
+
+## 2026-09-24 01:34 — F4 terminada: actividades y alternativas
+
+- **Acción:** se implementa F4 completa, backend y frontend.
+- **Archivos creados:**
+  - **Paquete compartido:** `hora.ts`, con `sumarMinutos` y `pasaLaMedianoche`. Los usan la API para calcular la hora de fin y la web para mostrar horarios y conflictos.
+  - **Módulo `actividades` del backend:**
+    - dominio: `actividad.ts` (entidad `Actividad` con `proponer()`, `crearAlternativa()`, `intervalo` y `grupo`), `politicas.ts` (`PoliticaSuperposicion` con `SinSuperposicionConConfirmadas`, y `PoliticaResolucionOpciones` con `DenegarOpcionesRestantes`) y `puertos.ts`;
+    - casos de uso: `casosDeUsoActividades.ts` (`ProponerActividad`, `ProponerAlternativa`, `ConsultarActividades`), `reglasDeResolucion.ts` (`ReglaSuperposicionAlConfirmar` y `ReglaOpcionesAlConfirmar`) y `agendaBloqueadaPrimero.ts`;
+    - infraestructura: `prisma.ts` (repositorio y consulta);
+    - rutas: `actividades.rutas.ts`.
+  - **Pruebas del backend:**
+    - `actividad.test.ts`, `casosDeUsoActividades.test.ts`, `agendaBloqueadaPrimero.test.ts` y `hora.test.ts`;
+    - `politicas.contrato.ts` con `politicas.test.ts`;
+    - `actividades.bd.test.ts`.
+  - **Frontend:**
+    - componentes `TarjetaActividad`, `ListaAlternativas`, `CampoFechaHora` y `AvisoSuperposicion`;
+    - vistas `ActividadesVista` y `ActividadFormularioVista`, que sirve para proponer una actividad y una alternativa;
+    - utilidad `agruparOpciones`;
+    - pruebas de las dos vistas, de la agrupación y del formato de horarios.
+- **Archivos modificados:**
+  - Paquete compartido: `esquemas.ts` (`esquemaHora` y `esquemaActividadNueva`), `contratos.ts` (`ActividadVista` y `ConflictoHorario`) e `index.ts`.
+  - Backend: `app.ts`, `contenedor.ts`, `propuestas.rutas.ts`, `conversiones.ts` (`aHora` y `deHora`), y los soportes de prueba (implementaciones en memoria, escenarios y contratos de repositorios).
+  - Frontend: el cliente y el store de propuestas, `formato.ts`, el router, el menú del viaje y los clientes falsos de las pruebas.
+  - Documentación: `docs/api.md` y `PLAN.md` (listado de actividades de la sección 5.6).
+- **Decisiones:**
+  - **Reglas de resolución:** la superposición al confirmar (RN-R3) y la denegación de las demás opciones (RN-R4) son dos `ReglaAlResolver` que se registran en `contenedor.ts`. `ResolverPropuesta` no se modificó, así que el punto de extensión de F3 cumplió su función (abierto/cerrado).
+  - **Políticas como estrategias:** las dos políticas son interfaces con una implementación del MVP. Son el punto de variación previsto para los subgrupos del Release 3, que motivaron la reserva del usuario sobre P9. Cada política tiene pruebas de contrato que cualquier implementación futura tiene que pasar (Liskov).
+  - **GRASP:** `Actividad` es experta en su intervalo y en su grupo de opciones, y crea sus alternativas. Por eso la regla de que una alternativa se vincule siempre a la original vive en la entidad y no en el caso de uso.
+  - **Rutas de propuestas:** ahora dependen solo de los métodos que usan (`Pick<…, 'ejecutar'>`). `ResolverPropuesta` se arma con los repositorios ampliados de actividades, y TypeScript no acepta esa instancia donde se espera la versión con los repositorios mínimos (segregación de interfaces).
+  - **Bloqueos:** la regla de superposición bloquea la fila del viaje antes de leer las confirmadas, así dos confirmaciones simultáneas de actividades superpuestas no pasan las dos.
+  - **`sumarMinutos` al paquete compartido:** se había creado en la API. Se movió cuando la web también lo necesitó, para no duplicar el cálculo.
+  - **Formulario de alternativa:** arranca con el día, la hora y la duración de la original, porque las alternativas suelen competir por el mismo horario. Todo se puede cambiar.
+  - **Recarga después de resolver:** si la respuesta trae `afectadas`, el store vuelve a pedir la lista de actividades para mostrar el estado nuevo de las demás opciones. Se descartó marcarlas como denegadas del lado del cliente, porque eso repetiría la política en el frontend.
+- **Desvíos respecto del plan:**
+  - La sección 5.6 decía que el listado anidaba las alternativas en su original. La API devuelve una lista plana en la que cada alternativa trae `alternativaDe` con el id y el título de la original, y el frontend las agrupa. Así el filtro por estado sigue funcionando cuando la original y sus alternativas están en estados distintos, y la misma vista sirve para la consulta de CU18. Se actualizó `PLAN.md`.
+  - Se agregó el decorador `PropuestasConAgendaBloqueadaPrimero`, que el plan no preveía; se explica en el error siguiente.
+- **Errores encontrados y corregidos:**
+  - **Bloqueo mutuo:** si el Admin confirmaba al mismo tiempo dos opciones del mismo grupo, cada transacción bloqueaba su propuesta y esperaba la fila del viaje que tenía la otra. PostgreSQL cortaba una de las dos, que respondía 500 después de un segundo.
+    - **Causa:** los bloqueos se tomaban en distinto orden.
+    - **Arreglo:** el decorador hace que, dentro de la transacción de resolución, se bloquee la agenda del viaje antes de cargar la propuesta. Ahora la segunda confirmación espera, encuentra su opción ya denegada y responde 409 `TRANSICION_INVALIDA`.
+    - **Por qué un decorador:** se armó en `contenedor.ts` para no modificar `ResolverPropuesta`. Se descartó sumar un método "antes de cargar" a `ReglaAlResolver`, porque cambiaría el contrato de F3 por una necesidad de infraestructura.
+    - Lo cubren una prueba de integración y una unitaria del orden de los bloqueos.
+  - **Duración:** el campo numérico de la duración entrega un número y el formulario lo trataba como texto, así que fallaba al enviar. Lo detectó la prueba de la vista.
+  - **Texto del aviso:** el aviso de superposición sugería cambiar el horario también cuando el Admin confirmaba desde la lista, donde no hay formulario. Ahora, en la lista, sugiere cancelar primero la actividad que ocupa ese horario.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 265 pruebas: 227 del backend y 38 del frontend. Entre ellas:
+    - superposición con intervalos que se tocan en el borde, que se contienen, que se cruzan en parte y que pasan la medianoche;
+    - solo cuentan las confirmadas: se puede proponer sobre el horario de una pendiente;
+    - la alternativa de una alternativa queda vinculada a la original;
+    - confirmar una opción deniega las demás pendientes del grupo, y denegar la original no afecta a las alternativas;
+    - confirmar una actividad que choca con otra confirmada devuelve 409 y no cambia nada;
+    - dos confirmaciones simultáneas de actividades superpuestas: solo una prospera. La prueba falla si se quita el bloqueo;
+    - dos confirmaciones simultáneas de opciones del mismo grupo: una responde 200 y la otra 409;
+    - contratos de las dos políticas y de los repositorios nuevos, en memoria y en Prisma;
+    - CU26 con el endpoint común de desvoto.
+  - `npm run lint` pasa sin errores. En un clon limpio también pasan `npm ci`, la compilación, las pruebas y el lint.
+  - **Recorrido manual en Chromium:**
+    - Tomás propone Kayak de 10:00 a 12:00 y, como alternativa, Trekking, que aparece anidada. También propone un Almuerzo a las 11:30.
+    - Ana confirma Trekking y Kayak queda denegada. Al confirmar el Almuerzo, ve el aviso con el conflicto.
+    - Tomás propone Bici a las 11:00, ve el conflicto y el formulario conserva lo cargado. La vuelve a proponer a las 12:00 y se acepta.
+    - Tomás vota y desvota la Bici.
+
+## 2026-09-24 01:37 — Commit y push de F4
+
+- **Acción:** con autorización del usuario, se hace commit de F4 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F4, más esta entrada en `LOG.md`.
+
+## 2026-09-24 01:39 — Inicio de F5: itinerario, cronograma y mapa
+
+- **Acción:** comienza la fase F5 de `PLAN.md`: consultar el cronograma (CU16, RN-C1 a RN-C4) y el mapa del día con marcadores numerados y recorrido (CU17, RN-M1 a RN-M8), y ver una actividad en el mapa (CU18). Se aplican P19, P20 y P21.
+
+## 2026-09-24 01:46 — F5 terminada: itinerario, cronograma y mapa
+
+- **Acción:** se implementa F5 completa, backend y frontend.
+- **Archivos creados:**
+  - **Módulo `itinerario` del backend:**
+    - dominio: `recorrido.ts` (`ProveedorRecorrido` y `RecorridoEnLineaRecta`) y `puertos.ts` (`ConsultaItinerario`);
+    - casos de uso: `casosDeUsoItinerario.ts` (`ConsultarCronograma` y `ConsultarMapa`);
+    - infraestructura: `prisma.ts` (`ConsultaItinerarioPrisma`);
+    - rutas: `itinerario.rutas.ts`.
+  - **Pruebas del backend:** `casosDeUsoItinerario.test.ts`, `recorrido.contrato.ts` con `recorrido.test.ts`, e `itinerario.bd.test.ts`.
+  - **Frontend:**
+    - cliente `itinerario.ts` y composable `useMapaDelDia`;
+    - componentes `MapaActividades`, `SelectorDia`, `AvisoSinActividades`, `PanelActividad` y `DiaCronograma`;
+    - vistas `MapaVista` y `CronogramaVista`;
+    - utilidades de fechas (`hoyDelDispositivo`, `diasEntre`, `nombreDelDia`);
+    - pruebas de `MapaActividades`, `MapaVista`, `CronogramaVista` y de las utilidades.
+- **Archivos modificados:**
+  - Paquete compartido: `contratos.ts` (tipos del cronograma y del mapa) y `esquemas.ts` (`esquemaConsultaMapa`).
+  - Backend:
+    - `viaje.ts` (`diaInicialDelMapa`), `viajes/dominio/puertos.ts` (`LectorDeViajes`) y `viajes/infraestructura/prisma.ts` (`obtener` sin bloqueo);
+    - `contenedor.ts` y `app.ts`;
+    - las pruebas de `Viaje` y los soportes y contratos de repositorios.
+  - Frontend: `main.ts`, el router y el menú del viaje.
+  - Documentación: `docs/api.md` y `PLAN.md` (sección 5.7).
+- **Decisiones:**
+  - **`LectorDeViajes`:** el mapa necesita la regla del día inicial, que vive en `Viaje` (experto en información). Para no cargar el agregado con bloqueo en una consulta, se agregó este puerto de lectura sin bloqueo, separado de `RepositorioViajes` (segregación de interfaces). Lo implementan los repositorios de viajes en Prisma y en memoria, y tiene prueba de contrato. Se descartó mover la regla a `RangoFechas`, porque "día inicial del mapa" es un concepto del viaje y no de cualquier rango.
+  - **`ProveedorRecorrido` asíncrono:** el trazado por calles del Release 4 va a consultar un servicio externo, así que la interfaz ya es asíncrona y no hará falta cambiarla. Su contrato exige empezar y terminar en las actividades y pasar por todas en orden, lo que admite puntos intermedios.
+  - **Una sola consulta de actividades confirmadas:** el mapa lee todas las del viaje y filtra el día en memoria, porque también necesita la lista de días con actividad. Con el tamaño de un viaje, dos consultas no aportan nada.
+  - **"Hoy":** la web lo calcula con la fecha local del dispositivo y lo manda en cada pedido del mapa (P19, D17). El cronograma lo usa para desplazarse hasta el día actual.
+  - **Marcadores numerados:** son íconos de texto de Leaflet, por el mismo motivo que en F3 (las imágenes de los íconos se rompen al empaquetar).
+  - **Día elegido en la dirección:** el día queda como `?dia=` para poder compartir el enlace o volver atrás.
+  - **Actividad no confirmada en el mapa:** si se abre `?actividad=` con una actividad que no está confirmada, se abre su día y se muestra el panel aclarando que no está en el recorrido. Se descartó responder con un error, porque el enlace puede venir de una actividad que se canceló después.
+- **Desvío respecto del plan:** el cronograma devuelve una lista de alojamientos por noche en lugar de uno solo. Nada impide confirmar dos alojamientos para la misma noche, y con un único valor uno quedaría oculto. Se actualizó la sección 5.7 de `PLAN.md`.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 301 pruebas: 255 del backend y 46 del frontend. Entre ellas:
+    - `Viaje.diaInicialDelMapa()` con hoy dentro del viaje, con y sin actividades; hoy antes y después del viaje con actividades confirmadas; y un viaje sin actividades confirmadas;
+    - cronograma con días vacíos, orden por horario, solo confirmadas y el alojamiento de cada noche sin contar el día de salida;
+    - integración de `GET …/mapa`: aviso del día vacío, cambio de día, día inicial, validación de parámetros y día fuera del viaje;
+    - contrato de `ProveedorRecorrido` y del puerto nuevo de lectura;
+    - prueba de componente de `MapaActividades`: un marcador numerado por actividad y una polilínea con las coordenadas en orden;
+    - `MapaVista` con `?actividad=`: abre el día de la actividad con su panel.
+  - `npm run lint` pasa sin errores.
+  - **Recorrido manual en Chromium:**
+    - el cronograma muestra los cinco días, las actividades del día 11 en orden, la noche en el hostel y la leyenda de los días vacíos;
+    - "Ver en el mapa" abre el día 11 con los marcadores 1, 2 y 3, la línea del recorrido y el panel del Almuerzo;
+    - el día 13 muestra el aviso y queda en la dirección;
+    - un clic en un marcador abre su panel;
+    - sin día elegido, el mapa abre el primer día con actividades.
+
+## 2026-09-24 01:48 — Commit y push de F5
+
+- **Acción:** con autorización del usuario, se hace commit de F5 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F5, más esta entrada en `LOG.md`.
+
+## 2026-09-24 01:49 — Inicio de F6: chat en tiempo real
+
+- **Acción:** comienza la fase F6 de `PLAN.md`: chat del viaje con historial paginado y mensajes en tiempo real por Socket.IO (CU19, RN-X5), y avisos de baja de participante y de traspaso de Admin entregados por `NotificadorViaje` a partir de los eventos de dominio de F2 (RN-E4, D11).
+
+## 2026-09-24 02:04 — F6 terminada: chat en tiempo real
+
+- **Acción:** se implementa F6 completa, backend y frontend.
+- **Dependencias nuevas:** `socket.io` en la API; `socket.io-client` en la web y, para las pruebas, en la API.
+- **Archivos creados:**
+  - **Módulo `chat` del backend:**
+    - dominio: `mensaje.ts` (entidad `Mensaje`) y `puertos.ts` (`RepositorioMensajes`, `ConsultaMensajes`, `ConsultaParticipacion`, `ConsultaSaldosPendientes` y `NotificadorViaje`);
+    - casos de uso: `casosDeUsoChat.ts` (`UnirseAlChat`, `EnviarMensaje`, `ConsultarMensajes` y `ReenviarEventosDelViaje`);
+    - infraestructura: `prisma.ts`, `participacion.ts` (adaptador sobre la consulta de viajes) y `socketIO.ts` (gateway y `NotificadorViajeSocketIO`);
+    - rutas: `chat.rutas.ts`.
+  - **Backend, conexión con el servidor:** `src/tiempoReal.ts`, que conecta Socket.IO al servidor HTTP.
+  - **Pruebas del backend:** `chat.test.ts`, `notificadorViaje.contrato.ts` con `notificadorViaje.test.ts` (en memoria y sobre Socket.IO) y `chat.bd.test.ts`.
+  - **Frontend:**
+    - cliente `chat.ts` (interfaz `ClienteChat` y adaptador de Socket.IO) y store `chat`;
+    - componentes `ListaMensajes` y `CampoMensaje`, y vista `ChatVista`;
+    - pruebas del store, de la vista y de `ViajeLayout`.
+- **Archivos modificados:**
+  - Paquete compartido: `contratos.ts` (mensajes, avisos y tipos de los eventos de Socket.IO) y `esquemas.ts` (`esquemaMensajeNuevo` y `esquemaConsultaMensajes`).
+  - Backend: `servidor.ts`, `contenedor.ts` y `app.ts`; soportes en memoria, escenarios y contratos de repositorios.
+  - Frontend: `main.ts`, el router, `ViajeLayout` (conexión y aviso de baja), `ViajesVista` (aviso), el store de viaje (`aviso`, `refrescar` y `cerrarPorBaja`) y los clientes falsos de las pruebas.
+  - Documentación: `docs/api.md` y `PLAN.md` (sección 5.8).
+- **Decisiones:**
+  - **`NotificadorViaje` como Observer:** `ReenviarEventosDelViaje` se suscribe a los eventos de baja y de traspaso que publica el módulo de viajes desde F2. Ese módulo no se modificó y sigue sin conocer el chat. El notificador tiene un contrato que cumplen la implementación sobre Socket.IO y la de memoria (Liskov).
+  - **`conservaAccesoSaldos`:** se calcula con saldos pendientes a favor o en contra (RN-E6) mediante una consulta nueva sobre `deuda`. El dato `bajaConDeuda` del evento no alcanza, porque a un acreedor también le quedan saldos pendientes.
+  - **Seguridad del canal:**
+    - el handshake exige el `Origin` de la aplicación y una sesión vigente;
+    - cada evento vuelve a validar la sesión, así un cierre de sesión corta la conexión abierta;
+    - el id del viaje que llega por socket se valida antes de consultar la base.
+  - **Salas:** una por viaje (`viaje:<id>`) y una por usuario (`usuario:<id>`). La del usuario permite avisarle la baja en todas sus conexiones y sacarlo de la sala del viaje.
+  - **Paginación:** el cursor es `(enviado_en, id)` y no solo la fecha, para no repetir ni perder mensajes del mismo instante.
+  - **Conexión en el frontend:** se abre al entrar a un viaje en `ViajeLayout` y no solo en la vista del chat. Así los avisos de baja y de traspaso llegan desde cualquier sección, como pide la sección 4 del plan.
+  - **Mensajes optimistas:** el mensaje propio se muestra enseguida con un `idTemporal` (un UUID) y se reemplaza con la confirmación o con el eco de la sala, lo que llegue primero, sin duplicarse. Solo se reemplaza un mensaje con el mismo `idTemporal` y el mismo autor.
+  - **Reconexión:** al reconectarse, el cliente vuelve a unirse a la sala y pide la última página del historial, para recuperar lo que se envió mientras la conexión estaba cortada.
+  - **Límite de espera:** unirse y enviar esperan hasta 10 segundos la confirmación. Si no llega, el mensaje queda marcado como no enviado y el error se muestra en la pantalla.
+- **Desvío respecto del plan:** Socket.IO usa solo el transporte WebSocket. En el recorrido manual, el servidor rechazó la conexión con `ORIGEN_NO_PERMITIDO`. El primer pedido del transporte de sondeo es un GET del mismo origen, y el navegador no le agrega el encabezado `Origin`. El handshake de WebSocket, en cambio, siempre lo trae. Se descartó relajar la verificación cuando falta el encabezado, porque dejaría pasar conexiones de otros sitios sin comprobar su origen. Las pruebas de integración no lo detectaron porque el cliente de Node agrega el encabezado en todos los pedidos. Se agregó una prueba que verifica que el sondeo se rechaza. Se actualizó la sección 5.8 de `PLAN.md`.
+- **Errores encontrados y corregidos:**
+  - Con la sesión cerrada, el servidor cortaba la conexión antes de responder, y el cliente no recibía la confirmación con `NO_AUTENTICADO`. Ahora responde primero y corta después. Lo detectó la prueba de integración.
+  - La vista del chat pedía el historial al montarse, a veces antes de que el chat tuviera el viaje abierto. Ahora lo pide cuando el viaje está disponible. Lo detectó la prueba de la vista.
+- **Dependencias con avisos de seguridad:** `npm audit` informa cuatro avisos altos en `mysql2` y `deepmerge-ts`. Llegan por la herramienta de línea de comandos `prisma` y ya estaban antes de esta fase. El arreglo automático propone bajar Prisma a la versión 6, un cambio incompatible, así que no se aplicó y queda para consultarlo con el usuario.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 336 pruebas: 282 del backend y 54 del frontend. Entre ellas, pruebas de integración con `socket.io-client` que verifican:
+    - dos participantes del mismo viaje reciben el mismo mensaje;
+    - un usuario de otro viaje no puede unirse ni enviar, y no recibe nada;
+    - la conexión sin cookie, con una cookie inválida, con otro `Origin` o por sondeo se rechaza;
+    - el participante eliminado recibe `viaje:membresia-finalizada` y deja de recibir mensajes;
+    - quien sale con saldos pendientes conserva el acceso a saldos;
+    - el traspaso emite `viaje:admin-cambiado`;
+    - el historial pagina hacia atrás sin repetir mensajes;
+    - el contenido se valida y la sesión cerrada corta la conexión.
+  - Otras pruebas:
+    - contrato de `NotificadorViaje`;
+    - contratos de los repositorios de mensajes y de saldos pendientes, incluida la paginación con mensajes del mismo instante.
+  - `npm run lint` pasa sin errores. Se repitieron cuatro veces seguidas las pruebas que dependen de tiempos, sin fallas.
+  - **Recorrido manual en Chromium con dos sesiones y el proxy de Vite:**
+    - Ana escribe y Tomás recibe el mensaje en vivo; Ana ve el suyo confirmado.
+    - Tomás responde y Ana lo recibe; al recargar, el historial se conserva.
+    - Ana transfiere la administración y Tomás pasa a ver las acciones de Admin sin volver a abrir el viaje.
+    - Tomás elimina a Ana, que vuelve a su lista de viajes con el aviso "El Admin te quitó de «Bariloche 2026»."
+
+## 2026-09-24 02:07 — Commit y push de F6
+
+- **Acción:** con autorización del usuario, se hace commit de F6 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F6, más esta entrada en `LOG.md`.
+- **Pendiente:** el usuario pidió una explicación de los avisos de seguridad de las dependencias; la decisión sobre ellos queda abierta.
+
+## 2026-09-24 02:16 — Decisión sobre los avisos de seguridad de las dependencias de Prisma
+
+- **Acción:** se le explicó al usuario para qué se usa Prisma y qué problemas hubo con él.
+  - **Usos:** esquema y migraciones de la base; repositorios y consultas de cada módulo; transacciones con `UnidadDeTrabajoPrisma`; semilla de datos de ejemplo; preparación de la base de pruebas.
+  - **Problemas encontrados, todos resueltos dentro de la capa de infraestructura:**
+    - avisos de `npm audit`;
+    - `migrate reset` bloqueado para agentes de IA sin consentimiento explícito;
+    - bloqueo de filas escrito a mano con `SELECT … FOR UPDATE`, porque Prisma no lo ofrece;
+    - restricciones `CHECK` y el índice parcial de Admin único agregados a mano en la migración;
+    - conversiones de `bigint` a número y de `Date` a fechas y horas en texto;
+    - npm marca como última versión la 8.0, que todavía es candidata.
+- **Decisión del usuario:** no tocar las dependencias ahora y evaluar la actualización cuando salga Prisma 8 estable.
+- **Motivo:** `mysql2` y `deepmerge-ts` llegan por la herramienta de línea de comandos `prisma`, que solo corre en desarrollo. La aplicación en funcionamiento usa `@prisma/client` con el adaptador de PostgreSQL y no los ejecuta.
+- **Alternativas descartadas:**
+  - Forzar versiones corregidas con `overrides`: `deepmerge-ts` cambia de versión mayor y podría romper Prisma.
+  - Replantear D4: habría que reescribir la infraestructura de F1 a F6.
+- **Archivos:** esta entrada en `LOG.md`. Se incluye en el próximo commit que el usuario autorice.
+
+## 2026-09-24 02:18 — Inicio de F7: gastos y deudas
+
+- **Acción:** comienza la fase F7 de `PLAN.md`. Incluye:
+  - anotar gastos con pagador, deudores y división en partes iguales o arbitraria (CU20, RN-G1 a RN-G6, P12 a P15);
+  - actualizar la deuda neta de cada par con compensación y filas bloqueadas (D18);
+  - consultar las deudas como deudor y como acreedor (CU21, CU22);
+  - dar acceso solo a saldos a quien dejó el viaje con saldos pendientes (RN-E6, P18).
+
+## 2026-09-24 02:38 — F7 terminada: gastos y deudas
+
+- **Acción:** se implementa F7 completa, backend y frontend.
+- **Archivos creados:**
+  - **Paquete compartido:** `dinero.ts` (`repartirEnPartesIguales`), que usan `Dinero.repartir()` en la API y la vista previa del formulario en la web.
+  - **Módulo `gastos` del backend:**
+    - dominio: `division.ts` (`EstrategiaDivision`, `DivisionEnPartesIguales` y `DivisionArbitraria`), `gasto.ts` (`Gasto`, que crea sus partes), `deuda.ts` (`Deuda` con `sumar()` y `compensarCon()`) y `puertos.ts`;
+    - casos de uso: `casosDeUsoGastos.ts` (`AnotarGasto`, `ConsultarGastos` y `ConsultarDeudas`);
+    - infraestructura: `prisma.ts`, con el repositorio de deudas que crea los pares faltantes y los bloquea en orden;
+    - rutas: `gastos.rutas.ts` (categorías, gastos y deudas).
+  - **Semilla:** `prisma/semilla.ts`, con los datos que antes estaban en `seed.ts`, para cargarlos también en la base de prueba.
+  - **Pruebas del backend:**
+    - `gastos.test.ts`, `casosDeUsoGastos.test.ts` y `estrategiaDivision.contrato.ts` con su prueba;
+    - `gastos.bd.test.ts` e `invarianteSemilla.bd.test.ts`;
+    - el soporte `invarianteSaldos.ts`.
+  - **Frontend:**
+    - cliente `gastos.ts` y store `gastos`;
+    - componentes `SelectorPagador`, `SelectorDeudores`, `SelectorModoDivision`, `TablaPartes`, `TarjetaGasto` y `FilaSaldo`;
+    - vistas `GastosVista`, `GastoFormularioVista` y `SaldosVista`;
+    - pruebas de `SelectorDeudores`, del formulario y de los saldos.
+- **Archivos modificados:**
+  - Paquete compartido: `contratos.ts` (`TipoAcceso`, `miAcceso` en el resumen y el detalle del viaje, y los tipos de gastos y deudas) y `esquemas.ts` (`esquemaGastoNuevo` y `esquemaConsultaDeudas`).
+  - Backend:
+    - `viaje.ts` (`tipoDeAcceso` y `Membresia.tipoDeAcceso()`, `monedaCodigo`), puertos, casos de uso (`ConsultarAcceso`), consultas y rutas del módulo de viajes;
+    - el middleware `accesoSaldos` y el tipo de `req.acceso`;
+    - `dinero.ts`, `app.ts`, `contenedor.ts` y `prisma/seed.ts`;
+    - el módulo de chat, que ahora usa el puerto de saldos pendientes del módulo de viajes;
+    - los soportes en memoria, los escenarios, los contratos de repositorios y la prueba de viajes.
+  - Frontend: `ViajeLayout`, `ViajesVista`, `DialogoSalir`, el router, `main.ts`, los clientes falsos y las pruebas del layout y de participantes.
+  - Documentación: `docs/api.md` y `PLAN.md` (sección 5.9).
+- **Decisiones:**
+  - **Estrategias de división:** `EstrategiaDivision` tiene dos implementaciones (Strategy). `contenedor.ts` elige la del modo pedido con una tabla, así un modo nuevo es una clase y una entrada, sin tocar `Gasto` ni `AnotarGasto` (abierto/cerrado). Las dos cumplen un contrato común: una parte por deudor, en orden, que suman el total.
+  - **Compensación (P15):** `Deuda.compensarCon()` resta a las dos deudas del par el menor de sus montos. `AnotarGasto` suma la parte a la deuda del deudor y después la compensa con la opuesta. El resultado es el mismo que compensar primero y sumar después, con una sola regla en la entidad.
+  - **Bloqueo de deudas (D18):**
+    - el repositorio crea en cero los pares que faltan (`INSERT … ON CONFLICT DO NOTHING`) y después bloquea las filas con `SELECT … FOR UPDATE` ordenadas por id;
+    - bloquear siempre en el mismo orden evita que dos gastos simultáneos se esperen en cruz;
+    - se agregó una prueba que falla si se quita el bloqueo.
+  - **Acceso solo a saldos (RN-E6):**
+    - la regla vive en una función del dominio que usan `Membresia.tipoDeAcceso()` y las consultas de la lista y del detalle, así no se repite;
+    - las rutas del detalle y de las deudas reciben su propia guarda (`accesoSaldos`) y el resto sigue exigiendo participar;
+    - `ConsultaSaldosPendientes`, creada en F6 dentro del chat, pasó al módulo de viajes, que es quien decide el acceso; el chat ahora la importa de ahí.
+  - **Invariante del saldo neto por par:** se calcula desde `gasto_parte` y `pago` y se compara con `deuda`. También verifica que no haya saldos negativos ni dos deudas con saldo en el mismo par. Corre sobre la semilla y después de cada prueba de gastos, y una prueba muestra que detecta un saldo alterado.
+  - **Formulario:**
+    - paga quien anota y no hay nadie elegido al empezar (P12, P13);
+    - la categoría no se preselecciona (RN-G1);
+    - en partes iguales se muestra el reparto antes de guardar, con el mismo cálculo que la API;
+    - en arbitraria se muestran la suma y lo que falta o sobra mientras se escribe.
+  - **Destino al perder el acceso completo:** con saldos pendientes, quien sale o es eliminado queda en la sección de saldos con un aviso; sin saldos, vuelve a la lista de viajes. La lista marca esos viajes como "Solo saldos" y los abre directo en esa sección.
+- **Desvíos respecto del plan:**
+  - Las partes de un gasto se devuelven de mayor a menor monto, porque `gasto_parte` no guarda el orden de elección. Se actualizó la sección 5.9 de `PLAN.md`.
+  - El historial de pagos en las deudas queda para F8, junto con los pagos, como indica su fase.
+- **Errores encontrados y corregidos:**
+  - **Pares con datos de más:** el repositorio de deudas en Prisma recibía los pares con el monto incluido y fallaba al crearlos. Lo detectó la prueba de integración y se agregó el caso al contrato, que la implementación en memoria no detectaba.
+  - **Prueba de F2 desactualizada:** esperaba que un eliminado con deuda perdiera todo acceso; con RN-E6 conserva el detalle y los saldos, y se actualizó.
+  - **Carrera al salir:** el diálogo de salida mandaba a la lista de viajes mientras el aviso por socket mandaba a saldos. Ahora los dos llevan al mismo destino según el acceso que queda, con una prueba.
+  - **Saldos viejos:** la vista mostraba los de una visita anterior hasta que llegaban los nuevos; ahora muestra "Cargando…" hasta tenerlos.
+- **Entorno:** el contenedor de la sesión se reinició y hubo que volver a levantar Docker y las bases.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 392 pruebas: 326 del backend y 66 del frontend. Entre ellas:
+    - reparto con resto (1000 entre 3 da 334, 333 y 333);
+    - división arbitraria cuya suma no coincide, con el detalle de la diferencia;
+    - pagador fuera de los elegidos y parte del pagador sin deuda;
+    - compensación: si A le debe 10.000 a B y paga un gasto con parte de B de 4.000, queda A → B 6.000;
+    - gastos simultáneos sobre el mismo par con el saldo correcto;
+    - un exparticipante con saldos accede al detalle y a `GET …/deudas`, y recibe 403 en el resto; el acreedor también conserva el acceso;
+    - contrato de `EstrategiaDivision`;
+    - invariante del saldo neto sobre la semilla y después de cada prueba de gastos;
+    - prueba de componente de `SelectorDeudores` con el estado inicial vacío y el botón que alterna.
+  - `npm run lint` pasa sin errores.
+  - **Recorrido manual en Chromium con tres usuarios:**
+    - Ana anota una cena de $10 entre los tres, con la vista previa $3,34, $3,33 y $3,33.
+    - Tomás anota nafta de $60 dividida a mano, viendo lo que falta asignar.
+    - Los saldos de Ana muestran que debe $36,67 a Tomás, ya compensado, y que Luis le debe $3,33.
+    - Luis sale con deuda y queda en la sección de saldos, con el menú reducido y el viaje marcado como "Solo saldos" en su lista.
+
+## 2026-09-24 02:41 — Commit y push de F7
+
+- **Acción:** con autorización del usuario, se hace commit de F7 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F7, la entrada sobre los avisos de seguridad de Prisma y esta entrada en `LOG.md`.
+
+## 2026-09-24 02:41 — Inicio de F8: pagos
+
+- **Acción:** comienza la fase F8 de `PLAN.md`: registrar pagos parciales o totales de una deuda propia (CU23, RN-P1 a RN-P6, P17), con la fila de deuda bloqueada (D18), y mostrar el historial de pagos en los saldos del deudor y del acreedor.
+
+## 2026-09-24 02:50 — F8 terminada: pagos
+
+- **Acción:** se implementa F8 completa, backend y frontend.
+- **Archivos creados:**
+  - Backend: `pagos.bd.test.ts`.
+  - Frontend:
+    - vista `PagoVista` y componente `AvisoExcedeDeuda`;
+    - pruebas de `PagoVista`.
+- **Archivos modificados:**
+  - Paquete compartido: `contratos.ts` (`PagoRegistrado`, `RespuestaPago` y `pagos` en `DeudaVista`) y `esquemas.ts` (`esquemaPagoNuevo`).
+  - Backend:
+    - `deuda.ts` (`Deuda.registrarPago()` y los pagos sin guardar);
+    - puertos, casos de uso (`RegistrarPago`), infraestructura Prisma y rutas del módulo de gastos;
+    - `app.ts` y `contenedor.ts`;
+    - los soportes en memoria, los contratos de repositorios y las pruebas unitarias de gastos.
+  - Frontend: el cliente y el store de gastos, `FilaSaldo` (historial y acciones), `SaldosVista`, el router, `ViajeLayout` (la pantalla de pago también vale con acceso solo a saldos) y los clientes falsos.
+  - Documentación: `docs/api.md`.
+- **Decisiones:**
+  - **Pago dentro del agregado:** el pago es parte del agregado `Deuda` (la relación "resta" del modelo conceptual). `Deuda.registrarPago()` aplica las reglas y guarda el pago como pendiente; el repositorio persiste el saldo y los pagos juntos, en la misma transacción.
+  - **Reglas que aplica `Deuda`:** quien registra el pago tiene que ser el deudor (P17), el monto tiene que ser mayor que cero y no puede superar el saldo (RN-P4, con el saldo en los detalles). La API ya usa a quien llama como deudor; la regla del dominio protege a cualquier otro uso.
+  - **Bloqueo (D18):** `obtenerParaPagar` toma la fila de la deuda con `SELECT … FOR UPDATE`. Dos pagos simultáneos se ordenan y el segundo ve el saldo actualizado. Se agregó una prueba que falla si se quita el bloqueo.
+  - **Acceso:** `POST …/pagos` usa la misma guarda que las deudas (RN-E6), así un exparticipante con saldo pendiente puede pagar. Al saldar, pierde también ese acceso.
+  - **Pantalla de pago:**
+    - muestra lo que se debe (RN-P2) y avisa mientras se escribe si el monto supera la deuda, sin dejar pagar;
+    - el botón "Pagar el total" completa el monto;
+    - si la API responde que el pago excede la deuda porque otro pago cambió el saldo, vuelve a leer las deudas y muestra el saldo nuevo;
+    - al terminar vuelve a los saldos con una confirmación que se muestra una sola vez.
+  - **Historial (RN-P6):** cada fila de saldo muestra sus pagos, desde los dos lados, con quién los registró y cuándo. El botón "Pagar" aparece solo en las deudas propias.
+- **Errores encontrados y corregidos:**
+  - **Pago total:** en el recorrido manual, pagar el total dejaba la pantalla sin navegar. El pago vaciaba la lista de deudas antes de armar la confirmación, que buscaba el nombre en esa deuda. Ahora el nombre se toma antes de pagar, y se agregó la prueba del pago total que faltaba.
+  - **Código cortado:** una edición de la vista de pago cortó el comienzo de una función. Lo detectó la compilación y se restauró.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 415 pruebas: 341 del backend y 74 del frontend. Entre ellas:
+    - pago parcial;
+    - pago exacto: el saldo queda en cero y la deuda desaparece de las dos listas;
+    - pago mayor que la deuda: 422 sin cambios en la base;
+    - pago registrado por alguien que no es el deudor: rechazado;
+    - pago de un exparticipante con saldo pendiente: aceptado, y al saldar pierde el acceso;
+    - dos pagos simultáneos que juntos superan el saldo: uno se registra y el otro recibe 422;
+    - el pago aparece en el historial de los dos con quién lo registró y cuándo;
+    - la invariante del saldo neto sigue pasando después de cada prueba.
+  - `npm run lint` pasa sin errores.
+  - **Recorrido manual en Chromium:**
+    - Tomás debe $1.000 a Ana; al escribir $1.200 ve el aviso y el botón se deshabilita.
+    - Paga $400 y ve "Todavía le debés $600,00 a Ana"; el pago aparece en el historial de los dos.
+    - Ana no tiene botón para pagar lo que le deben.
+    - Tomás paga el total con "Pagar el total" y la deuda queda saldada.
+
+## 2026-09-24 02:52 — Commit y push de F8
+
+- **Acción:** con autorización del usuario, se hace commit de F8 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F8, más esta entrada en `LOG.md`.
+
+## 2026-09-24 02:53 — Inicio de F9: pruebas de punta a punta y cierre
+
+- **Acción:** comienza la fase F9 de `PLAN.md`. Incluye:
+  - pruebas de Playwright en `e2e/` para los seis flujos previstos, con el script `e2e` de raíz;
+  - `docs/api.md` completo;
+  - la revisión de la tabla de trazabilidad, verificando que cada caso de uso de la sección 1 y cada regla de la sección 6 aparezcan en el nombre de al menos una prueba.
+
+## 2026-09-24 03:00 — F9 terminada: pruebas de punta a punta y cierre
+
+- **Acción:** se implementa F9 completa.
+- **Dependencia nueva:** `@playwright/test` 1.63 en la raíz.
+- **Archivos creados:**
+  - **Configuración:** `e2e/playwright.config.ts` y `e2e/tsconfig.json`.
+  - **Soporte en `e2e/soporte/`:**
+    - `constantes.ts`;
+    - `prepararBase.ts` y `prepararTodo.ts`: crean la base `viajes_e2e`, aplican las migraciones, la vacían y cargan los catálogos;
+    - `fixtures.ts`: viajeros con sesión propia, preparación de datos por la API, mapa sin teselas y Nominatim simulado.
+  - **Flujos:** `grupo.spec.ts`, `actividades.spec.ts`, `itinerario.spec.ts`, `gastos.spec.ts`, `chat.spec.ts` y `administracion.spec.ts`.
+  - **Trazabilidad:** `apps/api/test/unitarias/trazabilidad.test.ts`.
+- **Archivos modificados:**
+  - `package.json`: script `e2e` y chequeo de tipos de `e2e/` en `lint`.
+  - `eslint.config.js`, `.env.example` y `README.md`.
+  - Backend: `config.ts` (`REGISTROS_POR_HORA`), `seguridad.ts`, `auth.rutas.ts` y `app.ts`.
+  - Frontend: `vite.config.ts` (`API_URL` para el proxy).
+  - Nombres de algunas pruebas unitarias y dos pruebas nuevas (RN-R2 y RN-X6).
+  - Documentación: `docs/api.md` y `PLAN.md` (revisión de la tabla de trazabilidad).
+- **Decisiones:**
+  - **Entorno propio:** las pruebas de punta a punta levantan su propia API (puerto 3100) y su propia web (puerto 5273) contra la base `viajes_e2e`, creada en el mismo servidor que la de Vitest. Así no chocan con `npm run dev` ni con `npm test`, que vacía su propia base. Se descartó usar la base de prueba, porque correr las dos suites a la vez borraría datos de la otra.
+  - **Datos de preparación:** cada flujo crea usuarios nuevos y prepara por la API lo que no es parte de lo que prueba (por ejemplo, la actividad ya confirmada). Recorre en el navegador solo el flujo pedido.
+  - **Servicios externos:** las teselas del mapa se bloquean y Nominatim devuelve siempre un lugar, así el flujo de proponer una actividad elige la ubicación del buscador sin depender de la red.
+  - **Límite de registros configurable:** `REGISTROS_POR_HORA` (10 por defecto, D6). Solo lo suben las pruebas de punta a punta, que registran unos doce usuarios desde la misma IP.
+  - **Navegador:** Playwright usa la versión estable vigente (D23). Para un Chromium ya instalado en otra ruta, como en esta sesión, se indica con `E2E_CHROMIUM`; en cualquier otra máquina alcanza con `npx playwright install chromium`.
+  - **Contextos:** los contextos de navegador que abre cada prueba se cierran al terminarla.
+  - **Trazabilidad automática:** una prueba de Vitest lee la tabla de la sección 1 y las reglas de la sección 6 de `PLAN.md`, y falla si algún identificador no aparece en el nombre de al menos una prueba. Reconoce rangos como "RN-G1 a RN-G6". Al medirla por primera vez faltaban siete identificadores:
+    - CU13 a CU15, RN-A3 y RN-B2 ya tenían pruebas sin el identificador en el nombre; se renombraron;
+    - RN-R2 (el Admin resuelve sin umbral de votos) y RN-X6 (los montos van en la moneda del viaje) no tenían pruebas propias; se agregaron.
+- **Errores encontrados y corregidos:** una línea de `auth.rutas.ts` quedó sin el formato de Prettier y el lint lo detectó.
+- **Salida de la consola:** al cerrar un contexto, el proxy de Vite registra `ECONNRESET` porque el navegador corta el WebSocket del chat. Es esperable y no afecta a las pruebas.
+- **Verificación del criterio de terminado:**
+  - `npm run e2e` pasa los seis flujos en Chromium, en tres corridas seguidas sin fallas:
+    - registrarse, crear un grupo y agregar a un viajero;
+    - proponer una actividad que se superpone, ajustar el horario y guardarla;
+    - confirmarla y verla en el cronograma y en el mapa;
+    - anotar un gasto con división arbitraria y pagar parte de la deuda;
+    - conversar en el chat desde dos sesiones;
+    - transferir la administración y salir del grupo.
+  - Cada caso de uso de la sección 1 y cada regla de la sección 6 aparecen en el nombre de al menos una prueba; lo verifica la prueba de trazabilidad.
+  - `npm test` pasa 419 pruebas (345 del backend y 74 del frontend) y `npm run lint` pasa sin errores.
+  - `docs/api.md` documenta todos los endpoints del código, con los códigos de error generales, y la tabla de trazabilidad quedó revisada.
+
+## 2026-09-24 10:58 — Commit y push de F9
+
+- **Acción:** con autorización del usuario, se hace commit de F9 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F9, más esta entrada en `LOG.md`.
+
+## 2026-09-24 17:06 — Pull request del MVP
+
+- **Acción:** a pedido del usuario, se abre un pull request con todo el MVP (F0 a F9).
+- **Rama base:** el repositorio tenía una sola rama, `claude/elegant-maxwell-60322c`, que además era la principal, así que no había base contra la cual comparar. Con acuerdo del usuario se creó `main` en el commit `283a81a` ("Actualizar diagramas con las decisiones del plan"), el último antes del código, para que el PR muestre toda la implementación. Se descartó basarla en el primer commit (`f11f1b5`), que habría mezclado en el PR los ajustes del plan y de los diagramas.
+- **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-09-24 17:15 — Integración continua con GitHub Actions
+
+- **Acción:** a pedido del usuario, se agrega un flujo de CI para que el PR corra las verificaciones en GitHub. Hasta ahora el repositorio no tenía ninguno y las pruebas solo se corrían a mano.
+- **Archivos:** `.github/workflows/ci.yml` (nuevo), `README.md` (sección de pruebas) y esta entrada en `LOG.md`.
+- **Decisiones:**
+  - **Cuándo corre:** en cada push y en cada pull request. Un push nuevo a la misma rama cancela la corrida anterior.
+  - **Tres trabajos en paralelo:** lint y tipos, pruebas de Vitest y pruebas de punta a punta. Así un fallo indica enseguida qué parte se rompió. Se descartó un único trabajo con todos los pasos, que sería más lento y mostraría un solo resultado.
+  - **Base de datos:** los trabajos de pruebas levantan PostgreSQL 16 como servicio, con el mismo usuario, base (`viajes_test`) y puerto (5433) que `db-test` de `docker-compose.yml`. Así no hace falta ninguna variable de entorno nueva, y `viajes_e2e` se crea sola como en local.
+  - **Versiones:** Node 22 (el mínimo de `engines`) y la versión vigente de cada acción (`checkout`, `setup-node` y `upload-artifact`, todas en v7). Los permisos del token quedan en solo lectura.
+  - **Informe de Playwright:** si fallan las pruebas de punta a punta, se guardan `playwright-report/` y `test-results/` como artefacto durante siete días.
+- **Verificación:**
+  - `actionlint` no marca errores y Prettier acepta el formato.
+  - En un clon limpio con `CI=true` se repitieron los pasos del flujo contra la base de prueba: pasan `npm ci`, `npm run lint`, `npm test` (345 pruebas del backend y 74 del frontend) y `npm run e2e` (seis flujos).
+  - Queda pendiente ver la primera corrida en GitHub, después del push.
+
+## 2026-09-24 17:24 — CI: push solo a main
+
+- **Acción:** a pedido del usuario, el flujo de CI deja de dispararse con cada push y lo hace solo con los push a `main`. Los pull requests lo siguen disparando.
+- **Motivo:** en la primera corrida, cada push a la rama del PR disparó dos corridas iguales sobre el mismo commit, una por el push y otra por el pull request. El grupo de concurrencia no las unificaba, porque cada evento usa una referencia distinta. Ahora las ramas se verifican a través de su PR y `main` después de cada merge.
+- **Alternativa descartada:** dejar solo el disparo por pull request, que habría dejado sin verificar lo que llega a `main`.
+- **Archivos:** `.github/workflows/ci.yml`, `README.md` (el párrafo del CI) y esta entrada en `LOG.md`.
+- **Verificación:** `actionlint` y Prettier sin errores.
+
+## 2026-09-24 18:18 — Merge del PR del MVP a main
+
+- **Acción:** a pedido del usuario, se mergea el pull request #1 (`claude/elegant-maxwell-60322c` hacia `main`) con todo el MVP, de F0 a F9, más el flujo de CI.
+- **Estado previo:** el CI pasa en sus tres trabajos, el PR no tiene conflictos y no hay revisiones ni comentarios pendientes. Esta entrada se agrega antes del merge para que quede en el mismo historial que llega a `main`. El merge se hace solo si el CI del commit que la contiene pasa.
+- **Método:** commit de merge, elegido por el usuario. Conserva en `main` los commits de cada fase, que son los que cita este registro. Se descartaron el squash, que junta todo en un commit y pierde esas referencias, y el rebase, que copia los commits con otros identificadores.
+- **Archivos:** esta entrada en `LOG.md`.
