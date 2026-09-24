@@ -1,6 +1,6 @@
 # Plan del MVP — Organizador de viajes en grupo
 
-Este plan traduce a código el diseño de `docs/diagramas.drawio`. El alcance sale de la página "Página-13" del story mapping, que el usuario confirmó como versión final (todo lo que está antes de la línea del Release 2), y las reglas de negocio salen de los seis diagramas de actividad. Las 22 preguntas abiertas de la primera versión del plan ya tienen respuesta del usuario; la sección 10 resume cada decisión (P1 a P22) y el resto del plan las cita donde se aplican. Las diferencias que esas decisiones generan respecto de los diagramas se listan en la sección 10.2 y se trasladarán al `.drawio` en una tarea aparte.
+Este plan traduce a código el diseño de `docs/diagramas.drawio`. El alcance sale de la página "Página-13" del story mapping, que el usuario confirmó como versión final (todo lo que está antes de la línea del Release 2), y las reglas de negocio salen de los diagramas de actividad: los seis originales, actualizados con las decisiones del usuario, y dos agregados a su pedido ("Saliendo del grupo" y "Transfiriendo administración"). Las 22 preguntas abiertas de la primera versión del plan ya tienen respuesta del usuario; la sección 10 resume cada decisión (P1 a P22) y el resto del plan las cita donde se aplican. Las diferencias que esas decisiones generaban respecto de los diagramas se listan en la sección 10.2 y ya están incorporadas al `.drawio`.
 
 ## 1. Alcance del MVP y trazabilidad
 
@@ -846,12 +846,12 @@ Además de las preguntas, el usuario estableció que los principios SOLID se cum
 
 ### 10.2 Diferencias entre los diagramas y el plan
 
-Estas diferencias se trasladarán a `docs/diagramas.drawio` en una tarea aparte, con aprobación del usuario (P22). Mientras tanto, el plan es la referencia.
+Estas diferencias surgieron de las decisiones del usuario y ya están incorporadas a `docs/diagramas.drawio` (P22). Además, a pedido del usuario se agregaron dos diagramas de actividad nuevos, "Saliendo del grupo" (RN-E3 a RN-E7, RN-T3, RN-T4) y "Transfiriendo administración" (RN-T2), y en el diagrama de casos de uso los casos de registro e inicio de sesión quedaron asociados a un actor nuevo, Visitante, porque quien todavía no tiene cuenta no es un Viajero.
 
 | Diagrama | Diferencia | Decisión |
 |---|---|---|
 | Casos de uso | Falta "Transfiriendo administración" (Admin). | P5 |
-| Casos de uso | Faltan registro, inicio y cierre de sesión como soporte. | P3 |
+| Casos de uso | Faltan registro e inicio de sesión (actor Visitante) y cierre de sesión (Viajero). | P3 |
 | Story mapping ("Página-13") | Faltan desvotar alojamiento y actividad en el MVP. | P6 |
 | Story mapping ("Página-13") | Faltan "Admin transfiere la administración" en el MVP, preferencias de habitación en el Release 2 y exportar gastos a Excel en el Release 7. | P5, P22 |
 | Diagrama conceptual | Admin pasa a ser un rol por viaje; falta la relación de pertenencia (`Membresia`). | P2 |

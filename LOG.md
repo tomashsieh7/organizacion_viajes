@@ -194,3 +194,34 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de `PLAN.md` y `LOG.md` y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** ninguno nuevo.
+
+## 2026-09-23 23:42 — Inicio de la actualización de los diagramas
+
+- **Acción:** se empieza a trasladar a `docs/diagramas.drawio` las diferencias de la sección 10.2 de `PLAN.md`, más dos diagramas de actividad nuevos pedidos por el usuario: "Saliendo del grupo" y "Transfiriendo administración".
+- **Archivos:** se modificará `docs/diagramas.drawio`.
+- **Decisión:** se edita el XML de cada página directamente, copiando los estilos de las figuras existentes, con scripts descartables fuera del repo. Se descartó el flujo del skill `actualizando-diagramas-uml` porque genera un `.drawio` de una sola página a partir de PlantUML: habría borrado las otras diez páginas, convertido el conceptual en una imagen no editable por figuras y requerido instalar Graphviz y PlantUML. También se descartó aplicar el skill solo al conceptual, porque esa página quedaría con otro aspecto y otra forma de edición que el resto.
+
+## 2026-09-23 23:53 — Diagramas actualizados
+
+- **Acción:** se actualizó `docs/diagramas.drawio` con las diferencias de la sección 10.2 de `PLAN.md` y se agregaron dos páginas nuevas. El archivo pasa de 11 a 13 páginas.
+- **Archivos:** se modifican `docs/diagramas.drawio` y `PLAN.md` (introducción y sección 10.2, que ahora indican que las diferencias ya están en los diagramas).
+- **Cambios por página:**
+  - **Casos de uso:** se agregan "Transfiriendo administración" (Admin), "Cerrando sesión" (Viajero), y "Registrándose" e "Iniciando sesión", asociados a un actor nuevo, Visitante; el límite del sistema se agranda para contenerlos.
+  - **Página-13:** se agregan "Admin transfiere la administración", "Viajero desvota alojamiento" y "Viajero desvota actividad" al MVP; "Viajero ingresa preferencia de habitación (solo o compartida)" al Release 2; y "Viajero exporta los gastos a Excel" al Release 7. Los releases siguientes se desplazan hacia abajo para hacer lugar.
+  - **Diagrama conceptual:** regenerado con los mismos estilos. Se quitó la clase Admin; se agregaron Membresía, Credencial, Sesión, Moneda, CategoríaGasto, GastoParte y la enumeración EstadoPropuesta; se agregaron los atributos nuevos, la asociación reflexiva "alternativa de" y la composición Gasto–GastoParte; la relación Gasto–Deuda pasa a ser una dependencia «suma» desde GastoParte.
+  - **Proponiendo alternativa de actividad, Anotando gasto, Consultando mapa y Eliminando participantes:** regenerados con los mismos estilos para incorporar las reglas de P9, P12, P13, P15, P18 y P19.
+  - **Nuevas:** "Saliendo del grupo" y "Transfiriendo administración", ubicadas junto a los demás diagramas de actividad.
+- **Decisiones:**
+  - Se agregó el actor Visitante para registro e inicio de sesión, porque quien todavía no tiene cuenta no es un Viajero. Se descartó asociarlos al Viajero.
+  - En el conceptual solo se dibujó la enumeración EstadoPropuesta, que la sección 10.2 pedía completar; los demás tipos (Rol, EstadoMembresia, ModoDivision, TipoCredencial) quedan como tipos de atributo, igual que CategoriaGasto en el diagrama original. Se descartó dibujar todas las enumeraciones porque sumaban cinco relaciones de dependencia sin aportar información nueva.
+  - La relación Viaje–Deuda se trazó rodeando el diagrama por arriba y por la derecha para no cruzar las relaciones del Viajero.
+- **Verificación:**
+  - El XML es válido, no hay identificadores repetidos y todas las referencias apuntan a figuras existentes.
+  - Las páginas "Proponiendo actividad", "Registrando pago", "story mapping" y "Copia de story mapping" quedaron idénticas a las originales.
+  - Se renderizó cada página modificada a una imagen con un visor propio para revisarla, y se comprobó automáticamente que ninguna línea nueva atraviesa una figura. El único cruce detectado ya existía en el original (la línea de "Desvotando actividad" en casos de uso) y no se tocó.
+  - Los scripts de generación y verificación quedaron fuera del repo.
+
+## 2026-09-24 00:06 — Commit y push de la actualización de diagramas
+
+- **Acción:** con autorización del usuario, se hace commit de `docs/diagramas.drawio`, `PLAN.md` y `LOG.md` y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** ninguno nuevo.
