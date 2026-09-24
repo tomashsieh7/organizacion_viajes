@@ -258,3 +258,41 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F0 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada anterior, más esta entrada en `LOG.md`.
+
+## 2026-09-24 00:19 — Inicio de F1: modelo de datos e infraestructura común
+
+- **Acción:** comienza la fase F1 de `PLAN.md` (esquema de la sección 4 en PostgreSQL, semilla, `UnidadDeTrabajo` y objetos de valor).
+- **Decisión:** se usa Prisma 7.10, la última versión estable. Se descartó la 8.0, que es la que npm marca como `latest` pero todavía es candidata (`rc`), para no depender de una versión sin publicar como estable.
+
+## 2026-09-24 00:30 — F1 terminada: modelo de datos e infraestructura común
+
+- **Acción:** se implementó el esquema de la sección 4 de `PLAN.md` con Prisma 7.10 y se verificó el criterio de terminado de F1.
+- **Archivos creados** (en `apps/api`):
+  - **Base de datos:** `prisma.config.ts`, `prisma/schema.prisma`, `prisma/migrations/20260924032214_inicial/migration.sql` y `prisma/seed.ts`.
+  - **Código:** `src/compartido/valores/` (`dinero.ts`, `fecha.ts`, `rangoFechas.ts`, `intervalo.ts`), `src/compartido/unidadDeTrabajo.ts`, `src/compartido/eventos.ts`, `src/compartido/infraestructura/prisma.ts` y `src/compartido/infraestructura/unidadDeTrabajoPrisma.ts`.
+  - **Soporte de pruebas:** `test/soporte/` (unidad de trabajo en memoria, conexión y preparación de la base de prueba).
+  - **Pruebas:** `test/contratos/` (contrato de la unidad de trabajo y sus dos ejecuciones), `test/unitarias/` (`dinero`, `rangoFechas`, `intervalo`, `eventos`) y `test/integracion/restricciones.bd.test.ts`.
+- **Archivos modificados:** `apps/api/package.json` (scripts `generar`, `postinstall`, `db:migrar` y `db:reset`; dependencias de Prisma y `pg`), `apps/api/vitest.config.ts` (dos proyectos), `package.json` de raíz (`db:reset`), `.gitignore`, `.prettierignore` y `eslint.config.js` (ignoran el cliente generado), y `PLAN.md` (D24, restricciones agregadas en 4.3 y entregables de F1).
+- **Decisiones:**
+  - **Montos:** se guardan como `BIGINT` y el dominio los maneja como enteros seguros de JavaScript (D24).
+  - **Restricciones agregadas en la migración**, además de las previstas en 4.3: coherencia entre `estado` y `baja_en` en `membresia`, coordenadas dentro de rango en `propuesta` y cantidad de decimales en `moneda`. Se verificó con `prisma migrate diff` que Prisma no detecta diferencias por el índice parcial ni por los `CHECK`, así que las migraciones futuras no los borran.
+  - **Fechas:** los días calendario se representan como texto `YYYY-MM-DD` (`fecha.ts`), que se compara directamente y no depende de zonas horarias (D17). `Intervalo` usa minutos y es semiabierto, así dos actividades contiguas no se superponen.
+  - **Eventos de dominio:** `BusDeEventosEnMemoria` implementa el Observer previsto en 2.2.3; los eventos concretos llegan en F2 y F6.
+  - **Pruebas:** se separan en un proyecto rápido y otro con base (archivos `*.bd.test.ts`), que corre de a un archivo y vacía las tablas antes de cada prueba.
+  - **Semilla:** no incluye credenciales, porque el hash de contraseñas llega en F2 con el módulo de autenticación.
+- **Desvío del plan:** la base de prueba se prepara con `prisma migrate deploy` en lugar de `migrate reset`. Se descartó el reset porque Prisma lo bloquea cuando lo ejecuta un agente de IA y porque no hace falta: la base de prueba vive en memoria y cada prueba vacía las tablas.
+- **Consentimiento del usuario:** Prisma exige consentimiento explícito para `migrate reset` cuando lo ejecuta un agente. Se le pidió al usuario, indicando el comando, el motivo, que borra los datos en forma irreversible y que la base era la de desarrollo local del contenedor de la sesión. El usuario autorizó ("Sí, autorizo resetear la base de desarrollo local") y el comando se ejecutó solo sobre `localhost:5432/viajes`.
+- **Auditoría de dependencias:** `npm audit` reporta vulnerabilidades en `mysql2`, una dependencia de la línea de comandos de Prisma que solo se usa en desarrollo. No afecta a la aplicación, que usa PostgreSQL. Se descartó `npm audit fix --force` porque bajaría Prisma a la versión 6.
+- **Verificación del criterio de terminado:**
+  - `npm run db:reset` aplica la migración y la semilla sin errores. Quedan 4 usuarios y 9 propuestas en los cuatro estados, incluida una actividad con dos alternativas, 2 gastos (uno en partes iguales y otro arbitrario), 5 deudas, 1 pago, 6 categorías y 6 monedas.
+  - Una consulta SQL confirmó que el saldo neto de cada par de viajeros coincide con lo que surge de las partes de los gastos menos los pagos.
+  - `npm test` pasa 51 pruebas (49 del backend y 2 del frontend). Entre ellas:
+    - las de restricciones: voto y credencial duplicados, deuda consigo mismo y negativa, segundo Admin activo, rango de fechas invertido, email sin normalizar y coordenadas incompletas;
+    - el contrato de la unidad de trabajo para las dos implementaciones, incluida la reversión ante un error;
+    - las de los objetos de valor: reparto con resto, bordes de rango e intervalos contiguos y que pasan la medianoche.
+  - En un clon limpio, `npm ci` genera el cliente y `npm run build`, `npm test` y `npm run lint` terminan sin errores.
+
+## 2026-09-24 00:35 — Commit y push de F1
+
+- **Acción:** con autorización del usuario, se hace commit de F1 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F1, más esta entrada en `LOG.md`.

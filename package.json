@@ -15,7 +15,8 @@
     "build": "npm run build -w packages/compartido && npm run build -w apps/api && npm run build -w apps/web",
     "test": "npm run build -w packages/compartido && npm test --workspaces --if-present",
     "lint": "eslint . && prettier --check . && npm run build -w packages/compartido && npm run typecheck --workspaces --if-present",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:reset": "npm run db:reset -w apps/api"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
