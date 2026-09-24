@@ -837,3 +837,10 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Alternativa descartada:** dejar solo el disparo por pull request, que habría dejado sin verificar lo que llega a `main`.
 - **Archivos:** `.github/workflows/ci.yml`, `README.md` (el párrafo del CI) y esta entrada en `LOG.md`.
 - **Verificación:** `actionlint` y Prettier sin errores.
+
+## 2026-09-24 18:18 — Merge del PR del MVP a main
+
+- **Acción:** a pedido del usuario, se mergea el pull request #1 (`claude/elegant-maxwell-60322c` hacia `main`) con todo el MVP, de F0 a F9, más el flujo de CI.
+- **Estado previo:** el CI pasa en sus tres trabajos, el PR no tiene conflictos y no hay revisiones ni comentarios pendientes. Esta entrada se agrega antes del merge para que quede en el mismo historial que llega a `main`. El merge se hace solo si el CI del commit que la contiene pasa.
+- **Método:** commit de merge, elegido por el usuario. Conserva en `main` los commits de cada fase, que son los que cita este registro. Se descartaron el squash, que junta todo en un commit y pierde esas referencias, y el rebase, que copia los commits con otros identificadores.
+- **Archivos:** esta entrada en `LOG.md`.
