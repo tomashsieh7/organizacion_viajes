@@ -814,3 +814,18 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Acción:** a pedido del usuario, se abre un pull request con todo el MVP (F0 a F9).
 - **Rama base:** el repositorio tenía una sola rama, `claude/elegant-maxwell-60322c`, que además era la principal, así que no había base contra la cual comparar. Con acuerdo del usuario se creó `main` en el commit `283a81a` ("Actualizar diagramas con las decisiones del plan"), el último antes del código, para que el PR muestre toda la implementación. Se descartó basarla en el primer commit (`f11f1b5`), que habría mezclado en el PR los ajustes del plan y de los diagramas.
 - **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-09-24 17:15 — Integración continua con GitHub Actions
+
+- **Acción:** a pedido del usuario, se agrega un flujo de CI para que el PR corra las verificaciones en GitHub. Hasta ahora el repositorio no tenía ninguno y las pruebas solo se corrían a mano.
+- **Archivos:** `.github/workflows/ci.yml` (nuevo), `README.md` (sección de pruebas) y esta entrada en `LOG.md`.
+- **Decisiones:**
+  - **Cuándo corre:** en cada push y en cada pull request. Un push nuevo a la misma rama cancela la corrida anterior.
+  - **Tres trabajos en paralelo:** lint y tipos, pruebas de Vitest y pruebas de punta a punta. Así un fallo indica enseguida qué parte se rompió. Se descartó un único trabajo con todos los pasos, que sería más lento y mostraría un solo resultado.
+  - **Base de datos:** los trabajos de pruebas levantan PostgreSQL 16 como servicio, con el mismo usuario, base (`viajes_test`) y puerto (5433) que `db-test` de `docker-compose.yml`. Así no hace falta ninguna variable de entorno nueva, y `viajes_e2e` se crea sola como en local.
+  - **Versiones:** Node 22 (el mínimo de `engines`) y la versión vigente de cada acción (`checkout`, `setup-node` y `upload-artifact`, todas en v7). Los permisos del token quedan en solo lectura.
+  - **Informe de Playwright:** si fallan las pruebas de punta a punta, se guardan `playwright-report/` y `test-results/` como artefacto durante siete días.
+- **Verificación:**
+  - `actionlint` no marca errores y Prettier acepta el formato.
+  - En un clon limpio con `CI=true` se repitieron los pasos del flujo contra la base de prueba: pasan `npm ci`, `npm run lint`, `npm test` (345 pruebas del backend y 74 del frontend) y `npm run e2e` (seis flujos).
+  - Queda pendiente ver la primera corrida en GitHub, después del push.

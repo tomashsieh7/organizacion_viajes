@@ -1,0 +1,95 @@
+# Integración continua: en cada push y en cada pull request corre las mismas verificaciones que
+# el README pide correr a mano (lint, pruebas de Vitest y pruebas de punta a punta).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# Un push nuevo a la misma rama cancela la corrida anterior, que ya quedó vieja.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint y tipos
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  pruebas:
+    name: Pruebas de Vitest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Misma base de prueba que el servicio db-test de docker-compose.yml, en el mismo puerto.
+    services:
+      db-test:
+        image: postgres:16
+        env:
+          POSTGRES_USER: viajes
+          POSTGRES_PASSWORD: viajes
+          POSTGRES_DB: viajes_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U viajes -d viajes_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  e2e:
+    name: Pruebas de punta a punta
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # La base viajes_e2e se crea en este mismo servidor al preparar las pruebas.
+    services:
+      db-test:
+        image: postgres:16
+        env:
+          POSTGRES_USER: viajes
+          POSTGRES_PASSWORD: viajes
+          POSTGRES_DB: viajes_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U viajes -d viajes_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - name: Guardar el reporte si falla
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-playwright
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
