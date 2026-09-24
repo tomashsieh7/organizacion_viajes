@@ -1,0 +1,33 @@
+{
+  "name": "organizacion-viajes",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/compartido",
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run build -w packages/compartido && concurrently -k -n compartido,api,web -c gray,blue,green \"npm run dev -w packages/compartido\" \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "build": "npm run build -w packages/compartido && npm run build -w apps/api && npm run build -w apps/web",
+    "test": "npm run build -w packages/compartido && npm test --workspaces --if-present",
+    "lint": "eslint . && prettier --check . && npm run build -w packages/compartido && npm run typecheck --workspaces --if-present",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.2",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.11.1",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.1"
+  }
+}

@@ -225,3 +225,36 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de `docs/diagramas.drawio`, `PLAN.md` y `LOG.md` y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** ninguno nuevo.
+
+## 2026-09-24 00:08 — Inicio de F0: base del repositorio
+
+- **Acción:** comienza la fase F0 de `PLAN.md` (monorepo que compila, prueba y levanta frontend, backend y base de datos).
+- **Archivos:** se crearán los archivos de configuración de raíz, `apps/api`, `apps/web` y `packages/compartido`.
+- **Contexto del entorno:** Node 22.22 y npm 10.9 disponibles, registro de npm accesible, Docker instalado pero sin su servicio en ejecución, y PostgreSQL 16 instalado localmente.
+
+## 2026-09-24 00:12 — F0 terminada: base del repositorio
+
+- **Acción:** se armó el monorepo con los tres paquetes y se verificó el criterio de terminado de F0.
+- **Archivos creados:**
+  - **Raíz:** `package.json` (workspaces y scripts), `package-lock.json`, `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`, `.gitignore`, `.env.example`, `docker-compose.yml` y `README.md`.
+  - **`packages/compartido`:** `package.json`, `tsconfig.json` y `src/` con los contratos de la respuesta de error (D19) y de `/api/salud`.
+  - **`apps/api`:** `package.json`, dos `tsconfig` (uno para chequeo con pruebas y otro para compilar), `vitest.config.ts`, `src/app.ts`, `src/servidor.ts`, `src/config.ts`, `src/contenedor.ts`, `src/compartido/errores.ts`, `src/middlewares/manejarErrores.ts`, `src/modulos/salud/salud.rutas.ts` y pruebas en `test/unitarias` y `test/integracion`.
+  - **`apps/web`:** `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/main.ts`, `src/App.vue`, `src/router/index.ts`, `src/vistas/InicioVista.vue`, `src/clientes/salud.ts` y `test/InicioVista.test.ts`.
+- **Archivos modificados:** `PLAN.md` (desvíos de F0 y nueva decisión D23).
+- **Decisiones:**
+  - **Errores de dominio (D19):** `ErrorDeDominio` lleva una categoría del dominio (validación, no autenticado, prohibido, no encontrado, conflicto, regla de negocio, demasiados intentos). El middleware `manejarErrores` traduce esa categoría a HTTP con una tabla cerrada, así el dominio no conoce HTTP y cada código nuevo no obliga a tocar la traducción. Los errores inesperados responden 500 `ERROR_INTERNO` sin exponer detalles. Se descartó que cada error llevara su código HTTP, porque acoplaría el dominio a la capa web.
+  - **Módulo de salud:** es un solo archivo de rutas y no tiene la estructura de capas de los módulos de dominio, por el criterio contra la sobreingeniería (2.2.4 de `PLAN.md`), ya que no tiene reglas de negocio ni datos.
+  - **Frontend:** `InicioVista` depende de la interfaz `ClienteSalud`, que `main.ts` inyecta con `provide`; así se aplica la inversión de dependencias desde la primera pantalla y la prueba usa un cliente falso.
+  - **Chequeo de tipos:** `npm run lint` incluye el chequeo de tipos de cada paquete, porque la compilación del backend no revisa los archivos de prueba.
+  - **Versiones y herramientas:** se registran en D23.
+- **Desvíos del plan:** los scripts `db:reset` y `e2e` pasan a F1 y F9, cuando existen Prisma y Playwright, en lugar de dejar scripts de relleno que fallarían. Las carpetas vacías previstas (`stores`, `composables`, `test/contratos`) se crean cuando se usen, porque git no versiona carpetas vacías.
+- **Verificación del criterio de terminado:**
+  - `docker compose up -d` levanta las dos bases, que quedan saludables y aceptan conexiones en 5432 y 5433.
+  - `npm run dev` levanta todo. `curl localhost:3000/api/salud` y `curl localhost:5173/api/salud` (a través del proxy de Vite) devuelven `200 {"ok":true}`, y la web cargada en Chromium muestra "Servidor disponible".
+  - En un clon limpio, `npm ci`, `npm run build`, `npm test` (14 pruebas: 12 del backend y 2 del frontend) y `npm run lint` terminan sin errores.
+- **Entorno:** para verificar se inició el servicio de Docker de la sesión, que estaba detenido.
+
+## 2026-09-24 00:15 — Commit y push de F0
+
+- **Acción:** con autorización del usuario, se hace commit de F0 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada anterior, más esta entrada en `LOG.md`.
