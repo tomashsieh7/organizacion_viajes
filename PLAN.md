@@ -51,7 +51,11 @@ El paquete `packages/compartido` contiene los esquemas de validación (Zod), los
 
 En desarrollo, Vite redirige `/api` y `/socket.io` al backend, así el navegador ve un único origen y la cookie de sesión funciona sin abrir CORS.
 
-### 2.2 Principios de diseño obligatorios
+### 2.2 Principios de diseño y patrones obligatorios
+
+El código cumple SOLID y GRASP y usa patrones de diseño donde resuelven un problema concreto, sin sobreingeniería. Las tres exigencias se combinan con un criterio único para decidir cuándo agregar una abstracción, detallado en 2.2.4.
+
+#### 2.2.1 SOLID
 
 Los principios SOLID se cumplen estrictamente en todo el código. La única excepción es el uso de un patrón de diseño que, por su naturaleza, relaje alguno de ellos (por ejemplo, una Fachada que agrupa operaciones o un Visitor que exige tocar a los visitantes cuando aparece un tipo nuevo); en ese caso prevalece el patrón y se registra en `LOG.md` qué patrón se usó, qué principio relaja y por qué. Agregar una funcionalidad modifica, como mínimo, el punto de composición y las rutas; la regla se interpreta como que esas modificaciones quedan concentradas ahí y que la lógica existente no se edita para extenderla.
 
@@ -65,14 +69,58 @@ Cómo se traduce cada principio en este proyecto:
 | Segregación de interfaces | Las interfaces se definen según lo que necesita quien las usa. Por ejemplo, `RegistrarPago` depende de un repositorio con `obtenerDeudaBloqueada`, `restar` y `guardarPago`, y no de un repositorio con todas las operaciones de deudas. |
 | Inversión de dependencias | Los casos de uso dependen de interfaces de repositorio y de una `UnidadDeTrabajo` para las transacciones, nunca de Prisma. Las implementaciones con Prisma viven en la capa de infraestructura y se conectan en un único punto de composición (`contenedor.ts`). En el frontend, los stores dependen de interfaces de cliente de API que se inyectan al crear la aplicación. |
 
+#### 2.2.2 GRASP
+
+| Principio | Aplicación |
+|---|---|
+| Experto en información | Cada regla vive en la clase que tiene los datos para aplicarla, así que las entidades del dominio tienen comportamiento y no son solo contenedores de datos. `Propuesta` conoce sus transiciones válidas (`confirmar()`, `denegar()`, `cancelar()`) y quién puede votarla; `Deuda` sabe sumar, restar un pago (rechazando el exceso) y compensarse con la deuda en sentido opuesto; `Viaje` sabe si una fecha o un rango caen dentro de él y cuál es su día inicial para el mapa; el `Intervalo` de una `Actividad` sabe si se superpone con otro; `Membresia` sabe si da acceso completo o solo a saldos. |
+| Creador | `Viaje` crea la membresía de su Admin al crearse; `Actividad` crea sus alternativas (`crearAlternativa()`), lo que aplica la regla de "sin cadenas" en un solo lugar; `Gasto` crea sus partes a partir de la `EstrategiaDivision`. |
+| Controlador | Cada caso de uso (`AnotarGasto`, `ResolverPropuesta`, `SalirDelViaje`, etc.) es el controlador de su operación del sistema: carga las entidades, les pide que actúen, aplica las políticas que involucran a varias entidades y guarda dentro de una `UnidadDeTrabajo`. Los controladores HTTP y el gateway de Socket.IO solo traducen. |
+| Bajo acoplamiento | Los módulos de dominio se comunican entre sí por interfaces y eventos, nunca por sus implementaciones; el dominio no conoce Express, Prisma ni Socket.IO. |
+| Alta cohesión | Cada módulo agrupa un solo tema del dominio y cada clase tiene un propósito acotado. |
+| Polimorfismo | Las variantes se resuelven con implementaciones de una interfaz y no con condicionales por tipo: modos de división, políticas de opciones y de superposición, proveedores de recorrido, autenticación y ubicaciones. |
+| Fabricación pura | Repositorios, `UnidadDeTrabajo` y `NotificadorViaje` no son conceptos del dominio; existen para que las entidades no dependan de la persistencia ni de la mensajería. |
+| Indirección | Las interfaces de repositorio y de proveedores median entre el dominio y la infraestructura. |
+| Variaciones protegidas | Las interfaces se ponen en los puntos de variación conocidos (story mapping, dependencias externas); es el mismo criterio con el que se aplica abierto/cerrado. |
+
+#### 2.2.3 Patrones de diseño
+
+Patrones que usa el proyecto:
+
+| Patrón | Dónde | Por qué hace falta |
+|---|---|---|
+| Strategy | `EstrategiaDivision`, `PoliticaResolucionOpciones`, `PoliticaSuperposicion`, `ProveedorRecorrido`, `ProveedorAutenticacion`, `BuscadorUbicaciones` | Variaciones que ya existen (dos modos de división) o que están previstas en el story mapping (subgrupos, rutas reales, otras formas de ingreso). |
+| Repository | Acceso a datos de cada módulo | Separa el dominio de Prisma y permite probar con repositorios en memoria. |
+| Unit of Work | `UnidadDeTrabajo` | Agrupa las escrituras de un caso de uso en una transacción sin que el caso de uso conozca la base. |
+| Adapter | Implementaciones con Prisma, argon2, Nominatim y Socket.IO | Aíslan cada librería externa detrás de una interfaz del dominio. |
+| Observer, como eventos de dominio | Baja de participante y traspaso de Admin publican un evento que `NotificadorViaje` entrega por Socket.IO | El módulo de viajes no conoce el chat ni Socket.IO. |
+| Value Object | `Dinero` (monto entero y moneda), `RangoFechas`, `Intervalo` | Encapsulan reglas pequeñas y repetidas (reparto con resto, pertenencia a un rango, superposición) en objetos inmutables, en lugar de números y fechas sueltos. |
+| Composition Root | `contenedor.ts` en el backend y `main.ts` en el frontend | Único lugar donde se eligen las implementaciones. |
+| Chain of Responsibility | Middlewares de Express | Lo provee Express; no se construye nada propio. |
+
+Patrones y técnicas que se descartan por sobreingeniería:
+
+| Descartado | Motivo |
+|---|---|
+| State para los estados de propuesta | Con cuatro estados y tres transiciones, una tabla de transiciones dentro de `Propuesta` es más clara que una clase por estado. |
+| Repositorio genérico | Mezclaría operaciones que cada caso de uso no necesita y va contra la segregación de interfaces. |
+| Abstract Factory | No hay familias de objetos que varíen juntas. |
+| CQRS y reconstrucción del estado a partir de eventos | El volumen y la complejidad de consultas del MVP no lo justifican. |
+| Contenedor de inyección de dependencias | La inyección manual alcanza (D14). |
+| Microservicios | Un solo equipo y un solo despliegue; un monolito modular cubre la necesidad. |
+
+#### 2.2.4 Criterio contra la sobreingeniería
+
+Una abstracción (interfaz, patrón o capa adicional) se agrega solo si cumple al menos una de estas condiciones: aísla una dependencia externa, cubre una variación prevista en el story mapping o en las decisiones del usuario, o es necesaria para probar una regla sin infraestructura. Si no cumple ninguna, se implementa de la forma directa. Abierto/cerrado se aplica en esos puntos de variación conocidos, que coinciden con las variaciones protegidas de GRASP, así que SOLID estricto y la ausencia de sobreingeniería no se contradicen. Cada patrón que se agregue durante la implementación y no figure en 2.2.3 se registra en `LOG.md` con la condición que lo justifica.
+
 ### 2.3 Capas del backend
 
 Cada módulo de dominio sigue el mismo recorrido de una petición:
 
 1. **Rutas**: declaran el endpoint y encadenan los middlewares de autenticación, acceso al viaje, rol y validación.
 2. **Controlador**: traduce entre HTTP y el caso de uso, sin reglas de negocio.
-3. **Caso de uso**: aplica las reglas de negocio, usa las políticas y estrategias que recibe y abre transacciones con la `UnidadDeTrabajo`.
-4. **Dominio**: entidades, errores de dominio e interfaces de repositorio, políticas y proveedores.
+3. **Caso de uso**: coordina la operación como controlador de GRASP, cargando las entidades con los repositorios, delegándoles las reglas de las que son expertas, aplicando las políticas que involucran a varias entidades y guardando todo dentro de una `UnidadDeTrabajo`.
+4. **Dominio**: entidades con comportamiento, objetos de valor, eventos, errores de dominio e interfaces de repositorio, políticas y proveedores.
 5. **Infraestructura**: implementaciones con Prisma, argon2, Nominatim y Socket.IO de las interfaces del dominio.
 
 El gateway de Socket.IO es otro adaptador de entrada, como el controlador, y usa los mismos casos de uso.
@@ -92,7 +140,7 @@ El gateway de Socket.IO es otro adaptador de entrada, como el controlador, y usa
 │   │   │   ├── servidor.ts            # levanta HTTP y Socket.IO
 │   │   │   ├── contenedor.ts          # punto de composición: crea implementaciones e inyecta dependencias
 │   │   │   ├── config.ts              # lectura y validación de variables de entorno
-│   │   │   ├── compartido/            # UnidadDeTrabajo, errores de dominio, dinero, fechas
+│   │   │   ├── compartido/            # UnidadDeTrabajo, errores y eventos de dominio, objetos de valor Dinero, RangoFechas e Intervalo
 │   │   │   ├── middlewares/           # autenticado, verificarOrigen, participanteActivo, accesoSaldos, soloAdmin, validar, manejarErrores
 │   │   │   └── modulos/
 │   │   │       ├── auth/              # registro, sesiones, credenciales (P3)
@@ -161,6 +209,7 @@ Vue y Express están fijados por la consigna. El resto se decide acá; cada deci
 | D19 | Formato de errores | Todas las respuestas de error tienen la forma `{ "error": { "codigo", "mensaje", "detalles" } }` con códigos estables en mayúsculas (sección 5.1) | El frontend decide qué mostrar según el código y las pruebas verifican el código exacto. | Solo el código HTTP: no distingue, por ejemplo, superposición horaria de propuesta ya resuelta. |
 | D20 | Estilos | CSS propio con variables y un puñado de componentes base (botón, campo, aviso, diálogo) | Las pantallas son formularios y listas; una librería de componentes agregaría peso y un sistema de diseño propio. | Vuetify o PrimeVue: aceleran pantallas complejas, pero imponen su sistema y aumentan el tamaño del paquete. |
 | D21 | Calidad de código | ESLint (con `eslint-plugin-vue`) y Prettier en `npm run lint` | Estándar en proyectos Vue con TypeScript. | Biome: soporte parcial de archivos `.vue`. |
+| D22 | Ubicación de las reglas de negocio | Modelo de dominio con comportamiento: entidades y objetos de valor que aplican las reglas de las que son expertos, y casos de uso que coordinan (sección 2.2.2) | Cumple el principio de experto en información de GRASP, evita repetir una misma regla en varios casos de uso y permite probar las reglas sin repositorios ni base. | Modelo anémico con toda la lógica en servicios: más directo al principio, pero dispersa reglas como la superposición o la resta de una deuda entre varios casos de uso. |
 
 ## 4. Modelo de datos
 
@@ -478,29 +527,29 @@ Eventos de Socket.IO (espacio de nombres `/chat`). El handshake verifica el enca
 
 ## 6. Reglas de negocio
 
-Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG.md`. La columna "Dónde" nombra el endpoint y el caso de uso, política o estrategia que la aplica. El frontend repite las validaciones de formato para dar respuesta inmediata, pero la regla vale solo si la aplica el backend.
+Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG.md`. La columna "Dónde" nombra, siguiendo GRASP, la entidad u objeto de valor experto que aplica la regla y el caso de uso que la coordina, o la política o estrategia correspondiente. El frontend repite las validaciones de formato para dar respuesta inmediata, pero la regla vale solo si la aplica el backend.
 
 ### 6.1 Proponiendo actividad
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
 | RN-A1 | El viajero completa título, fecha, horario, duración, ubicación (con coordenadas) y descripción; el precio es opcional (P8). | `POST …/actividades` → esquema `actividadNueva` y `ProponerActividad` | 400 `VALIDACION` |
-| RN-A2 | Si el intervalo `[fecha + hora_inicio, fecha + hora_inicio + duración)` se superpone con el de una actividad `CONFIRMADA` del viaje, no se guarda; el viajero ajusta el horario y vuelve a enviar hasta que no haya superposición. | `PoliticaSuperposicion` (implementación `SinSuperposicionConConfirmadas`), usada por `ProponerActividad` | 409 `SUPERPOSICION_HORARIA` con los conflictos; la pantalla conserva el formulario y resalta fecha, hora y duración |
-| RN-A3 | Sin superposición, la propuesta se guarda con estado `PENDIENTE`. | `ProponerActividad` | 201 |
+| RN-A2 | Si el intervalo `[fecha + hora_inicio, fecha + hora_inicio + duración)` se superpone con el de una actividad `CONFIRMADA` del viaje, no se guarda; el viajero ajusta el horario y vuelve a enviar hasta que no haya superposición. | `Intervalo.seSuperponeCon()` es el experto; `PoliticaSuperposicion` (`SinSuperposicionConConfirmadas`) decide contra qué actividades comparar; coordina `ProponerActividad` | 409 `SUPERPOSICION_HORARIA` con los conflictos; la pantalla conserva el formulario y resalta fecha, hora y duración |
+| RN-A3 | Sin superposición, la propuesta se guarda con estado `PENDIENTE`. | `Actividad.proponer()` crea la actividad pendiente; coordina `ProponerActividad` | 201 |
 
 ### 6.2 Proponiendo alternativa de actividad
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
-| RN-B1 | El viajero elige de una lista la actividad a la que da una alternativa; solo se ofrecen actividades `PENDIENTE` (P9). | Pantalla de actividades y `ProponerAlternativa`, que verifica existencia y estado | 404 `NO_ENCONTRADO`, 409 `ORIGINAL_NO_PENDIENTE` |
+| RN-B1 | El viajero elige de una lista la actividad a la que da una alternativa; solo se ofrecen actividades `PENDIENTE` (P9). | Pantalla de actividades; `Actividad.crearAlternativa()` rechaza originales no pendientes; coordina `ProponerAlternativa` | 404 `NO_ENCONTRADO`, 409 `ORIGINAL_NO_PENDIENTE` |
 | RN-B2 | Completa descripción, ubicación, duración, título, fecha y horario, con los mismos controles de RN-A1 y RN-A2 (P9) y la fecha dentro del viaje (P11). | Esquema `actividadNueva`, `PoliticaSuperposicion` | 400, 409, 422 |
-| RN-B3 | Se guarda como una nueva actividad vinculada a la original con estado `PENDIENTE`. Si la elegida es a su vez una alternativa, la nueva se vincula a la original de esa, de modo que no hay cadenas (P9). | `ProponerAlternativa` | 201 |
+| RN-B3 | Se guarda como una nueva actividad vinculada a la original con estado `PENDIENTE`. Si la elegida es a su vez una alternativa, la nueva se vincula a la original de esa, de modo que no hay cadenas (P9). | `Actividad.crearAlternativa()` como Creador, que siempre vincula a la original; coordina `ProponerAlternativa` | 201 |
 
 ### 6.3 Resolución de propuestas
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
-| RN-R1 | Las transiciones válidas son `PENDIENTE → CONFIRMADA`, `PENDIENTE → DENEGADA` y `CONFIRMADA → CANCELADA`; `DENEGADA` y `CANCELADA` son finales (P7). | `ResolverPropuesta` | 409 `TRANSICION_INVALIDA` |
+| RN-R1 | Las transiciones válidas son `PENDIENTE → CONFIRMADA`, `PENDIENTE → DENEGADA` y `CONFIRMADA → CANCELADA`; `DENEGADA` y `CANCELADA` son finales (P7). | `Propuesta.confirmar()`, `denegar()` y `cancelar()` con su tabla de transiciones; coordina `ResolverPropuesta` | 409 `TRANSICION_INVALIDA` |
 | RN-R2 | El Admin confirma o deniega libremente, viendo el conteo de votos; no hay umbral de votación (P7). | `ResolverPropuesta` | — |
 | RN-R3 | Al confirmar una actividad se vuelve a aplicar `PoliticaSuperposicion` contra las confirmadas, dentro de la misma transacción (P10). | `ResolverPropuesta` | 409 `SUPERPOSICION_HORARIA` |
 | RN-R4 | Al confirmar una actividad que forma parte de un grupo de opciones (original y alternativas), las demás opciones pendientes pasan a `DENEGADA` en la misma transacción. Denegar la original no afecta a sus alternativas (P9). | `PoliticaResolucionOpciones` (implementación `DenegarOpcionesRestantes`), usada por `ResolverPropuesta` | 200 con las opciones denegadas |
@@ -509,7 +558,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
-| RN-M1 | Al abrir el mapa sin día elegido: si `hoy` (fecha del dispositivo) cae dentro de `[fecha_inicio, fecha_fin]`, se muestra hoy aunque no tenga actividades; si no, el primer día con actividad confirmada; si no hay ninguna actividad confirmada, el primer día del viaje (P19). | `GET …/mapa` → `ConsultarMapa.resolverDiaInicial` | `dia` |
+| RN-M1 | Al abrir el mapa sin día elegido: si `hoy` (fecha del dispositivo) cae dentro de `[fecha_inicio, fecha_fin]`, se muestra hoy aunque no tenga actividades; si no, el primer día con actividad confirmada; si no hay ninguna actividad confirmada, el primer día del viaje (P19). | `Viaje.diaInicialDelMapa(hoy, diasConActividad)`; coordina `ConsultarMapa` (`GET …/mapa`) | `dia` |
 | RN-M2 | Se buscan las actividades `CONFIRMADA` de ese día. | `ConsultarMapa` | `actividades` |
 | RN-M3 | Si el día no tiene actividades confirmadas, se muestra un aviso. | `ConsultarMapa` devuelve `aviso`; `MapaVista` lo muestra sobre el mapa | 200 con `actividades: []` |
 | RN-M4 | Las actividades se ordenan cronológicamente por horario. | Repositorio de itinerario (`ORDER BY hora_inicio, titulo`) | orden de `actividades` |
@@ -524,7 +573,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 |---|---|---|---|
 | RN-C1 | Se muestran todos los días del viaje, incluidos los que no tienen actividades, con la leyenda "sin actividades confirmadas" (P21). | `ConsultarCronograma` | — |
 | RN-C2 | Cada día muestra solo actividades confirmadas, ordenadas por horario, con hora de inicio y de fin, título, ubicación y enlace "Ver en el mapa". | `ConsultarCronograma` y `CronogramaVista` | — |
-| RN-C3 | Cada día muestra el alojamiento confirmado de esa noche, es decir, el que cumple `fecha_desde <= día < fecha_hasta`; si no hay, no se muestra nada. | `ConsultarCronograma` | — |
+| RN-C3 | Cada día muestra el alojamiento confirmado de esa noche, es decir, el que cumple `fecha_desde <= día < fecha_hasta`; si no hay, no se muestra nada. | `RangoFechas.incluyeNoche(dia)` del alojamiento; coordina `ConsultarCronograma` | — |
 | RN-C4 | Al abrir, la vista se desplaza hasta hoy si cae dentro del viaje, con la misma regla de "hoy" que el mapa. | `CronogramaVista` | — |
 
 ### 6.6 Anotando gasto
@@ -534,9 +583,9 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | RN-G1 | El viajero completa título, categoría y monto mayor que cero. | Esquema `gastoNuevo` | 400 `VALIDACION` |
 | RN-G2 | Un único pagador por gasto, que por defecto es quien lo anota y puede cambiarse por otro participante activo (P12). | `AnotarGasto` | 422 `PAGADOR_NO_PARTICIPANTE` |
 | RN-G3 | El viajero elige quiénes tienen que pagar: al menos un participante activo. La lista arranca sin nadie seleccionado, con una casilla por participante y un botón que alterna entre "Seleccionar a todos" y "Quitar a todos". El pagador puede quedar fuera de los elegidos (P13). | `SelectorDeudores` y `AnotarGasto` | 422 `DEUDOR_NO_PARTICIPANTE`; el formulario no deja guardar sin elegidos |
-| RN-G4 | En partes iguales, el monto se reparte entre los elegidos y las unidades sobrantes se asignan de a una a los primeros de la lista (P13, D16). En división arbitraria, el viajero indica cuánto le corresponde a cada uno y la suma debe coincidir con el total; si no coincide, corrige y vuelve a enviar. | `EstrategiaDivision` (`DivisionEnPartesIguales`, `DivisionArbitraria`) y validación en vivo en `TablaPartes` | 422 `SUMA_NO_COINCIDE` |
-| RN-G5 | Con la división válida, se guardan el gasto y sus partes. | `AnotarGasto` en una transacción | 201 |
-| RN-G6 | Al guardar, se actualiza el total a pagar de cada deudor: la parte del pagador no genera deuda; cada otra parte se compensa primero contra lo que el pagador le debía a ese deudor y el resto se suma a la deuda del deudor con el pagador, de modo que entre dos viajeros queda una sola deuda neta (P14, P15). Todo en la misma transacción y con las filas bloqueadas (D18). | `AnotarGasto` mediante el repositorio de deudas | — |
+| RN-G4 | En partes iguales, el monto se reparte entre los elegidos y las unidades sobrantes se asignan de a una a los primeros de la lista (P13, D16). En división arbitraria, el viajero indica cuánto le corresponde a cada uno y la suma debe coincidir con el total; si no coincide, corrige y vuelve a enviar. | `EstrategiaDivision` (`DivisionEnPartesIguales`, que usa `Dinero.repartir()` para el resto, y `DivisionArbitraria`); validación en vivo en `TablaPartes` | 422 `SUMA_NO_COINCIDE` |
+| RN-G5 | Con la división válida, se guardan el gasto y sus partes. | `Gasto` crea sus partes como Creador; coordina `AnotarGasto` en una transacción | 201 |
+| RN-G6 | Al guardar, se actualiza el total a pagar de cada deudor: la parte del pagador no genera deuda; cada otra parte se compensa primero contra lo que el pagador le debía a ese deudor y el resto se suma a la deuda del deudor con el pagador, de modo que entre dos viajeros queda una sola deuda neta (P14, P15). Todo en la misma transacción y con las filas bloqueadas (D18). | `Deuda.compensarCon()` y `Deuda.sumar()`; coordina `AnotarGasto`, que obtiene las deudas bloqueadas del repositorio | — |
 
 ### 6.7 Registrando pago
 
@@ -545,8 +594,8 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | RN-P1 | El viajero elige con quién saldar a partir de su lista de saldos pendientes (deudas con monto mayor que cero donde es deudor). Solo el deudor registra pagos (P17). | `SaldosVista` sobre `GET …/deudas?rol=deudor`; `RegistrarPago` verifica que exista esa deuda | 404 `SIN_DEUDA_CON_ACREEDOR` |
 | RN-P2 | El sistema muestra el saldo pendiente con ese viajero. | `PagoVista` | — |
 | RN-P3 | El viajero ingresa el monto, mayor que cero. | Esquema `pagoNuevo` | 400 `VALIDACION` |
-| RN-P4 | Si el monto supera la deuda total con ese acreedor, se avisa y no se registra; el viajero vuelve a ingresar el monto. | `RegistrarPago`, leyendo el saldo con la fila bloqueada | 422 `PAGO_EXCEDE_DEUDA` con el saldo actual |
-| RN-P5 | Si no la supera, se registra el pago, se resta de la deuda y se actualiza `ultima_actualizacion`. El pago se aplica sin confirmación del acreedor (P17). | `RegistrarPago` en una transacción | 201 con el pago y el saldo restante |
+| RN-P4 | Si el monto supera la deuda total con ese acreedor, se avisa y no se registra; el viajero vuelve a ingresar el monto. | `Deuda.registrarPago(monto)`, que rechaza el exceso, sobre la fila bloqueada; coordina `RegistrarPago` | 422 `PAGO_EXCEDE_DEUDA` con el saldo actual |
+| RN-P5 | Si no la supera, se registra el pago, se resta de la deuda y se actualiza `ultima_actualizacion`. El pago se aplica sin confirmación del acreedor (P17). | `Deuda.registrarPago()` crea el `Pago` y resta el monto; coordina `RegistrarPago` en una transacción | 201 con el pago y el saldo restante |
 | RN-P6 | Cada pago guarda quién lo registró y cuándo, y aparece en el historial de saldos del deudor y del acreedor. En el MVP no se deshacen pagos (P17). | `RegistrarPago` y `ConsultarDeudas` | — |
 
 ### 6.8 Eliminando participantes y saliendo del grupo
@@ -555,21 +604,21 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 |---|---|---|---|
 | RN-E1 | Solo el Admin puede eliminar participantes. | Middleware `soloAdmin` | 403 `SOLO_ADMIN` |
 | RN-E2 | El Admin elige a qué viajero eliminar, que debe ser un participante activo distinto de él. | `EliminarParticipante` | 404, 409 `NO_PUEDE_ELIMINARSE_A_SI_MISMO` |
-| RN-E3 | La baja nunca borra historial: gastos, deudas, pagos, mensajes y propuestas se conservan siempre. Si el viajero tenía deuda pendiente con el grupo, se marca `baja_con_deuda = true` (P18). | `EliminarParticipante` | 200 con `bajaConDeuda` |
-| RN-E4 | La membresía pasa a `ELIMINADA` con `baja_en`; el viajero pierde el acceso al viaje y se lo desconecta de la sala del chat. | `EliminarParticipante` y evento `viaje:membresia-finalizada` | 200 |
+| RN-E3 | La baja nunca borra historial: gastos, deudas, pagos, mensajes y propuestas se conservan siempre. Si el viajero tenía deuda pendiente con el grupo, se marca `baja_con_deuda = true` (P18). | `Membresia.darDeBaja(motivo, tieneDeuda)`; coordina `EliminarParticipante` | 200 con `bajaConDeuda` |
+| RN-E4 | La membresía pasa a `ELIMINADA` con `baja_en`; el viajero pierde el acceso al viaje y se lo desconecta de la sala del chat. | `Membresia.darDeBaja()` publica el evento de dominio que `NotificadorViaje` entrega como `viaje:membresia-finalizada`; coordina `EliminarParticipante` | 200 |
 | RN-E5 | Sus votos en propuestas `PENDIENTE` se retiran en la misma transacción; sus propuestas pendientes siguen en votación y lo ya resuelto no cambia (P18). | `EliminarParticipante` y `SalirDelViaje` | — |
-| RN-E6 | Mientras tenga saldos pendientes a favor o en contra, conserva acceso solo a la sección de saldos de ese viaje (ver y pagar); al quedar en cero, pierde también ese acceso. Los demás pueden seguir pagándole lo que le deben (P18). | Middleware `accesoSaldos` | 403 `NO_PARTICIPANTE` en el resto de las rutas |
+| RN-E6 | Mientras tenga saldos pendientes a favor o en contra, conserva acceso solo a la sección de saldos de ese viaje (ver y pagar); al quedar en cero, pierde también ese acceso. Los demás pueden seguir pagándole lo que le deben (P18). | `Membresia.tipoDeAcceso(saldosPendientes)`, consultado por el middleware `accesoSaldos` | 403 `NO_PARTICIPANTE` en el resto de las rutas |
 | RN-E7 | Salir del grupo sigue las mismas reglas RN-E3 a RN-E6, con estado `RETIRADA`; si tiene deuda, puede salir y la pantalla le muestra cuánto debe antes de confirmar (P18). | `SalirDelViaje` | 200 |
-| RN-E8 | Volver a agregar a alguien que se dio de baja reactiva su misma membresía con su historial (P18). | `AgregarViajero` | 201 |
+| RN-E8 | Volver a agregar a alguien que se dio de baja reactiva su misma membresía con su historial (P18). | `Membresia.reactivar()`; coordina `AgregarViajero` | 201 |
 
 ### 6.9 Administración y traspaso
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
-| RN-T1 | Quien crea el viaje queda como su único Admin. | `CrearViaje`, en la misma transacción que crea la membresía | — |
-| RN-T2 | El Admin puede transferir la administración en cualquier momento a otro participante activo; en una sola transacción el elegido pasa a `ADMIN` y el anterior a `VIAJERO` (P5). | `TransferirAdministracion` | 422 `SUCESOR_INVALIDO` |
-| RN-T3 | Para salir, el Admin debe elegir sucesor; el traspaso y la salida ocurren en la misma transacción, de modo que el viaje nunca queda sin Admin ni con dos (P5). | `SalirDelViaje`, que reutiliza `TransferirAdministracion` | 400 `FALTA_SUCESOR` |
-| RN-T4 | Si el Admin es el único participante activo, no puede salir (P5). | `SalirDelViaje` | 409 `ADMIN_UNICO_PARTICIPANTE` |
+| RN-T1 | Quien crea el viaje queda como su único Admin. | `Viaje.crear()` crea la membresía del Admin como Creador; coordina `CrearViaje` | — |
+| RN-T2 | El Admin puede transferir la administración en cualquier momento a otro participante activo; en una sola transacción el elegido pasa a `ADMIN` y el anterior a `VIAJERO` (P5). | `Viaje.transferirAdministracion(sucesor)`, que cambia ambas membresías y publica el evento de traspaso; coordina `TransferirAdministracion` | 422 `SUCESOR_INVALIDO` |
+| RN-T3 | Para salir, el Admin debe elegir sucesor; el traspaso y la salida ocurren en la misma transacción, de modo que el viaje nunca queda sin Admin ni con dos (P5). | `Viaje.transferirAdministracion()` y `Membresia.darDeBaja()` en la misma `UnidadDeTrabajo`; coordina `SalirDelViaje` | 400 `FALTA_SUCESOR` |
+| RN-T4 | Si el Admin es el único participante activo, no puede salir (P5). | `Viaje.puedeSalir(membresia)`; coordina `SalirDelViaje` | 409 `ADMIN_UNICO_PARTICIPANTE` |
 
 ### 6.10 Reglas transversales
 
@@ -577,10 +626,10 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 |---|---|---|---|
 | RN-X1 | Toda operación sobre un viaje requiere membresía activa, salvo la sección de saldos (RN-E6). | Middlewares `participanteActivo` y `accesoSaldos`, handshake de `chat:unirse` | 403 `NO_PARTICIPANTE` |
 | RN-X2 | Confirmar, denegar, cancelar, eliminar participantes, agregar viajeros y transferir la administración son acciones del Admin. | Middleware `soloAdmin` | 403 `SOLO_ADMIN` |
-| RN-X3 | Un viajero tiene como mucho un voto por propuesta; votar de nuevo reemplaza el valor, y desvotar retira el voto propio. Solo se vota o desvota una propuesta `PENDIENTE`. Quien propone puede votar lo suyo (P6, P7). | PK de `voto`, `Votar` y `Desvotar` | 409 `PROPUESTA_NO_PENDIENTE` |
-| RN-X4 | La fecha de una actividad y el rango de un alojamiento caen dentro de `[fecha_inicio, fecha_fin]` del viaje; de la actividad se controla solo el día de inicio (P11). Los selectores de fecha solo ofrecen días del viaje. | `ProponerActividad`, `ProponerAlternativa`, `ProponerAlojamiento` | 422 `FUERA_DEL_VIAJE` |
+| RN-X3 | Un viajero tiene como mucho un voto por propuesta; votar de nuevo reemplaza el valor, y desvotar retira el voto propio. Solo se vota o desvota una propuesta `PENDIENTE`. Quien propone puede votar lo suyo (P6, P7). | `Propuesta.votar()` y `Propuesta.desvotar()`, más la PK de `voto`; coordinan `Votar` y `Desvotar` | 409 `PROPUESTA_NO_PENDIENTE` |
+| RN-X4 | La fecha de una actividad y el rango de un alojamiento caen dentro de `[fecha_inicio, fecha_fin]` del viaje; de la actividad se controla solo el día de inicio (P11). Los selectores de fecha solo ofrecen días del viaje. | `Viaje.contiene(fecha)` y `Viaje.contiene(rango)`; coordinan `ProponerActividad`, `ProponerAlternativa` y `ProponerAlojamiento` | 422 `FUERA_DEL_VIAJE` |
 | RN-X5 | Solo participantes activos envían mensajes al chat del viaje. | Caso de uso `EnviarMensaje` | confirmación con `NO_PARTICIPANTE` |
-| RN-X6 | Todos los montos de un viaje se expresan en su moneda, elegida al crearlo; no hay conversión (P16). | `CrearViaje` y formateo en la interfaz | — |
+| RN-X6 | Todos los montos de un viaje se expresan en su moneda, elegida al crearlo; no hay conversión (P16). | Objeto de valor `Dinero`, que lleva la moneda del viaje; `CrearViaje` y formateo en la interfaz | — |
 
 ### 6.11 Seguridad de la autenticación
 
@@ -639,7 +688,7 @@ El cronograma y el mapa no usan store propio porque son vistas de solo lectura; 
 
 - **El registro en `LOG.md` es obligatorio en todas las fases.** Cada fase agrega, como mínimo, una entrada al empezar y otra al terminar, y una entrada adicional por cada decisión que no esté en este plan, por cada desvío respecto de él y por cada excepción a SOLID justificada por un patrón de diseño. Cada entrada lleva fecha y hora en America/Argentina/Buenos_Aires, la acción, los archivos creados o modificados y la decisión con su motivo y las alternativas descartadas. Las entradas se agregan al final y no se reescriben.
 - Si la implementación difiere de lo planificado, se corrige la sección afectada de `PLAN.md` en la misma fase y se deja constancia en `LOG.md`.
-- Todo el código cumple los principios de la sección 2.2. Cada interfaz nueva llega con sus pruebas de contrato y cada caso de uso con pruebas unitarias sobre repositorios en memoria.
+- Todo el código cumple SOLID, GRASP y el criterio contra la sobreingeniería de la sección 2.2. Cada entidad y objeto de valor llega con pruebas unitarias de sus reglas, cada interfaz nueva con sus pruebas de contrato y cada caso de uso con pruebas unitarias sobre repositorios en memoria. Todo patrón que no figure en 2.2.3 se registra en `LOG.md` con la condición de 2.2.4 que lo justifica.
 - Cada fase termina con `npm run lint`, `npm test` y `npm run build` sin errores, además de su criterio propio.
 - Los identificadores de caso de uso (CU01…) y de regla (RN-…) se incluyen en los nombres de las pruebas, para poder rastrear qué prueba cubre cada fila de las secciones 1 y 6.
 
@@ -665,63 +714,63 @@ F6 y F7 dependen solo de F2, así que pueden hacerse en cualquier orden respecto
 #### F0 — Base del repositorio
 
 - **Objetivo:** dejar un monorepo que compila, prueba y levanta frontend, backend y base de datos.
-- **Entregables:** `package.json` de raíz con workspaces y scripts (`dev`, `build`, `lint`, `test`, `db:reset`, `e2e`); `apps/api` con Express, `GET /api/salud`, `contenedor.ts` vacío y manejador de errores con el formato de D19; `apps/web` con Vue, Vue Router, Pinia, el proxy de Vite y la inyección de clientes en `main.ts`; `packages/compartido` enlazado; configuración de TypeScript, ESLint, Prettier y Vitest con las carpetas de pruebas unitarias, de contrato y de integración; `docker-compose.yml` con una base para desarrollo y otra para pruebas; `.env.example`; `README.md` con los pasos para levantar el proyecto.
+- **Entregables:** `package.json` de raíz con workspaces y scripts (`dev`, `build`, `lint`, `test`, `db:reset`, `e2e`); `apps/api` con Express, `GET /api/salud`, `contenedor.ts` vacío, manejador de errores con el formato de D19 y la clase base de errores de dominio; `apps/web` con Vue, Vue Router, Pinia, el proxy de Vite y la inyección de clientes en `main.ts`; `packages/compartido` enlazado; configuración de TypeScript, ESLint, Prettier y Vitest con las carpetas de pruebas unitarias, de contrato y de integración; `docker-compose.yml` con una base para desarrollo y otra para pruebas; `.env.example`; `README.md` con los pasos para levantar el proyecto.
 - **Dependencias:** ninguna.
 - **Criterio de terminado:** en un clon limpio, `npm install`, `docker compose up -d` y `npm run dev` levantan todo; `curl localhost:3000/api/salud` devuelve `200 {"ok":true}`; la web responde en `localhost:5173`; `npm run lint`, `npm test` (una prueba de humo por aplicación) y `npm run build` terminan sin errores.
 
 #### F1 — Modelo de datos e infraestructura común
 
 - **Objetivo:** tener el esquema de la sección 4 aplicado en PostgreSQL, con datos de ejemplo y la infraestructura de transacciones que usan todos los módulos.
-- **Entregables:** `schema.prisma` con todas las tablas; migración inicial con SQL agregado para los `CHECK` y el índice parcial de Admin único; `seed.ts` con las seis categorías (alojamiento, transporte, comida, actividades, compras, otros), las monedas iniciales (ARS, USD, EUR, BRL, CLP, UYU) y un viaje de ejemplo con cuatro usuarios, propuestas en todos los estados, una actividad con alternativas, gastos en ambos modos, deudas y un pago; interfaz `UnidadDeTrabajo` con su implementación Prisma y una implementación en memoria, ambas con pruebas de contrato.
+- **Entregables:** `schema.prisma` con todas las tablas; migración inicial con SQL agregado para los `CHECK` y el índice parcial de Admin único; `seed.ts` con las seis categorías (alojamiento, transporte, comida, actividades, compras, otros), las monedas iniciales (ARS, USD, EUR, BRL, CLP, UYU) y un viaje de ejemplo con cuatro usuarios, propuestas en todos los estados, una actividad con alternativas, gastos en ambos modos, deudas y un pago; interfaz `UnidadDeTrabajo` con su implementación Prisma y una implementación en memoria, ambas con pruebas de contrato; objetos de valor `Dinero` (con `repartir()`), `RangoFechas` (con `contiene()` e `incluyeNoche()`) e `Intervalo` (con `seSuperponeCon()`); mecanismo de eventos de dominio.
 - **Dependencias:** F0.
-- **Criterio de terminado:** `npm run db:reset` aplica la migración y la semilla sin errores; pruebas de integración verifican que fallan un voto duplicado, una credencial duplicada, una deuda de un usuario consigo mismo, una deuda con monto negativo, un segundo Admin activo en el mismo viaje y un viaje con `fecha_inicio > fecha_fin`; las pruebas de contrato de `UnidadDeTrabajo` pasan para ambas implementaciones, incluida la reversión ante un error.
+- **Criterio de terminado:** `npm run db:reset` aplica la migración y la semilla sin errores; pruebas de integración verifican que fallan un voto duplicado, una credencial duplicada, una deuda de un usuario consigo mismo, una deuda con monto negativo, un segundo Admin activo en el mismo viaje y un viaje con `fecha_inicio > fecha_fin`; las pruebas de contrato de `UnidadDeTrabajo` pasan para ambas implementaciones, incluida la reversión ante un error; pruebas unitarias de los tres objetos de valor cubren reparto con resto, bordes de rango e intervalos contiguos.
 
 #### F2 — Autenticación y gestión del grupo
 
 - **Objetivo:** que un usuario se registre de forma segura, cree un viaje y administre sus participantes y la administración.
-- **Entregables:** módulo `auth` con `ProveedorAutenticacion` y `EmailContrasena`, sesiones en la base y las medidas de D6 (RN-S1 a RN-S6); middlewares `autenticado`, `verificarOrigen`, `participanteActivo`, `soloAdmin` y `validar`; módulo `viajes` con CU01 a CU04 y CU24 (RN-E1 a RN-E5, RN-E7, RN-E8, RN-T1 a RN-T4); `GET /api/monedas`; vistas de ingreso, registro, viajes, `ViajeLayout` y participantes con `DialogoTraspaso`; `useSesionStore` y `useViajeStore`; primera versión de `docs/api.md`.
+- **Entregables:** módulo `auth` con `ProveedorAutenticacion` y `EmailContrasena`, sesiones en la base y las medidas de D6 (RN-S1 a RN-S6); middlewares `autenticado`, `verificarOrigen`, `participanteActivo`, `soloAdmin` y `validar`; entidades `Viaje` y `Membresia` con sus reglas (creación del Admin, traspaso, baja, reactivación, tipo de acceso); módulo `viajes` con CU01 a CU04 y CU24 (RN-E1 a RN-E5, RN-E7, RN-E8, RN-T1 a RN-T4); `GET /api/monedas`; vistas de ingreso, registro, viajes, `ViajeLayout` y participantes con `DialogoTraspaso`; `useSesionStore` y `useViajeStore`; primera versión de `docs/api.md`.
 - **Dependencias:** F1.
-- **Criterio de terminado:** pruebas unitarias de cada caso de uso con repositorios en memoria; pruebas de contrato de `ProveedorAutenticacion` y de los repositorios del módulo; pruebas de integración de cada endpoint de 5.2 y 5.3 con sus errores; pruebas de seguridad que verifican el bloqueo tras 5 intentos fallidos, el mismo mensaje con email existente e inexistente, la sesión inválida tras cerrar sesión, los atributos de la cookie y el rechazo de una petición con otro `Origin`; pruebas de baja con y sin deuda (insertando filas de `deuda` directamente) que verifican historial conservado, votos pendientes retirados y 403 en rutas del viaje; pruebas del traspaso que verifican que el viaje nunca queda sin Admin ni con dos, incluso con dos pedidos simultáneos; una prueba de componente verifica que las acciones de Admin no se muestran a un viajero común.
+- **Criterio de terminado:** pruebas unitarias de `Viaje` y `Membresia` y de cada caso de uso con repositorios en memoria; pruebas de contrato de `ProveedorAutenticacion` y de los repositorios del módulo; pruebas de integración de cada endpoint de 5.2 y 5.3 con sus errores; pruebas de seguridad que verifican el bloqueo tras 5 intentos fallidos, el mismo mensaje con email existente e inexistente, la sesión inválida tras cerrar sesión, los atributos de la cookie y el rechazo de una petición con otro `Origin`; pruebas de baja con y sin deuda (insertando filas de `deuda` directamente) que verifican historial conservado, votos pendientes retirados y 403 en rutas del viaje; pruebas del traspaso que verifican que el viaje nunca queda sin Admin ni con dos, incluso con dos pedidos simultáneos; una prueba de componente verifica que las acciones de Admin no se muestran a un viajero común.
 
 #### F3 — Propuestas y alojamientos
 
 - **Objetivo:** proponer, votar, desvotar y resolver alojamientos, dejando listo el mecanismo común de propuestas.
-- **Entregables:** módulo `propuestas` con `Votar`, `Desvotar` y `ResolverPropuesta` (RN-R1, RN-R2, RN-X3); módulo `alojamientos` con `ProponerAlojamiento` (CU05, RN-X4); interfaz `BuscadorUbicaciones` con la implementación Nominatim; componentes `TarjetaPropuesta` y `CampoUbicacion`; vistas de alojamientos; `usePropuestasStore`.
+- **Entregables:** entidad `Propuesta` con su tabla de transiciones y las reglas de voto; módulo `propuestas` con `Votar`, `Desvotar` y `ResolverPropuesta` (RN-R1, RN-R2, RN-X3); módulo `alojamientos` con `ProponerAlojamiento` (CU05, RN-X4); interfaz `BuscadorUbicaciones` con la implementación Nominatim; componentes `TarjetaPropuesta` y `CampoUbicacion`; vistas de alojamientos; `usePropuestasStore`.
 - **Dependencias:** F2.
 - **Criterio de terminado:** pruebas de CU05 a CU09 y CU25 que incluyen la matriz completa de transiciones (cada estado contra cada acción), el reemplazo de voto, el desvoto y la prohibición de votar o desvotar propuestas resueltas; alojamiento fuera de las fechas del viaje rechazado; pruebas de contrato de `BuscadorUbicaciones` con una implementación falsa; prueba de componente de `TarjetaPropuesta` para los dos roles.
 
 #### F4 — Actividades y alternativas
 
 - **Objetivo:** proponer actividades y alternativas respetando la superposición horaria, y resolverlas con el mecanismo de F3.
-- **Entregables:** módulo `actividades` con `ProponerActividad`, `ProponerAlternativa` y la consulta de CU18 (RN-A1 a RN-A3, RN-B1 a RN-B3); interfaces `PoliticaSuperposicion` y `PoliticaResolucionOpciones` con sus implementaciones del MVP, conectadas a `ResolverPropuesta` desde `contenedor.ts` (RN-R3, RN-R4); vistas de actividades con `AvisoSuperposicion` y el formulario en modo alternativa.
+- **Entregables:** entidad `Actividad` con `proponer()`, `crearAlternativa()` y su `Intervalo`; módulo `actividades` con `ProponerActividad`, `ProponerAlternativa` y la consulta de CU18 (RN-A1 a RN-A3, RN-B1 a RN-B3); interfaces `PoliticaSuperposicion` y `PoliticaResolucionOpciones` con sus implementaciones del MVP, conectadas a `ResolverPropuesta` desde `contenedor.ts` (RN-R3, RN-R4); vistas de actividades con `AvisoSuperposicion` y el formulario en modo alternativa.
 - **Dependencias:** F3.
 - **Criterio de terminado:** pruebas de la superposición con intervalos que se tocan en el borde (no se superponen), que se contienen, que se cruzan parcialmente y que pasan la medianoche, y que verifican que solo cuentan las actividades confirmadas; alternativa de una alternativa vinculada a la original; confirmar una opción deniega las demás pendientes del grupo y denegar la original no afecta a las alternativas; confirmar una actividad que choca con otra confirmada devuelve 409; pruebas de contrato de ambas políticas; CU26 cubierto con el mismo endpoint de desvoto.
 
 #### F5 — Itinerario: cronograma y mapa
 
 - **Objetivo:** mostrar el cronograma y el mapa del día con marcadores y recorrido.
-- **Entregables:** módulo `itinerario` con `ConsultarCronograma` (RN-C1 a RN-C3) y `ConsultarMapa` (RN-M1 a RN-M4, RN-M6); interfaz `ProveedorRecorrido` con `RecorridoEnLineaRecta`; vistas `CronogramaVista` y `MapaVista`; componente `MapaActividades`; composable `useMapaDelDia`.
+- **Entregables:** método `Viaje.diaInicialDelMapa()`; módulo `itinerario` con `ConsultarCronograma` (RN-C1 a RN-C3) y `ConsultarMapa` (RN-M1 a RN-M4, RN-M6); interfaz `ProveedorRecorrido` con `RecorridoEnLineaRecta`; vistas `CronogramaVista` y `MapaVista`; componente `MapaActividades`; composable `useMapaDelDia`.
 - **Dependencias:** F4.
-- **Criterio de terminado:** pruebas unitarias de `resolverDiaInicial` para hoy dentro del rango con y sin actividades, hoy antes y después del rango con actividades confirmadas y viaje sin ninguna actividad confirmada; pruebas del cronograma que verifican días vacíos, el orden por horario y el alojamiento de cada noche sin contar el día de salida; pruebas de integración de `GET …/mapa` para el aviso de día vacío y el cambio de día; prueba de contrato de `ProveedorRecorrido`; una prueba de componente verifica que `MapaActividades` crea un marcador por actividad y una polilínea con las coordenadas en orden; al abrir `/mapa?actividad=:id`, el mapa queda en el día de esa actividad con su panel abierto.
+- **Criterio de terminado:** pruebas unitarias de `Viaje.diaInicialDelMapa()` para hoy dentro del rango con y sin actividades, hoy antes y después del rango con actividades confirmadas y viaje sin ninguna actividad confirmada; pruebas del cronograma que verifican días vacíos, el orden por horario y el alojamiento de cada noche sin contar el día de salida; pruebas de integración de `GET …/mapa` para el aviso de día vacío y el cambio de día; prueba de contrato de `ProveedorRecorrido`; una prueba de componente verifica que `MapaActividades` crea un marcador por actividad y una polilínea con las coordenadas en orden; al abrir `/mapa?actividad=:id`, el mapa queda en el día de esa actividad con su panel abierto.
 
 #### F6 — Chat en tiempo real
 
 - **Objetivo:** que los participantes de un viaje conversen en tiempo real, vean el historial y reciban los avisos de cambios de membresía y de Admin.
-- **Entregables:** módulo `chat` con `EnviarMensaje`, `ConsultarMensajes` y el gateway Socket.IO con verificación de `Origin` y cookie, salas por viaje y los eventos de 5.8; emisión de `viaje:membresia-finalizada` y `viaje:admin-cambiado` desde los casos de uso de F2 a través de una interfaz `NotificadorViaje`; `useChatStore` y `ChatVista`.
+- **Entregables:** módulo `chat` con `EnviarMensaje`, `ConsultarMensajes` y el gateway Socket.IO con verificación de `Origin` y cookie, salas por viaje y los eventos de 5.8; `NotificadorViaje`, que se suscribe a los eventos de dominio de baja y de traspaso publicados en F2 y los entrega como `viaje:membresia-finalizada` y `viaje:admin-cambiado`; `useChatStore` y `ChatVista`.
 - **Dependencias:** F2.
 - **Criterio de terminado:** pruebas de integración con `socket.io-client` que verifican que dos participantes del mismo viaje reciben el mismo mensaje, que un usuario de otro viaje no puede unirse, que una conexión sin cookie o con otro `Origin` se rechaza, que un participante eliminado recibe `viaje:membresia-finalizada` y deja de recibir mensajes, que el traspaso emite `viaje:admin-cambiado` y que el historial pagina hacia atrás sin repetir mensajes; prueba de contrato de `NotificadorViaje`.
 
 #### F7 — Gastos y deudas
 
 - **Objetivo:** anotar gastos con su división y consultar lo que cada viajero debe y le deben.
-- **Entregables:** módulo `gastos` con `AnotarGasto` y `ConsultarDeudas` (RN-G1 a RN-G6); interfaz `EstrategiaDivision` con `DivisionEnPartesIguales` y `DivisionArbitraria`; repositorio de deudas con bloqueo de filas y compensación; middleware `accesoSaldos` (RN-E6); `GET /api/categorias-gasto`; vistas de gastos, formulario con `SelectorPagador` y `SelectorDeudores`, y saldos sin pagar; `useGastosStore`.
+- **Entregables:** entidades `Gasto` (crea sus partes) y `Deuda` (con `sumar()` y `compensarCon()`); módulo `gastos` con `AnotarGasto` y `ConsultarDeudas` (RN-G1 a RN-G6); interfaz `EstrategiaDivision` con `DivisionEnPartesIguales` y `DivisionArbitraria`; repositorio de deudas con bloqueo de filas y compensación; middleware `accesoSaldos` (RN-E6); `GET /api/categorias-gasto`; vistas de gastos, formulario con `SelectorPagador` y `SelectorDeudores`, y saldos sin pagar; `useGastosStore`.
 - **Dependencias:** F2.
 - **Criterio de terminado:** pruebas de RN-G1 a RN-G6, que incluyen reparto con resto (1000 unidades entre 3 da 334, 333 y 333), división arbitraria cuya suma no coincide, pagador fuera de los elegidos, parte del pagador sin deuda y compensación (si A le debe 10.000 a B y después A paga un gasto en el que la parte de B es 4.000, queda una sola deuda de A con B por 6.000); dos gastos simultáneos sobre el mismo par dejan el saldo correcto; un exparticipante con saldos accede a `GET …/deudas` y recibe 403 en el resto; pruebas de contrato de `EstrategiaDivision`; la prueba de invariante del saldo neto por par pasa sobre la semilla y tras cada prueba; prueba de componente de `SelectorDeudores` para el estado inicial vacío y el botón que alterna.
 
 #### F8 — Pagos
 
 - **Objetivo:** registrar pagos parciales o totales de una deuda.
-- **Entregables:** `RegistrarPago` y `POST …/pagos` con RN-P1 a RN-P6; historial de pagos en `ConsultarDeudas`; `PagoVista` con `AvisoExcedeDeuda`.
+- **Entregables:** método `Deuda.registrarPago()`, que crea el `Pago` y rechaza el exceso; `RegistrarPago` y `POST …/pagos` con RN-P1 a RN-P6; historial de pagos en `ConsultarDeudas`; `PagoVista` con `AvisoExcedeDeuda`.
 - **Dependencias:** F7.
 - **Criterio de terminado:** pruebas de pago parcial, pago exacto (el saldo queda en cero y la deuda desaparece de ambas listas), pago mayor que la deuda (422 sin cambios en la base), pago registrado por alguien que no es el deudor (rechazado), pago de un exparticipante con saldo pendiente (aceptado) y dos pagos simultáneos que juntos superan el saldo (uno se registra y el otro recibe 422); el pago aparece en el historial de ambos con quién lo registró y cuándo; la prueba de invariante sigue pasando.
 
@@ -793,7 +842,7 @@ Todas las preguntas de la primera versión del plan tienen respuesta del usuario
 | P21 | Cronograma | Todos los días del viaje, solo actividades confirmadas con enlace al mapa, alojamiento de cada noche y desplazamiento hasta hoy. |
 | P22 | Versiones del story mapping | "Página-13" es la versión final; preferencias de habitación al Release 2; exportar a Excel al Release 7; llamada grupal descartada; los diagramas se actualizan en una tarea aparte. |
 
-Además de las preguntas, el usuario estableció que los principios SOLID se cumplen estrictamente, con la excepción de los patrones de diseño que los relajen, documentada en `LOG.md` (sección 2.2).
+Además de las preguntas, el usuario estableció que los principios SOLID se cumplen estrictamente, con la excepción de los patrones de diseño que los relajen, documentada en `LOG.md`, y que el código cumple también GRASP y usa patrones de diseño donde hacen falta, evitando la sobreingeniería (sección 2.2).
 
 ### 10.2 Diferencias entre los diagramas y el plan
 

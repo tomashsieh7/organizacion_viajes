@@ -182,3 +182,15 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Acción:** con autorización del usuario, se hace el primer commit del repositorio con `PLAN.md`, `LOG.md` y `docs/diagramas.drawio`, y se sube a la rama `claude/elegant-maxwell-60322c`.
 - **Archivos:** ninguno nuevo; se versionan los tres existentes.
 - **Decisión:** un único commit para la etapa de planificación, porque todavía no hay código y el plan con sus decisiones forma una sola unidad revisable.
+
+## 2026-09-23 23:39 — GRASP, patrones de diseño y criterio contra la sobreingeniería
+
+- **Acción:** el usuario pidió que la arquitectura, además de SOLID, cumpla GRASP y use patrones de diseño cuando sea necesario, evitando la sobreingeniería. Se propuso cómo aplicarlo, el usuario lo aprobó y se actualizó `PLAN.md`.
+- **Archivos:** se modifica `PLAN.md` (sección 2.2 dividida en SOLID, GRASP, patrones y criterio; sección 2.3; nueva decisión D22; columna "Dónde" de la sección 6; reglas y entregables de la sección 8; nota de la sección 10.1).
+- **Decisión:** aplicar GRASP lleva las reglas a las entidades que tienen los datos (experto en información). `Propuesta` maneja sus transiciones y votos; `Deuda` suma, se compensa y registra pagos; `Viaje` controla fechas, día inicial del mapa, traspaso y salida; `Membresia` maneja bajas, reactivación y tipo de acceso; los objetos de valor `Dinero`, `RangoFechas` e `Intervalo` encapsulan reparto, rangos y superposición. Los casos de uso quedan como controladores que coordinan. Los patrones adoptados son Strategy, Repository, Unit of Work, Adapter, Observer como eventos de dominio (`NotificadorViaje` se suscribe en lugar de ser llamado por los casos de uso), Value Object, Composition Root y Chain of Responsibility (propia de Express). Criterio: una abstracción se agrega solo si aísla una dependencia externa, cubre una variación prevista o es necesaria para probar sin infraestructura. Abierto/cerrado se aplica en esos puntos, que coinciden con las variaciones protegidas de GRASP.
+- **Descartado:** modelo anémico con toda la lógica en servicios, porque dispersa reglas entre casos de uso; patrón State para los estados de propuesta, porque con cuatro estados basta una tabla de transiciones; repositorio genérico, Abstract Factory, CQRS, reconstrucción del estado a partir de eventos, contenedor de inyección y microservicios, por sobreingeniería.
+
+## 2026-09-23 23:39 — Commit y push de la actualización
+
+- **Acción:** con autorización del usuario, se hace commit de `PLAN.md` y `LOG.md` y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** ninguno nuevo.
