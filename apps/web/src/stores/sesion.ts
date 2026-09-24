@@ -12,11 +12,19 @@ export const useSesionStore = defineStore('sesion', () => {
   const cargada = ref(false);
   const autenticado = computed(() => usuario.value !== null);
 
-  /** Consulta la sesión una sola vez; las guardas de ruta la llaman antes de decidir. */
+  /**
+   * Consulta la sesión una sola vez; las guardas de ruta la llaman antes de decidir. Si el servidor
+   * no responde, se trata como sin sesión y se vuelve a consultar en la próxima navegación, así la
+   * aplicación no queda en blanco por una falla momentánea.
+   */
   async function cargar(): Promise<void> {
     if (cargada.value) return;
-    usuario.value = await cliente!.yo();
-    cargada.value = true;
+    try {
+      usuario.value = await cliente!.yo();
+      cargada.value = true;
+    } catch {
+      usuario.value = null;
+    }
   }
 
   async function ingresar(datos: DatosInicioSesion) {

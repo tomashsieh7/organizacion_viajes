@@ -10,8 +10,11 @@ const store = useViajeStore();
 const route = useRoute();
 const error = ref('');
 
-// Las demás secciones del menú se suman en las fases siguientes (F3 a F8).
-const secciones = [{ nombre: 'Participantes', ruta: 'participantes' }];
+// Las demás secciones del menú se suman en las fases siguientes (F4 a F8).
+const secciones = [
+  { nombre: 'Participantes', ruta: 'participantes' },
+  { nombre: 'Alojamientos', ruta: 'alojamientos' },
+];
 
 watch(
   () => route.params['viajeId'],

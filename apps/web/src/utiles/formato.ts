@@ -19,3 +19,31 @@ export function formatearFecha(fecha: string): string {
 export function nombreVisible(p: { nombre: string; apodo: string | null }): string {
   return p.apodo ? `${p.nombre} (${p.apodo})` : p.nombre;
 }
+
+/**
+ * Convierte lo que escribe la persona ("48000", "48000,50" o "48.000,50") a la unidad mínima de la
+ * moneda. Devuelve `null` si el texto no es un monto válido.
+ */
+export function aUnidadMinima(texto: string, decimales: number): number | null {
+  const limpio = texto.trim().replace(/\s/g, '');
+  if (!/^\d{1,3}(\.\d{3})*(,\d+)?$|^\d+([.,]\d+)?$/.test(limpio)) return null;
+  // En castellano el punto separa miles y la coma los decimales; sin coma, "48.000" se lee como miles
+  // y "48.5" como decimal.
+  const conMiles = /^\d{1,3}(\.\d{3})+$/.test(limpio);
+  const normalizado = limpio.includes(',')
+    ? limpio.replace(/\./g, '').replace(',', '.')
+    : conMiles
+      ? limpio.replace(/\./g, '')
+      : limpio;
+  const [entero = '0', fraccion = ''] = normalizado.split('.');
+  if (fraccion.length > decimales) return null;
+  const valor = Number(entero) * 10 ** decimales + Number(fraccion.padEnd(decimales, '0') || '0');
+  return Number.isSafeInteger(valor) ? valor : null;
+}
+
+export const NOMBRES_ESTADO: Record<string, string> = {
+  PENDIENTE: 'Pendiente',
+  CONFIRMADA: 'Confirmada',
+  DENEGADA: 'Denegada',
+  CANCELADA: 'Cancelada',
+};

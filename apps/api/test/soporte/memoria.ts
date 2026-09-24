@@ -1,9 +1,29 @@
 /**
- * Implementaciones en memoria de los puertos de F2, para las pruebas unitarias. Todas trabajan
+ * Implementaciones en memoria de los puertos, para las pruebas unitarias. Todas trabajan
  * sobre una misma `BaseEnMemoria`, así se comportan como tablas de una misma base. Las pruebas de
  * contrato verifican que se comporten igual que las implementaciones con Prisma.
  */
-import type { DetalleViaje, Moneda, Participante, ResumenViaje } from '@viajes/compartido';
+import type {
+  AlojamientoVista,
+  DetalleViaje,
+  EstadoPropuesta,
+  Moneda,
+  Participante,
+  PropuestaVista,
+  ResumenViaje,
+} from '@viajes/compartido';
+import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
+import type {
+  ConsultaAlojamientos,
+  DetalleAlojamiento,
+  RepositorioAlojamientos,
+} from '../../src/modulos/alojamientos/dominio/puertos.js';
+import { Propuesta, type DatosPropuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
+import type {
+  ConsultaFechasDeViaje,
+  ConsultaPropuestas,
+  RepositorioPropuestas,
+} from '../../src/modulos/propuestas/dominio/puertos.js';
 import { ErrorDeDominio } from '../../src/compartido/errores.js';
 import { normalizarEmail } from '../../src/modulos/auth/dominio/emailContrasena.js';
 import type {
@@ -38,7 +58,11 @@ export interface BaseEnMemoria {
   monedas: Moneda[];
   viajes: DatosViaje[];
   deudas: { viajeId: string; deudorId: string; acreedorId: string; monto: number }[];
-  votos: { propuestaId: string; usuarioId: string; viajeId: string; pendiente: boolean }[];
+  /** Propuestas con sus votos y, según el tipo, los datos propios del alojamiento. */
+  propuestas: {
+    datos: DatosPropuesta;
+    alojamiento?: { nombre: string; fechaDesde: string; fechaHasta: string };
+  }[];
 }
 
 export function baseVacia(): BaseEnMemoria {
@@ -49,7 +73,7 @@ export function baseVacia(): BaseEnMemoria {
     monedas: [{ codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 }],
     viajes: [],
     deudas: [],
-    votos: [],
+    propuestas: [],
   };
 }
 
@@ -145,9 +169,11 @@ export class RetiroDeVotosEnMemoria implements RetiroDeVotos {
   constructor(private readonly base: BaseEnMemoria) {}
 
   async retirarVotosPendientes(viajeId: string, usuarioId: string): Promise<void> {
-    this.base.votos = this.base.votos.filter(
-      (v) => !(v.viajeId === viajeId && v.usuarioId === usuarioId && v.pendiente),
-    );
+    for (const { datos } of this.base.propuestas) {
+      if (datos.viajeId === viajeId && datos.estado === 'PENDIENTE') {
+        datos.votos = datos.votos.filter((v) => v.usuarioId !== usuarioId);
+      }
+    }
   }
 }
 
@@ -253,5 +279,159 @@ export function reposViajesEnMemoria(base: BaseEnMemoria): ReposViajes {
     viajes: new RepositorioViajesEnMemoria(base),
     deudas: new ConsultaDeudasEnMemoria(base),
     votos: new RetiroDeVotosEnMemoria(base),
+  };
+}
+
+export class RepositorioPropuestasEnMemoria implements RepositorioPropuestas {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async obtenerParaModificar(viajeId: string, propuestaId: string): Promise<Propuesta | null> {
+    const fila = this.base.propuestas.find(
+      (p) => p.datos.id === propuestaId && p.datos.viajeId === viajeId,
+    );
+    return fila ? Propuesta.reconstruir(structuredClone(fila.datos)) : null;
+  }
+
+  async guardar(propuesta: Propuesta): Promise<void> {
+    const datos = propuesta.aDatos();
+    const fila = this.base.propuestas.find((p) => p.datos.id === datos.id);
+    if (fila) fila.datos = datos;
+    else this.base.propuestas.push({ datos });
+  }
+}
+
+export function aVistaEnMemoria(
+  base: BaseEnMemoria,
+  d: DatosPropuesta,
+  usuarioId: string,
+): PropuestaVista {
+  const autor = base.usuarios.find((u) => u.id === d.autorId);
+  return {
+    id: d.id,
+    tipo: d.tipo,
+    estado: d.estado,
+    descripcion: d.descripcion,
+    precio: d.precio,
+    ubicacion: d.ubicacion,
+    latitud: d.latitud,
+    longitud: d.longitud,
+    autor: { usuarioId: d.autorId, nombre: autor?.nombre ?? '' },
+    votosAFavor: d.votos.filter((v) => v.valor === 'A_FAVOR').length,
+    votosEnContra: d.votos.filter((v) => v.valor === 'EN_CONTRA').length,
+    miVoto: d.votos.find((v) => v.usuarioId === usuarioId)?.valor ?? null,
+    creadaEn: d.creadaEn.toISOString(),
+    resueltaEn: d.resueltaEn?.toISOString() ?? null,
+  };
+}
+
+export class ConsultaPropuestasEnMemoria implements ConsultaPropuestas {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async obtenerVista(
+    viajeId: string,
+    propuestaId: string,
+    usuarioId: string,
+  ): Promise<PropuestaVista | null> {
+    const fila = this.base.propuestas.find(
+      (p) => p.datos.id === propuestaId && p.datos.viajeId === viajeId,
+    );
+    return fila ? aVistaEnMemoria(this.base, fila.datos, usuarioId) : null;
+  }
+}
+
+export class ConsultaFechasDeViajeEnMemoria implements ConsultaFechasDeViaje {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async rango(viajeId: string): Promise<RangoFechas | null> {
+    const v = this.base.viajes.find((x) => x.id === viajeId);
+    return v ? RangoFechas.crear(v.fechaInicio, v.fechaFin) : null;
+  }
+}
+
+export class RepositorioAlojamientosEnMemoria implements RepositorioAlojamientos {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async crear(propuesta: Propuesta, detalle: DetalleAlojamiento): Promise<void> {
+    this.base.propuestas.push({
+      datos: propuesta.aDatos(),
+      alojamiento: {
+        nombre: detalle.nombre,
+        fechaDesde: detalle.estadia.desde,
+        fechaHasta: detalle.estadia.hasta,
+      },
+    });
+  }
+}
+
+export class ConsultaAlojamientosEnMemoria implements ConsultaAlojamientos {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async listar(
+    viajeId: string,
+    usuarioId: string,
+    estado?: EstadoPropuesta,
+  ): Promise<AlojamientoVista[]> {
+    return this.base.propuestas
+      .filter(
+        (p) =>
+          p.datos.viajeId === viajeId && p.alojamiento && (!estado || p.datos.estado === estado),
+      )
+      .sort(
+        (a, b) =>
+          a.alojamiento!.fechaDesde.localeCompare(b.alojamiento!.fechaDesde) ||
+          a.datos.creadaEn.getTime() - b.datos.creadaEn.getTime(),
+      )
+      .map((p) => this.vista(p, usuarioId));
+  }
+
+  async obtener(
+    viajeId: string,
+    propuestaId: string,
+    usuarioId: string,
+  ): Promise<AlojamientoVista | null> {
+    const p = this.base.propuestas.find(
+      (x) => x.datos.id === propuestaId && x.datos.viajeId === viajeId && x.alojamiento,
+    );
+    return p ? this.vista(p, usuarioId) : null;
+  }
+
+  private vista(p: BaseEnMemoria['propuestas'][number], usuarioId: string): AlojamientoVista {
+    return {
+      ...aVistaEnMemoria(this.base, p.datos, usuarioId),
+      tipo: 'ALOJAMIENTO',
+      alojamiento: { ...p.alojamiento! },
+    };
+  }
+}
+
+/** Propuesta mínima para cargar en la base en memoria desde las pruebas. */
+export function propuestaDePrueba(datos: {
+  viajeId: string;
+  autorId: string;
+  estado?: EstadoPropuesta;
+  votantes?: string[];
+  id?: string;
+}): { datos: DatosPropuesta } {
+  return {
+    datos: {
+      id: datos.id ?? crypto.randomUUID(),
+      viajeId: datos.viajeId,
+      autorId: datos.autorId,
+      tipo: 'ALOJAMIENTO',
+      descripcion: 'x',
+      precio: null,
+      ubicacion: 'y',
+      latitud: null,
+      longitud: null,
+      estado: datos.estado ?? 'PENDIENTE',
+      resueltaPorId: null,
+      resueltaEn: null,
+      creadaEn: new Date(),
+      votos: (datos.votantes ?? []).map((usuarioId) => ({
+        usuarioId,
+        valor: 'A_FAVOR' as const,
+        emitidoEn: new Date(),
+      })),
+    },
   };
 }

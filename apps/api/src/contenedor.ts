@@ -32,6 +32,25 @@ import {
 } from './modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
 import type { ConsultaViajes, ReposViajes } from './modulos/viajes/dominio/puertos.js';
 import {
+  ConsultarAlojamientos,
+  ProponerAlojamiento,
+} from './modulos/alojamientos/casos-de-uso/casosDeUsoAlojamientos.js';
+import type { ReposAlojamientos } from './modulos/alojamientos/dominio/puertos.js';
+import {
+  ConsultaAlojamientosPrisma,
+  RepositorioAlojamientosPrisma,
+} from './modulos/alojamientos/infraestructura/prisma.js';
+import {
+  ResolverPropuesta,
+  Votar,
+} from './modulos/propuestas/casos-de-uso/casosDeUsoPropuestas.js';
+import type { ReposPropuestas } from './modulos/propuestas/dominio/puertos.js';
+import {
+  ConsultaFechasDeViajePrisma,
+  ConsultaPropuestasPrisma,
+  RepositorioPropuestasPrisma,
+} from './modulos/propuestas/infraestructura/prisma.js';
+import {
   ConsultaDeudasPrisma,
   ConsultaViajesPrisma,
   RepositorioViajesPrisma,
@@ -61,6 +80,14 @@ export interface Contenedor {
     transferirAdministracion: TransferirAdministracion;
     consultar: ConsultarViajes;
     consultas: ConsultaViajes;
+  };
+  propuestas: {
+    votar: Votar<ReposPropuestas>;
+    resolver: ResolverPropuesta<ReposPropuestas>;
+  };
+  alojamientos: {
+    proponer: ProponerAlojamiento;
+    consultar: ConsultarAlojamientos;
   };
 }
 
@@ -92,6 +119,17 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   const depsViajes: DependenciasViajes = { unidad: unidadViajes, eventos, reloj };
   const consultasViajes = new ConsultaViajesPrisma(prisma);
 
+  // Propuestas (comunes a alojamientos y actividades)
+  const unidadPropuestas = new UnidadDeTrabajoPrisma<ReposPropuestas>(prisma, (tx) => ({
+    propuestas: new RepositorioPropuestasPrisma(tx),
+  }));
+  const consultasPropuestas = new ConsultaPropuestasPrisma(prisma);
+
+  // Alojamientos
+  const unidadAlojamientos = new UnidadDeTrabajoPrisma<ReposAlojamientos>(prisma, (tx) => ({
+    alojamientos: new RepositorioAlojamientosPrisma(tx),
+  }));
+
   return {
     config,
     prisma,
@@ -111,6 +149,18 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       transferirAdministracion: new TransferirAdministracion(depsViajes),
       consultar: new ConsultarViajes(consultasViajes, new ConsultaDeudasPrisma(prisma)),
       consultas: consultasViajes,
+    },
+    propuestas: {
+      votar: new Votar(unidadPropuestas, consultasPropuestas, reloj),
+      resolver: new ResolverPropuesta(unidadPropuestas, consultasPropuestas, reloj),
+    },
+    alojamientos: {
+      proponer: new ProponerAlojamiento(
+        unidadAlojamientos,
+        new ConsultaFechasDeViajePrisma(prisma),
+        reloj,
+      ),
+      consultar: new ConsultarAlojamientos(new ConsultaAlojamientosPrisma(prisma)),
     },
   };
 }

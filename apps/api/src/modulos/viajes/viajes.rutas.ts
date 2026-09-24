@@ -25,10 +25,9 @@ export interface DependenciasRutasViajes {
   transferirAdministracion: TransferirAdministracion;
   consultar: ConsultarViajes;
   autenticado: RequestHandler;
-  participanteActivo: RequestHandler;
 }
 
-/** Controlador y rutas de grupo y participantes (sección 5.3 de PLAN.md). */
+/** Rutas generales de viajes: monedas, crear y listar (sección 5.3 de PLAN.md). */
 export function rutasViajes(deps: DependenciasRutasViajes): Router {
   const router = Router();
   const usuario = (req: { usuarioId?: string }) => req.usuarioId ?? '';
@@ -46,8 +45,13 @@ export function rutasViajes(deps: DependenciasRutasViajes): Router {
     res.json({ viajes: await deps.consultar.listarMisViajes(usuario(req)) });
   });
 
+  return router;
+}
+
+/** Rutas dentro de un viaje; se montan en el router de viaje, que ya exige participar. */
+export function rutasDelViaje(deps: Omit<DependenciasRutasViajes, 'autenticado'>): Router {
   const viaje = Router({ mergeParams: true });
-  viaje.use(deps.autenticado, deps.participanteActivo);
+  const usuario = (req: { usuarioId?: string }) => req.usuarioId ?? '';
   const viajeId = (req: { params: Record<string, string | string[] | undefined> }) =>
     String(req.params['viajeId']);
 
@@ -96,6 +100,5 @@ export function rutasViajes(deps: DependenciasRutasViajes): Router {
     res.status(204).end();
   });
 
-  router.use('/viajes/:viajeId', viaje);
-  return router;
+  return viaje;
 }

@@ -59,3 +59,46 @@ export type DatosSalirDelViaje = z.input<typeof esquemaSalirDelViaje>;
 
 export const esquemaTraspaso = z.object({ nuevoAdminId: z.uuid('Elegí a un participante') });
 export type DatosTraspaso = z.input<typeof esquemaTraspaso>;
+
+export const ESTADOS_PROPUESTA = ['PENDIENTE', 'CONFIRMADA', 'DENEGADA', 'CANCELADA'] as const;
+export const VALORES_VOTO = ['A_FAVOR', 'EN_CONTRA'] as const;
+
+export const esquemaVoto = z.object({ valor: z.enum(VALORES_VOTO, 'Elegí a favor o en contra') });
+export type DatosVoto = z.input<typeof esquemaVoto>;
+
+export const esquemaFiltroEstado = z.object({ estado: z.enum(ESTADOS_PROPUESTA).optional() });
+
+const coordenadas = {
+  latitud: z.number().min(-90).max(90).optional(),
+  longitud: z.number().min(-180).max(180).optional(),
+};
+
+/** Datos comunes a toda propuesta (P8): descripción, ubicación, coordenadas y precio opcional. */
+const baseDePropuesta = {
+  descripcion: z.string().trim().min(1, 'Ingresá una descripción').max(1000),
+  ubicacion: z.string().trim().min(1, 'Ingresá la ubicación').max(200),
+  ...coordenadas,
+  precio: z
+    .number()
+    .int('El precio va en centavos')
+    .min(0, 'El precio no puede ser negativo')
+    .max(Number.MAX_SAFE_INTEGER)
+    .optional(),
+};
+
+const coordenadasCompletas = (v: { latitud?: number | undefined; longitud?: number | undefined }) =>
+  (v.latitud === undefined) === (v.longitud === undefined);
+
+export const esquemaAlojamientoNuevo = z
+  .object({
+    nombre: z.string().trim().min(1, 'Ingresá el nombre del alojamiento').max(120),
+    ...baseDePropuesta,
+    fechaDesde: esquemaFecha,
+    fechaHasta: esquemaFecha,
+  })
+  .refine(coordenadasCompletas, { message: 'Faltan coordenadas', path: ['latitud'] })
+  .refine((v) => v.fechaDesde <= v.fechaHasta, {
+    message: 'La fecha de salida no puede ser anterior a la de entrada',
+    path: ['fechaHasta'],
+  });
+export type DatosAlojamientoNuevo = z.input<typeof esquemaAlojamientoNuevo>;

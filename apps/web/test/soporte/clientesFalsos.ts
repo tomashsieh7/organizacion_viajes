@@ -57,13 +57,22 @@ export function clienteViajesFalso(parcial: Partial<ClienteViajes> = {}): Client
 }
 
 /** Opciones de montaje con Pinia y los clientes falsos inyectados. */
-export function montaje(auth: ClienteAuth, viajes: ClienteViajes) {
+export function montaje(
+  auth: ClienteAuth,
+  viajes: ClienteViajes,
+  otros: Record<symbol, unknown> = {},
+) {
   const pinia = createPinia();
   setActivePinia(pinia);
+  const provide: Record<symbol, unknown> = {
+    [CLIENTE_AUTH as symbol]: auth,
+    [CLIENTE_VIAJES as symbol]: viajes,
+    ...otros,
+  };
   return {
     global: {
       plugins: [pinia],
-      provide: { [CLIENTE_AUTH as symbol]: auth, [CLIENTE_VIAJES as symbol]: viajes },
+      provide,
       stubs: { RouterLink: { template: '<a><slot /></a>' } },
     },
   };

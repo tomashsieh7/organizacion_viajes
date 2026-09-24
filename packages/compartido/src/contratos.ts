@@ -59,3 +59,36 @@ export interface Participante {
 export interface RespuestaBaja {
   bajaConDeuda: boolean;
 }
+
+export type EstadoPropuesta = 'PENDIENTE' | 'CONFIRMADA' | 'DENEGADA' | 'CANCELADA';
+export type ValorVoto = 'A_FAVOR' | 'EN_CONTRA';
+export type AccionSobrePropuesta = 'confirmar' | 'denegar' | 'cancelar';
+
+/** Datos comunes con los que se muestra una propuesta, con el conteo de votos y el voto propio. */
+export interface PropuestaVista {
+  id: string;
+  tipo: 'ACTIVIDAD' | 'ALOJAMIENTO';
+  estado: EstadoPropuesta;
+  descripcion: string;
+  precio: number | null;
+  ubicacion: string;
+  latitud: number | null;
+  longitud: number | null;
+  autor: { usuarioId: string; nombre: string };
+  votosAFavor: number;
+  votosEnContra: number;
+  miVoto: ValorVoto | null;
+  creadaEn: string;
+  resueltaEn: string | null;
+}
+
+export interface AlojamientoVista extends PropuestaVista {
+  tipo: 'ALOJAMIENTO';
+  alojamiento: { nombre: string; fechaDesde: string; fechaHasta: string };
+}
+
+export interface RespuestaResolucion {
+  propuesta: PropuestaVista;
+  /** Otras propuestas que cambiaron de estado como consecuencia (por ejemplo, alternativas denegadas en F4). */
+  afectadas: string[];
+}

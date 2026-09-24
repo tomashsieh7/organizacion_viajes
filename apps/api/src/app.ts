@@ -7,7 +7,9 @@ import { manejarErrores, rutaNoEncontrada } from './middlewares/manejarErrores.j
 import { verificarOrigen } from './middlewares/seguridad.js';
 import { rutasAuth } from './modulos/auth/auth.rutas.js';
 import { rutasSalud } from './modulos/salud/salud.rutas.js';
-import { rutasViajes } from './modulos/viajes/viajes.rutas.js';
+import { rutasDelViaje, rutasViajes } from './modulos/viajes/viajes.rutas.js';
+import { rutasDeAlojamientos } from './modulos/alojamientos/alojamientos.rutas.js';
+import { rutasDePropuestas } from './modulos/propuestas/propuestas.rutas.js';
 
 /** Arma la aplicación Express con las rutas de la API y el manejo de errores. */
 export function crearApp(c: Contenedor): Express {
@@ -30,13 +32,15 @@ export function crearApp(c: Contenedor): Express {
       cookieSegura: c.config.NODE_ENV === 'production',
     }),
   );
-  api.use(
-    rutasViajes({
-      ...c.viajes,
-      autenticado: exigirSesion,
-      participanteActivo: participanteActivo(c.viajes.consultas),
-    }),
-  );
+  api.use(rutasViajes({ ...c.viajes, autenticado: exigirSesion }));
+
+  // Rutas dentro de un viaje: la sesión y la membresía activa se verifican una sola vez (RN-X1).
+  const viaje = express.Router({ mergeParams: true });
+  viaje.use(exigirSesion, participanteActivo(c.viajes.consultas));
+  viaje.use(rutasDelViaje(c.viajes));
+  viaje.use(rutasDePropuestas(c.propuestas));
+  viaje.use(rutasDeAlojamientos(c.alojamientos));
+  api.use('/viajes/:viajeId', viaje);
   api.use(rutaNoEncontrada);
 
   app.use('/api', api);

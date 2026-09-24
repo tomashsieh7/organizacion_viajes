@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
+import { Propuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
 import { Viaje } from '../../src/modulos/viajes/dominio/viaje.js';
 import type { Escenario, Implementacion, Repos } from '../soporte/escenarios.js';
 
@@ -192,6 +194,107 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       expect(await r.consultas.obtenerDetalle(viaje, crypto.randomUUID())).toBeNull();
       expect(await r.consultas.existeMoneda('ARS')).toBe(true);
       expect(await r.consultas.existeMoneda('XXX')).toBe(false);
+    });
+  });
+
+  describe(`Propuestas y alojamientos — ${impl.nombre}`, () => {
+    const AHORA = new Date('2026-09-24T12:00:00.000Z');
+    const alojamiento = (
+      viajeId: string,
+      autorId: string,
+      nombre: string,
+      desde: string,
+      hasta: string,
+    ) => {
+      const p = Propuesta.proponer({
+        id: crypto.randomUUID(),
+        viajeId,
+        autorId,
+        tipo: 'ALOJAMIENTO',
+        descripcion: `desc ${nombre}`,
+        precio: 1500,
+        ubicacion: 'Centro',
+        coordenadas: null,
+        ahora: AHORA,
+      });
+      return {
+        p,
+        crear: () => r.alojamientos.crear(p, { nombre, estadia: RangoFechas.crear(desde, hasta) }),
+      };
+    };
+
+    it('ConsultaFechasDeViaje devuelve el rango del viaje o null', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      expect(await r.fechas.rango(viaje)).toEqual(RangoFechas.crear('2026-12-10', '2026-12-16'));
+      expect(await r.fechas.rango(crypto.randomUUID())).toBeNull();
+    });
+
+    it('crea un alojamiento y lo reconstruye como propuesta del viaje', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const { p, crear } = alojamiento(viaje, ana, 'Hostel', '2026-12-10', '2026-12-13');
+      await crear();
+      expect((await r.propuestas.obtenerParaModificar(viaje, p.id))?.aDatos()).toEqual(p.aDatos());
+      expect(await r.propuestas.obtenerParaModificar(await e.viaje(ana), p.id)).toBeNull();
+    });
+
+    it('guarda estado y sincroniza votos (alta, cambio y baja)', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      const { p, crear } = alojamiento(viaje, ana, 'Hostel', '2026-12-10', '2026-12-13');
+      await crear();
+      const cargada = (await r.propuestas.obtenerParaModificar(viaje, p.id))!;
+      cargada.votar(ana, 'A_FAVOR', AHORA);
+      cargada.votar(tomas, 'A_FAVOR', AHORA);
+      await r.propuestas.guardar(cargada);
+      const otra = (await r.propuestas.obtenerParaModificar(viaje, p.id))!;
+      otra.votar(ana, 'EN_CONTRA', AHORA);
+      otra.desvotar(tomas);
+      otra.resolver('confirmar', ana, AHORA);
+      await r.propuestas.guardar(otra);
+      const final = (await r.propuestas.obtenerParaModificar(viaje, p.id))!.aDatos();
+      expect(final.estado).toBe('CONFIRMADA');
+      expect(final.resueltaPorId).toBe(ana);
+      expect(final.votos).toEqual([{ usuarioId: ana, valor: 'EN_CONTRA', emitidoEn: AHORA }]);
+    });
+
+    it('lista alojamientos por fecha de entrada, con conteo, voto propio y filtro por estado', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      const tarde = alojamiento(viaje, ana, 'Cabaña', '2026-12-13', '2026-12-16');
+      const temprano = alojamiento(viaje, tomas, 'Hostel', '2026-12-10', '2026-12-13');
+      await tarde.crear();
+      await temprano.crear();
+      const p = (await r.propuestas.obtenerParaModificar(viaje, tarde.p.id))!;
+      p.votar(tomas, 'A_FAVOR', AHORA);
+      p.votar(ana, 'EN_CONTRA', AHORA);
+      p.resolver('confirmar', ana, AHORA);
+      await r.propuestas.guardar(p);
+
+      const lista = await r.consultaAlojamientos.listar(viaje, tomas);
+      expect(lista.map((a) => a.alojamiento.nombre)).toEqual(['Hostel', 'Cabaña']);
+      expect(lista[1]).toMatchObject({
+        estado: 'CONFIRMADA',
+        precio: 1500,
+        votosAFavor: 1,
+        votosEnContra: 1,
+        miVoto: 'A_FAVOR',
+        autor: { usuarioId: ana, nombre: 'Ana' },
+        creadaEn: AHORA.toISOString(),
+        alojamiento: { nombre: 'Cabaña', fechaDesde: '2026-12-13', fechaHasta: '2026-12-16' },
+      });
+      expect(
+        (await r.consultaAlojamientos.listar(viaje, tomas, 'PENDIENTE')).map((a) => a.id),
+      ).toEqual([temprano.p.id]);
+      expect((await r.consultaAlojamientos.obtener(viaje, temprano.p.id, ana))?.miVoto).toBeNull();
+      expect(await r.consultaAlojamientos.obtener(viaje, crypto.randomUUID(), ana)).toBeNull();
+      expect(await r.consultaPropuestas.obtenerVista(viaje, tarde.p.id, ana)).toMatchObject({
+        miVoto: 'EN_CONTRA',
+        tipo: 'ALOJAMIENTO',
+      });
     });
   });
 }

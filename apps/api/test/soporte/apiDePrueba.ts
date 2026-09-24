@@ -33,6 +33,11 @@ export function cliente(app: Express) {
         .post(url)
         .set('Origin', ORIGEN)
         .send(cuerpo ?? {}),
+    put: (url: string, cuerpo?: object) =>
+      agente
+        .put(url)
+        .set('Origin', ORIGEN)
+        .send(cuerpo ?? {}),
     delete: (url: string) => agente.delete(url).set('Origin', ORIGEN),
   };
 }

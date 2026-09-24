@@ -4,6 +4,24 @@
  */
 import type { PrismaClient } from '../../src/compartido/infraestructura/prisma.js';
 import type {
+  ConsultaAlojamientos,
+  RepositorioAlojamientos,
+} from '../../src/modulos/alojamientos/dominio/puertos.js';
+import {
+  ConsultaAlojamientosPrisma,
+  RepositorioAlojamientosPrisma,
+} from '../../src/modulos/alojamientos/infraestructura/prisma.js';
+import type {
+  ConsultaFechasDeViaje,
+  ConsultaPropuestas,
+  RepositorioPropuestas,
+} from '../../src/modulos/propuestas/dominio/puertos.js';
+import {
+  ConsultaFechasDeViajePrisma,
+  ConsultaPropuestasPrisma,
+  RepositorioPropuestasPrisma,
+} from '../../src/modulos/propuestas/infraestructura/prisma.js';
+import type {
   RepositorioCuentas,
   RepositorioSesiones,
 } from '../../src/modulos/auth/dominio/puertos.js';
@@ -29,6 +47,12 @@ import {
 import { vaciarBase } from './baseDePrueba.js';
 import {
   baseVacia,
+  ConsultaAlojamientosEnMemoria,
+  ConsultaFechasDeViajeEnMemoria,
+  ConsultaPropuestasEnMemoria,
+  RepositorioAlojamientosEnMemoria,
+  RepositorioPropuestasEnMemoria,
+  propuestaDePrueba,
   BuscadorDeUsuariosEnMemoria,
   ConsultaDeudasEnMemoria,
   ConsultaViajesEnMemoria,
@@ -50,6 +74,11 @@ export interface Escenario {
 }
 
 export interface Repos {
+  propuestas: RepositorioPropuestas;
+  consultaPropuestas: ConsultaPropuestas;
+  fechas: ConsultaFechasDeViaje;
+  alojamientos: RepositorioAlojamientos;
+  consultaAlojamientos: ConsultaAlojamientos;
   cuentas: RepositorioCuentas;
   sesiones: RepositorioSesiones;
   viajes: RepositorioViajes;
@@ -122,17 +151,29 @@ export const implementacionEnMemoria: Implementacion = {
         base.deudas.push({ viajeId, deudorId, acreedorId, monto });
       },
       async voto(viajeId, votanteId, pendiente) {
-        const propuestaId = crypto.randomUUID();
-        base.votos.push({ propuestaId, usuarioId: votanteId, viajeId, pendiente });
-        return propuestaId;
+        const fila = propuestaDePrueba({
+          viajeId,
+          autorId: votanteId,
+          estado: pendiente ? 'PENDIENTE' : 'CONFIRMADA',
+          votantes: [votanteId],
+        });
+        base.propuestas.push(fila);
+        return fila.datos.id;
       },
       async propuestasVotadasPor(usuarioId) {
-        return base.votos.filter((v) => v.usuarioId === usuarioId).map((v) => v.propuestaId);
+        return base.propuestas
+          .filter((p) => p.datos.votos.some((v) => v.usuarioId === usuarioId))
+          .map((p) => p.datos.id);
       },
     };
     return {
       escenario,
       repos: {
+        propuestas: new RepositorioPropuestasEnMemoria(base),
+        consultaPropuestas: new ConsultaPropuestasEnMemoria(base),
+        fechas: new ConsultaFechasDeViajeEnMemoria(base),
+        alojamientos: new RepositorioAlojamientosEnMemoria(base),
+        consultaAlojamientos: new ConsultaAlojamientosEnMemoria(base),
         cuentas: new RepositorioCuentasEnMemoria(base),
         sesiones: new RepositorioSesionesEnMemoria(base),
         viajes: new RepositorioViajesEnMemoria(base),
@@ -220,6 +261,11 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
       return {
         escenario,
         repos: {
+          propuestas: new RepositorioPropuestasPrisma(prisma),
+          consultaPropuestas: new ConsultaPropuestasPrisma(prisma),
+          fechas: new ConsultaFechasDeViajePrisma(prisma),
+          alojamientos: new RepositorioAlojamientosPrisma(prisma),
+          consultaAlojamientos: new ConsultaAlojamientosPrisma(prisma),
           cuentas: new RepositorioCuentasPrisma(prisma),
           sesiones: new RepositorioSesionesPrisma(prisma),
           viajes: new RepositorioViajesPrisma(prisma),

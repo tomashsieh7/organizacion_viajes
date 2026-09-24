@@ -340,3 +340,55 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F2 y push a `claude/elegant-maxwell-60322c`. No se reseteó la base de desarrollo, porque el usuario no respondió sobre eso.
 - **Archivos:** los de la entrada de cierre de F2, más esta entrada en `LOG.md`.
+
+## 2026-09-24 00:56 — Inicio de F3: propuestas y alojamientos
+
+- **Acción:** comienza la fase F3 de `PLAN.md`: mecanismo común de propuestas (votar, desvotar, confirmar, denegar y cancelar) y alojamientos (CU05 a CU09 y CU25), con el buscador de ubicaciones.
+- **Dependencias nuevas:** `leaflet` (D9) en el frontend.
+- **Entorno:** la red de la sesión bloquea `nominatim.openstreetmap.org` y `tile.openstreetmap.org`. El adaptador de Nominatim se prueba con respuestas simuladas, y en el navegador de la sesión el mapa se ve sin teselas; marcar un punto con un clic funciona igual.
+
+## 2026-09-24 01:10 — F3 terminada: propuestas y alojamientos
+
+- **Acción:** se implementaron el mecanismo común de propuestas (votar, desvotar, confirmar, denegar y cancelar) y los alojamientos (CU05 a CU09 y CU25), con el buscador de ubicaciones y el mapa para marcar puntos, y se verificó el criterio de terminado de F3.
+- **Archivos creados:**
+  - **Paquete compartido:** esquemas de voto, filtro por estado y alojamiento nuevo, y tipos `PropuestaVista`, `AlojamientoVista` y `RespuestaResolucion`.
+  - **Backend:**
+    - módulo `propuestas`: entidad `Propuesta` con su tabla de transiciones, puertos con `ReglaAlResolver`, casos de uso `Votar` y `ResolverPropuesta`, infraestructura Prisma y rutas;
+    - módulo `alojamientos`: puertos, casos de uso `ProponerAlojamiento` y `ConsultarAlojamientos`, infraestructura Prisma y rutas;
+    - objeto de valor `Coordenadas`.
+  - **Pruebas del backend:** `propuesta.test.ts`, `casosDeUsoPropuestas.test.ts`, `propuestas.bd.test.ts` y los contratos ampliados.
+  - **Frontend:**
+    - clientes `propuestas.ts` y `ubicaciones.ts` (`BuscadorUbicaciones` y adaptador de Nominatim);
+    - store `propuestas`;
+    - componentes `TarjetaPropuesta`, `MapaSelector` (Leaflet) y `CampoUbicacion`;
+    - vistas `AlojamientosVista` y `AlojamientoFormularioVista`;
+    - utilidad `aUnidadMinima`;
+    - pruebas de la tarjeta, del contrato del buscador, del formato de montos y de los stores de sesión y de propuestas.
+- **Archivos modificados:** `app.ts` y `contenedor.ts`; `viajes.rutas.ts` (rutas separadas en generales y de viaje); las implementaciones en memoria y los escenarios de prueba (la base en memoria guarda propuestas completas con sus votos); `eslint.config.js`; el router, el menú del viaje y `main.ts` del frontend; `docs/api.md`; y `PLAN.md` (D8 y entregables de F3).
+- **Decisiones:**
+  - **Punto de extensión de la resolución (abierto/cerrado):** `ResolverPropuesta` recibe una lista de `ReglaAlResolver` que se ejecutan dentro de la transacción. Es genérico sobre los repositorios de la transacción, así F4 suma las políticas de superposición y de opciones desde el punto de composición sin modificar este código.
+  - **Propuesta:** la entidad maneja solo lo común: estado, votos y resolución. Los datos propios de cada tipo los guarda el repositorio de su módulo.
+  - **Rutas:** todas las rutas dentro de un viaje se montan en un único router que verifica la sesión y la membresía una sola vez. Se descartó que cada módulo repitiera esos middlewares, porque cada petición haría las mismas consultas varias veces.
+  - **Buscador de ubicaciones:** vive en el frontend y consulta Nominatim desde el navegador. Espera 600 ms después de la última tecla, por el límite de uso de Nominatim, y ofrece marcar el punto con un clic si el servicio falla.
+  - **Mapa:** el marcador es un círculo de Leaflet, para no depender de las imágenes de íconos, que se rompen al empaquetar con Vite.
+  - **Precios:** se escriben en pesos y se convierten a la unidad mínima de la moneda. Se acepta "48000", "48000,50" y "48.000,50"; el punto se lee como separador de miles, como se escribe en castellano.
+  - **Lint:** la regla de variables sin usar ahora ignora las que se descartan al separar propiedades con `...resto`, que es un patrón válido.
+- **Errores encontrados y corregidos:**
+  - Al arrancar el entorno de desarrollo, la API se reinicia cuando termina de compilar el paquete compartido. Si la guarda de ruta consultaba la sesión en ese momento, la navegación inicial fallaba y la página quedaba en blanco. Ahora una falla al consultar la sesión se trata como sin sesión y se reintenta en la próxima navegación. Lo cubre una prueba nueva.
+  - El store de propuestas tomaba el viaje recién al cargar la lista, así que al entrar directo al formulario de alta enviaba la petición sin viaje. Ahora usa siempre el viaje abierto. Lo cubre una prueba nueva.
+- **Entorno:** la red de la sesión bloquea Nominatim y las teselas de OpenStreetMap. El adaptador de Nominatim se probó con una respuesta grabada, y en el recorrido manual el mapa se vio sin teselas, con el marcado por clic funcionando.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 201 pruebas: 175 del backend y 26 del frontend. Entre ellas:
+    - la matriz completa de transiciones, en la entidad y a través de la API;
+    - el reemplazo de voto, el desvoto y la prohibición de votar o desvotar propuestas resueltas;
+    - el rechazo de alojamientos fuera de las fechas del viaje;
+    - los contratos de los repositorios nuevos, en memoria y en Prisma;
+    - el contrato de `BuscadorUbicaciones` con una implementación falsa y con el adaptador de Nominatim;
+    - la prueba de componente de `TarjetaPropuesta` para los dos roles.
+  - `npm run lint` pasa sin errores.
+  - Recorrido manual en Chromium: Tomás propone un alojamiento marcando el punto en el mapa y con precio "48.000", que se muestra como $ 48.000,00. Tomás vota a favor, Ana vota en contra y lo confirma, y el filtro por estado funciona.
+
+## 2026-09-24 01:13 — Commit y push de F3
+
+- **Acción:** con autorización del usuario, se hace commit de F3 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F3, más esta entrada en `LOG.md`.

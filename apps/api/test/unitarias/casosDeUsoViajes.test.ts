@@ -16,6 +16,7 @@ import {
   BuscadorDeUsuariosEnMemoria,
   ConsultaDeudasEnMemoria,
   ConsultaViajesEnMemoria,
+  propuestaDePrueba,
   reposViajesEnMemoria,
   type BaseEnMemoria,
 } from '../soporte/memoria.js';
@@ -96,14 +97,23 @@ describe('Casos de uso de viajes', () => {
     await agregarATomas();
     unidad.prepararEstado((estado) => {
       estado.deudas.push({ viajeId, deudorId: tomas, acreedorId: ana, monto: 500 });
-      estado.votos.push(
-        { propuestaId: 'p1', usuarioId: tomas, viajeId, pendiente: true },
-        { propuestaId: 'p2', usuarioId: tomas, viajeId, pendiente: false },
+      estado.propuestas.push(
+        propuestaDePrueba({ id: 'p1', viajeId, autorId: ana, votantes: [tomas] }),
+        propuestaDePrueba({
+          id: 'p2',
+          viajeId,
+          autorId: ana,
+          estado: 'CONFIRMADA',
+          votantes: [tomas],
+        }),
       );
     });
     const conDeuda = await new EliminarParticipante(deps).ejecutar(viajeId, ana, tomas);
     expect(conDeuda).toBe(true);
-    expect(unidad.confirmado.votos.map((v) => v.propuestaId)).toEqual(['p2']);
+    const votosDeTomas = unidad.confirmado.propuestas.filter((p) =>
+      p.datos.votos.some((v) => v.usuarioId === tomas),
+    );
+    expect(votosDeTomas.map((p) => p.datos.id)).toEqual(['p2']);
     expect(await consultas().obtenerAcceso(viajeId, tomas)).toBeNull();
     expect(publicados).toEqual([
       expect.objectContaining({

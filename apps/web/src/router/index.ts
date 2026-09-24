@@ -20,6 +20,11 @@ export const rutas: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: (to) => `/viajes/${String(to.params['viajeId'])}/participantes` },
       { path: 'participantes', component: () => import('../vistas/ParticipantesVista.vue') },
+      { path: 'alojamientos', component: () => import('../vistas/AlojamientosVista.vue') },
+      {
+        path: 'alojamientos/nuevo',
+        component: () => import('../vistas/AlojamientoFormularioVista.vue'),
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/viajes' },

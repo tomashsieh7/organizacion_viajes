@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Estado al cierre de F2. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
+Estado al cierre de F3. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
 
 ## Convenciones
 
@@ -53,3 +53,26 @@ Todas requieren sesión. Las rutas bajo `/api/viajes/:viajeId` requieren además
 | `DELETE /api/viajes/:viajeId/participantes/:usuarioId` | Admin | — | `200 { bajaConDeuda }`; baja lógica que conserva el historial y retira sus votos en propuestas pendientes | 404, 409 `NO_PUEDE_ELIMINARSE_A_SI_MISMO` |
 | `POST /api/viajes/:viajeId/salir` | Participante | `{ nuevoAdminId? }`, obligatorio si quien sale es el Admin | `200 { bajaConDeuda }` | 400 `FALTA_SUCESOR`, 409 `ADMIN_UNICO_PARTICIPANTE`, 422 `SUCESOR_INVALIDO` |
 | `POST /api/viajes/:viajeId/administracion/traspaso` | Admin | `{ nuevoAdminId }` | `204` | 422 `SUCESOR_INVALIDO` |
+
+## Propuestas (comunes a alojamientos y actividades)
+
+Requieren participar del viaje. `propuesta` es la vista común: `{ id, tipo, estado, descripcion, precio, ubicacion, latitud, longitud, autor: { usuarioId, nombre }, votosAFavor, votosEnContra, miVoto, creadaEn, resueltaEn }`.
+
+| Método y ruta | Quién | Cuerpo | Respuesta | Errores específicos |
+|---|---|---|---|---|
+| `PUT /api/viajes/:viajeId/propuestas/:propuestaId/voto` | Participante (también quien propuso) | `{ valor: "A_FAVOR" \| "EN_CONTRA" }`; votar de nuevo reemplaza el voto | `200 { propuesta }` | 409 `PROPUESTA_NO_PENDIENTE` |
+| `DELETE /api/viajes/:viajeId/propuestas/:propuestaId/voto` | Quien votó | — | `200 { propuesta }` | 404 `SIN_VOTO`, 409 `PROPUESTA_NO_PENDIENTE` |
+| `POST /api/viajes/:viajeId/propuestas/:propuestaId/confirmar` | Admin | — | `200 { propuesta, afectadas }` | 409 `TRANSICION_INVALIDA` |
+| `POST /api/viajes/:viajeId/propuestas/:propuestaId/denegar` | Admin | — | `200 { propuesta, afectadas }` | 409 `TRANSICION_INVALIDA` |
+| `POST /api/viajes/:viajeId/propuestas/:propuestaId/cancelar` | Admin | — | `200 { propuesta, afectadas }` | 409 `TRANSICION_INVALIDA` |
+
+Transiciones válidas: pendiente → confirmada o denegada; confirmada → cancelada. `afectadas` lista otras propuestas que cambiaron de estado como consecuencia (se usa desde F4).
+
+## Alojamientos
+
+| Método y ruta | Quién | Cuerpo | Respuesta | Errores específicos |
+|---|---|---|---|---|
+| `GET /api/viajes/:viajeId/alojamientos?estado=` | Participante | Filtro opcional por estado | `200 { alojamientos }`, ordenados por fecha de entrada | 400 si el estado no existe |
+| `POST /api/viajes/:viajeId/alojamientos` | Participante | `{ nombre, descripcion, ubicacion, latitud?, longitud?, fechaDesde, fechaHasta, precio? }`; coordenadas ambas o ninguna; precio total estimado en la unidad mínima de la moneda | `201 { alojamiento }` pendiente de votación | 422 `FUERA_DEL_VIAJE` (con `detalles: { desde, hasta }`) |
+
+Cada alojamiento es una `propuesta` con `alojamiento: { nombre, fechaDesde, fechaHasta }`.
