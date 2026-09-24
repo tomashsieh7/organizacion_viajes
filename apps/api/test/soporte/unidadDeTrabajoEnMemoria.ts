@@ -18,6 +18,11 @@ export class UnidadDeTrabajoEnMemoria<E, R> implements UnidadDeTrabajo<R> {
     return structuredClone(this.estado);
   }
 
+  /** Carga datos de partida directamente en el estado confirmado, como lo haría una semilla. */
+  prepararEstado(cambio: (estado: E) => void): void {
+    cambio(this.estado);
+  }
+
   ejecutar<T>(trabajo: (repositorios: R) => Promise<T>): Promise<T> {
     const corrida = this.cola.then(async () => {
       const copia = structuredClone(this.estado);

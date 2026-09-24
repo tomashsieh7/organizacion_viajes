@@ -4,10 +4,16 @@
  * - Datos de ejemplo: un viaje con cuatro viajeros, propuestas en todos los estados, una actividad
  *   con alternativas, gastos en ambos modos de división, deudas y un pago. Solo se cargan si la
  *   base no tiene usuarios, y nunca con NODE_ENV=test.
+ * Los usuarios de ejemplo ingresan con su email (ana@ejemplo.com, tomas@ejemplo.com, luis@ejemplo.com,
+ * sofia@ejemplo.com) y la contraseña `CONTRASENA_DE_EJEMPLO`.
  * Los montos están en centavos (D16). Las deudas se calcularon a mano aplicando RN-G6 y P15; el
  * detalle está en los comentarios de cada paso.
  */
 import { crearClientePrisma } from '../src/compartido/infraestructura/prisma.js';
+import { HasheadorArgon2 } from '../src/modulos/auth/infraestructura/adaptadores.js';
+
+/** Contraseña de los usuarios de ejemplo; solo existe en la base de desarrollo. */
+export const CONTRASENA_DE_EJEMPLO = 'viaje-de-prueba-2026';
 
 try {
   process.loadEnvFile();
@@ -54,14 +60,24 @@ async function cargarCatalogos() {
 }
 
 async function cargarEjemplo() {
+  const secretoHash = await new HasheadorArgon2().hashear(CONTRASENA_DE_EJEMPLO);
   await prisma.$transaction(async (tx) => {
     const [ana, tomas, luis, sofia] = await Promise.all(
       [
-        { nombre: 'Ana Pérez', apodo: 'Ani' },
-        { nombre: 'Tomás Gómez', apodo: 'Tomi' },
-        { nombre: 'Luis Díaz', apodo: null },
-        { nombre: 'Sofía Ruiz', apodo: 'Sofi' },
-      ].map((u) => tx.usuario.create({ data: u })),
+        { nombre: 'Ana Pérez', apodo: 'Ani', email: 'ana@ejemplo.com' },
+        { nombre: 'Tomás Gómez', apodo: 'Tomi', email: 'tomas@ejemplo.com' },
+        { nombre: 'Luis Díaz', apodo: null, email: 'luis@ejemplo.com' },
+        { nombre: 'Sofía Ruiz', apodo: 'Sofi', email: 'sofia@ejemplo.com' },
+      ].map(({ email, ...u }) =>
+        tx.usuario.create({
+          data: {
+            ...u,
+            credenciales: {
+              create: { tipo: 'EMAIL_CONTRASENA', identificador: email, secretoHash },
+            },
+          },
+        }),
+      ),
     );
     if (!ana || !tomas || !luis || !sofia) throw new Error('No se crearon los usuarios de ejemplo');
 

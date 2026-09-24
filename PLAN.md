@@ -151,7 +151,7 @@ El gateway de Socket.IO es otro adaptador de entrada, como el controlador, y usa
 │   │   │       ├── itinerario/        # cronograma y mapa (CU16, CU17)
 │   │   │       ├── chat/              # historial REST y gateway Socket.IO (CU19)
 │   │   │       └── gastos/            # gastos, deudas y pagos (CU20–CU23)
-│   │   │           # cada módulo: rutas/, controladores/, casos-de-uso/, dominio/, infraestructura/
+│   │   │           # cada módulo: <modulo>.rutas.ts (rutas y controlador, que es delgado), casos-de-uso/, dominio/, infraestructura/
 │   │   └── test/
 │   │       ├── unitarias/             # casos de uso con repositorios en memoria
 │   │       ├── contratos/             # pruebas de contrato de cada interfaz
@@ -446,7 +446,7 @@ Ninguna tabla borra filas de `usuario` ni de `membresia`: las bajas son lógicas
 
 | Método y ruta | Quién | Validaciones | Errores específicos |
 |---|---|---|---|
-| `POST /api/auth/registro` | Cualquiera | `email` válido (se normaliza), `password` de 8 a 128 caracteres y no incluida en la lista de contraseñas comunes, `nombre` obligatorio, `apodo` opcional | 409 `EMAIL_EN_USO`, 400 `CONTRASENA_COMUN` |
+| `POST /api/auth/registro` | Cualquiera | `email` válido (se normaliza), `password` de 8 a 128 caracteres y no incluida en la lista de contraseñas comunes, `nombre` obligatorio, `apodo` opcional; deja la sesión iniciada | 409 `EMAIL_EN_USO`, 400 `CONTRASENA_COMUN` |
 | `POST /api/auth/sesion` | Cualquiera | `email`, `password`; mismo mensaje y tiempo de respuesta exista o no el email | 401 `CREDENCIALES_INVALIDAS`, 429 `DEMASIADOS_INTENTOS` |
 | `DELETE /api/auth/sesion` | Con sesión | Revoca la sesión actual | — |
 | `GET /api/auth/yo` | Con sesión | Perfil del usuario | — |
@@ -457,13 +457,13 @@ Ninguna tabla borra filas de `usuario` ni de `membresia`: las bajas son lógicas
 |---|---|---|---|---|
 | CU01 | `POST /api/viajes` | Cualquier usuario con sesión; queda como Admin | `nombre` y `destino` obligatorios, `fecha_inicio <= fecha_fin`, `moneda_codigo` existente | 400 `RANGO_FECHAS_INVALIDO`, 422 `MONEDA_INEXISTENTE` |
 | — | `GET /api/monedas` | Con sesión | Lista de monedas disponibles | — |
-| — | `GET /api/viajes` | Con sesión | Viajes con membresía activa y viajes con acceso solo a saldos, marcados como tales | — |
-| — | `GET /api/viajes/:viajeId` | `accesoSaldos` | Datos del viaje y rol o tipo de acceso de quien consulta | — |
+| — | `GET /api/viajes` | Con sesión | Viajes con membresía activa; desde F7 suma los viajes con acceso solo a saldos, marcados como tales | — |
+| — | `GET /api/viajes/:viajeId` | Participante (desde F7, `accesoSaldos`) | Datos del viaje con su moneda, rol de quien consulta, su deuda pendiente (para el aviso de RN-E7) y la cantidad de participantes | — |
 | — | `GET /api/viajes/:viajeId/participantes` | Participante | Participantes activos con su rol | — |
 | CU02 | `POST /api/viajes/:viajeId/participantes` | Admin | `email` de un usuario registrado (P4); si tenía una membresía dada de baja, se reactiva con su historial (P18) | 404 `USUARIO_NO_REGISTRADO`, 409 `YA_ES_PARTICIPANTE` |
 | CU03 | `DELETE /api/viajes/:viajeId/participantes/:usuarioId` | Admin | El usuario es participante activo y no es el propio Admin | 409 `NO_PUEDE_ELIMINARSE_A_SI_MISMO`; la respuesta indica `bajaConDeuda` |
 | CU04 | `POST /api/viajes/:viajeId/salir` | Participante | Si quien sale es el Admin, `nuevoAdminId` es obligatorio y debe ser otro participante activo (CU24); si el Admin es el único participante, no puede salir (P5) | 400 `FALTA_SUCESOR`, 422 `SUCESOR_INVALIDO`, 409 `ADMIN_UNICO_PARTICIPANTE`; la respuesta indica la deuda pendiente, si la hay (P18) |
-| CU24 | `POST /api/viajes/:viajeId/administracion/traspaso` | Admin | `nuevoAdminId` es otro participante activo | 422 `SUCESOR_INVALIDO` |
+| CU24 | `POST /api/viajes/:viajeId/administracion/traspaso` | Admin | `nuevoAdminId` es otro participante activo; responde 204 | 422 `SUCESOR_INVALIDO` |
 
 ### 5.4 Propuestas: votos y transiciones comunes a alojamientos y actividades
 
@@ -671,7 +671,7 @@ El cronograma y el mapa no usan store propio porque son vistas de solo lectura; 
 |---|---|---|---|---|
 | `/ingresar`, `/registrarse` | `IngresoVista`, `RegistroVista` | `FormularioCredenciales` (muestra los requisitos de contraseña) | `useSesionStore` | Soporte (P3) |
 | `/viajes` | `ViajesVista` | `TarjetaViaje` (marca los viajes con acceso solo a saldos), `DialogoNuevoViaje` (con selector de moneda) | `useViajeStore` | CU01 |
-| `/viajes/:viajeId/participantes` | `ParticipantesVista` | `ListaParticipantes`; para el Admin, `FormularioAgregarViajero`, `DialogoEliminarParticipante` (avisa si tiene deuda) y `DialogoTraspaso`; botón "Salir del grupo", que muestra la deuda propia y, si quien sale es el Admin, abre `DialogoTraspaso` para elegir sucesor | `useViajeStore` | CU02–CU04, CU24 |
+| `/viajes/:viajeId/participantes` | `ParticipantesVista` | `ListaParticipantes`; para el Admin, `FormularioAgregarViajero`, el diálogo de confirmación de eliminación (avisa que se conserva el historial) y `DialogoTraspaso`; botón "Salir del grupo", que abre `DialogoSalir`: muestra la deuda propia y, si quien sale es el Admin, pide el sucesor con `SelectorSucesor` | `useViajeStore` | CU02–CU04, CU24 |
 | `/viajes/:viajeId/alojamientos` | `AlojamientosVista` | `TarjetaPropuesta` (conteo, botones de voto y de desvoto, acciones del Admin según estado), filtro por estado | `usePropuestasStore` | CU06–CU09, CU25 |
 | `/viajes/:viajeId/alojamientos/nuevo` | `AlojamientoFormularioVista` | `CampoUbicacion` (buscador y clic en el mapa), `CampoRangoFechas` (limitado al viaje) | `usePropuestasStore` | CU05 |
 | `/viajes/:viajeId/actividades` | `ActividadesVista` | `TarjetaPropuesta` con `ListaAlternativas` anidada, botón "Proponer alternativa" en actividades pendientes | `usePropuestasStore` | CU12–CU15, CU26 |
@@ -731,7 +731,7 @@ F6 y F7 dependen solo de F2, así que pueden hacerse en cualquier orden respecto
 #### F2 — Autenticación y gestión del grupo
 
 - **Objetivo:** que un usuario se registre de forma segura, cree un viaje y administre sus participantes y la administración.
-- **Entregables:** módulo `auth` con `ProveedorAutenticacion` y `EmailContrasena`, sesiones en la base y las medidas de D6 (RN-S1 a RN-S6); middlewares `autenticado`, `verificarOrigen`, `participanteActivo`, `soloAdmin` y `validar`; entidades `Viaje` y `Membresia` con sus reglas (creación del Admin, traspaso, baja, reactivación, tipo de acceso); módulo `viajes` con CU01 a CU04 y CU24 (RN-E1 a RN-E5, RN-E7, RN-E8, RN-T1 a RN-T4); `GET /api/monedas`; vistas de ingreso, registro, viajes, `ViajeLayout` y participantes con `DialogoTraspaso`; `useSesionStore` y `useViajeStore`; primera versión de `docs/api.md`.
+- **Entregables:** módulo `auth` con `ProveedorAutenticacion` y `EmailContrasena`, sesiones en la base y las medidas de D6 (RN-S1 a RN-S6); credenciales de ejemplo en la semilla; middlewares `autenticado`, `verificarOrigen`, `participanteActivo`, `soloAdmin` y `validar`; entidades `Viaje` y `Membresia` con sus reglas (creación del Admin, traspaso, baja, reactivación, tipo de acceso); módulo `viajes` con CU01 a CU04 y CU24 (RN-E1 a RN-E5, RN-E7, RN-E8, RN-T1 a RN-T4); `GET /api/monedas`; vistas de ingreso, registro, viajes, `ViajeLayout` y participantes con `DialogoTraspaso`; `useSesionStore` y `useViajeStore`; primera versión de `docs/api.md`.
 - **Dependencias:** F1.
 - **Criterio de terminado:** pruebas unitarias de `Viaje` y `Membresia` y de cada caso de uso con repositorios en memoria; pruebas de contrato de `ProveedorAutenticacion` y de los repositorios del módulo; pruebas de integración de cada endpoint de 5.2 y 5.3 con sus errores; pruebas de seguridad que verifican el bloqueo tras 5 intentos fallidos, el mismo mensaje con email existente e inexistente, la sesión inválida tras cerrar sesión, los atributos de la cookie y el rechazo de una petición con otro `Origin`; pruebas de baja con y sin deuda (insertando filas de `deuda` directamente) que verifican historial conservado, votos pendientes retirados y 403 en rutas del viaje; pruebas del traspaso que verifican que el viaje nunca queda sin Admin ni con dos, incluso con dos pedidos simultáneos; una prueba de componente verifica que las acciones de Admin no se muestran a un viajero común.
 

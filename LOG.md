@@ -296,3 +296,47 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F1 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada de cierre de F1, más esta entrada en `LOG.md`.
+
+## 2026-09-24 00:38 — Inicio de F2: autenticación y gestión del grupo
+
+- **Acción:** comienza la fase F2 de `PLAN.md`: registro, sesiones y medidas de seguridad (P3, D5, D6, D7), creación de viajes y gestión de participantes y de la administración (CU01 a CU04 y CU24), con sus pantallas.
+- **Dependencias nuevas:** `@node-rs/argon2` (hash argon2id con binarios precompilados, D5), `helmet` (encabezados de seguridad), `express-rate-limit` (límite de intentos, D6) y `cookie-parser` (lectura de la cookie de sesión) en el backend; `zod` en el paquete compartido, para que backend y frontend usen los mismos esquemas (D12).
+
+## 2026-09-24 00:53 — F2 terminada: autenticación y gestión del grupo
+
+- **Acción:** se implementaron el registro, las sesiones y las medidas de seguridad (P3, D5, D6, D7), la creación de viajes y la gestión de participantes y de la administración (CU01 a CU04 y CU24), con sus pantallas, y se verificó el criterio de terminado de F2.
+- **Archivos creados:**
+  - **Paquete compartido:** `esquemas.ts` (esquemas Zod de registro, ingreso, viaje nuevo, agregar viajero, salir y traspaso) y `contrasenasComunes.ts`; `contratos.ts` se amplió con los tipos de respuesta.
+  - **Backend, módulo `auth`:** `dominio/` (puertos, `EmailContrasena`, `ServicioDeSesiones`), `casos-de-uso/`, `infraestructura/` (argon2id, tokens, repositorios Prisma y buscador de usuarios) y `auth.rutas.ts`.
+  - **Backend, módulo `viajes`:** `dominio/` (agregado `Viaje` con `Membresia`, eventos y puertos), `casos-de-uso/`, `infraestructura/prisma.ts` y `viajes.rutas.ts`.
+  - **Backend, compartido:** `middlewares/` (`acceso.ts`, `seguridad.ts`, `validar.ts`), `compartido/reloj.ts`, `compartido/infraestructura/conversiones.ts` y `tipos/express.d.ts`.
+  - **Pruebas del backend:** `test/soporte/` (implementaciones en memoria, escenarios y cliente HTTP de prueba), `test/contratos/` (repositorios y `ProveedorAutenticacion`), `test/unitarias/` (`viaje`, `auth` y casos de uso de viajes) y `test/integracion/` (`auth.bd` y `viajes.bd`).
+  - **Frontend:** `clientes/` (`http`, `auth`, `viajes`), `stores/` (`sesion`, `viaje`), `componentes/base/` (`CampoFormulario`, `AvisoMensaje`, `DialogoModal`), `componentes/viajes/` (`DialogoNuevoViaje`, `ListaParticipantes`, `FormularioAgregarViajero`, `SelectorSucesor`, `DialogoTraspaso`, `DialogoSalir`), `vistas/` (`IngresoVista`, `RegistroVista`, `ViajesVista`, `ViajeLayout`, `ParticipantesVista`) y `utiles/formato.ts`, con sus pruebas en `test/`.
+  - **Documentación:** `docs/api.md`.
+- **Archivos modificados:** `app.ts`, `config.ts` (`DATABASE_URL`, `SESION_DIAS`), `contenedor.ts`, `compartido/infraestructura/prisma.ts`, la semilla (credenciales de ejemplo), el router, `App.vue` y `main.ts` del frontend, y `PLAN.md`. Se eliminaron `InicioVista.vue`, `clientes/salud.ts` y su prueba, porque la pantalla de inicio de F0 se reemplazó por la lista de viajes; `GET /api/salud` se mantiene.
+- **Decisiones:**
+  - **GRASP:** `Viaje` es el agregado experto en participantes y administración: agrega, elimina, reactiva, transfiere y da de baja, y registra eventos de dominio que el caso de uso publica recién después de confirmar la transacción. Los casos de uso cargan el viaje con `SELECT … FOR UPDATE`, así dos operaciones simultáneas sobre el mismo viaje se ejecutan de a una. Al guardar, las membresías que dejan de ser Admin se escriben antes que la del nuevo Admin, para no violar el índice de Admin único.
+  - **Interfaz del lado del consumidor:** el módulo de viajes necesita buscar usuarios por email, así que define la interfaz `BuscadorDeUsuarios` en su dominio y la implementa el módulo de autenticación. Así los viajes no dependen de las credenciales (inversión de dependencias).
+  - **Seguridad:** los tokens de sesión se guardan como hash SHA-256. Los contadores de intentos viven en memoria y se crean por instancia de la app. El registro tiene un límite de 10 por hora por IP. La lista de contraseñas comunes está en el paquete compartido, así el formulario las rechaza antes de enviar.
+  - **Registro:** deja la sesión iniciada (201 con cookie). Se descartó obligar a ingresar después de registrarse, porque es un paso más sin beneficio de seguridad.
+  - **Respuestas de la API:** `GET /api/viajes/:viajeId` incluye la deuda pendiente de quien consulta, que el diálogo de salida muestra antes de confirmar (RN-E7). Eliminar y salir responden `{ bajaConDeuda }` y el traspaso responde 204.
+  - **Frontend:** los stores obtienen sus clientes de API con `inject`, y las pruebas montan las vistas con clientes falsos. Los componentes base tienen nombres de dos palabras, como pide la regla de ESLint para Vue.
+  - **Estructura de módulos:** cada módulo tiene un archivo `<modulo>.rutas.ts` con rutas y controlador juntos, porque el controlador es una traducción delgada entre HTTP y casos de uso. Se descartó separarlos en carpetas propias por el criterio contra la sobreingeniería.
+- **Desvío del plan:** `GET /api/viajes` lista por ahora solo las membresías activas; los viajes con acceso solo a saldos (RN-E6) se suman en F7, junto con el middleware `accesoSaldos`.
+- **Entorno:** el servicio de Docker de la sesión se detuvo durante la fase y se volvió a iniciar. Además, la preparación de la base de prueba ahora explica el error si la base no está levantada.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 143 pruebas: 134 del backend (81 rápidas y 53 contra la base) y 9 del frontend. Entre ellas:
+    - las pruebas de cada endpoint de 5.2 y 5.3 con sus errores;
+    - las de seguridad: bloqueo tras 5 intentos fallidos, mismo mensaje con email existente e inexistente, sesión inválida tras cerrar sesión, atributos de la cookie, rechazo de otro `Origin`, encabezados de helmet y argon2id en la base;
+    - las de baja con y sin deuda: historial conservado, votos pendientes retirados y 403 posterior;
+    - la de dos traspasos simultáneos, que deja exactamente un Admin;
+    - los contratos de repositorios y de `ProveedorAutenticacion` para las implementaciones en memoria y en Prisma;
+    - la prueba de componente que oculta las acciones de Admin a un viajero común.
+  - `npm run lint` pasa sin errores, con chequeo de tipos.
+  - Recorrido manual en Chromium con `npm run dev`: dos personas se registran, Ana crea un viaje, agrega a Tomás por email escrito en mayúsculas, Tomás entra sin ver acciones de Admin, Ana lo elimina, Tomás ya no puede entrar, y Ana cierra sesión y la guarda de ruta la manda a ingresar.
+- **Pendiente para el usuario:** la base de desarrollo tiene los datos de ejemplo cargados antes de sumar las credenciales. Para ingresar con `ana@ejemplo.com` y la contraseña de ejemplo hay que ejecutar `npm run db:reset`, que borra la base de desarrollo; no se ejecutó sin autorización.
+
+## 2026-09-24 00:54 — Commit y push de F2
+
+- **Acción:** con autorización del usuario, se hace commit de F2 y push a `claude/elegant-maxwell-60322c`. No se reseteó la base de desarrollo, porque el usuario no respondió sobre eso.
+- **Archivos:** los de la entrada de cierre de F2, más esta entrada en `LOG.md`.

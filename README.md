@@ -25,6 +25,14 @@ npm run dev                     # API en http://localhost:3000 y web en http://l
 
 La web redirige `/api` al backend, así que en desarrollo alcanza con abrir `http://localhost:5173`.
 
+## Datos de ejemplo
+
+`npm run db:reset` borra la base de desarrollo, aplica las migraciones y carga la semilla: un viaje a Bariloche con cuatro viajeros. Se puede ingresar con `ana@ejemplo.com`, `tomas@ejemplo.com`, `luis@ejemplo.com` o `sofia@ejemplo.com`, todos con la contraseña `viaje-de-prueba-2026`. Nunca lo ejecutes contra una base con datos reales.
+
+## Pruebas
+
+`npm test` corre las pruebas rápidas y las que usan la base de prueba (`docker compose up -d` tiene que estar levantado). La API y la referencia de endpoints están en `docs/api.md`.
+
 ## Scripts
 
 | Script | Qué hace |
@@ -34,3 +42,4 @@ La web redirige `/api` al backend, así que en desarrollo alcanza con abrir `htt
 | `npm test` | Corre las pruebas del backend y del frontend con Vitest. |
 | `npm run lint` | ESLint, verificación de formato con Prettier y chequeo de tipos. |
 | `npm run format` | Aplica el formato de Prettier. |
+| `npm run db:reset` | Resetea la base de desarrollo y carga la semilla. |

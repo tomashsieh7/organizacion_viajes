@@ -4,11 +4,13 @@ const esquema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   ORIGEN_WEB: z.url().default('http://localhost:5173'),
+  DATABASE_URL: z.string().min(1).default('postgresql://viajes:viajes@localhost:5432/viajes'),
+  SESION_DIAS: z.coerce.number().int().positive().default(7),
 });
 
 export type Config = z.infer<typeof esquema>;
 
-/** Lee y valida las variables de entorno; si falta o sobra algo inválido, corta el arranque. */
+/** Lee y valida las variables de entorno; si algo es inválido, corta el arranque. */
 export function leerConfig(entorno: NodeJS.ProcessEnv = process.env): Config {
   const resultado = esquema.safeParse(entorno);
   if (!resultado.success) {
