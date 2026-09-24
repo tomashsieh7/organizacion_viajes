@@ -497,7 +497,7 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 
 | CU | Método y ruta | Quién | Validaciones | Respuesta y errores |
 |---|---|---|---|---|
-| CU16 | `GET /api/viajes/:viajeId/cronograma` | Participante | — | Todos los días del viaje; cada uno con sus actividades confirmadas ordenadas por hora (inicio, fin, título, ubicación, id para el enlace al mapa) y el alojamiento confirmado de esa noche, si lo hay (P21) |
+| CU16 | `GET /api/viajes/:viajeId/cronograma` | Participante | — | Todos los días del viaje; cada uno con sus actividades confirmadas ordenadas por hora (inicio, fin, título, ubicación, id para el enlace al mapa) y la lista de alojamientos confirmados de esa noche, vacía si no hay ninguno (P21; lista desde F5, porque nada impide confirmar dos alojamientos para la misma noche) |
 | CU17 | `GET /api/viajes/:viajeId/mapa?hoy=YYYY-MM-DD&dia=YYYY-MM-DD` | Participante | `hoy` obligatorio (fecha del dispositivo, P19); `dia` opcional y dentro del viaje | `{ dia, diasConActividad[], actividades[] ordenadas, recorrido[], aviso }`, con `aviso = SIN_ACTIVIDADES_CONFIRMADAS` cuando el día no tiene actividades; 422 `FUERA_DEL_VIAJE` |
 
 ### 5.8 Comunicarse

@@ -9,6 +9,11 @@ export interface RepositorioViajes {
   guardar(viaje: Viaje): Promise<void>;
 }
 
+/** Lectura del agregado sin bloquearlo, para consultas que usan sus reglas (por ejemplo, RN-M1). */
+export interface LectorDeViajes {
+  obtener(viajeId: string): Promise<Viaje | null>;
+}
+
 /** Saldos que el módulo de viajes necesita consultar para las bajas (RN-E3). */
 export interface ConsultaDeudas {
   /** Total que el usuario debe al resto del grupo, en la unidad mínima de la moneda. */

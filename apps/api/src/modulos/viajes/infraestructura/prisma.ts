@@ -5,22 +5,28 @@ import type {
   Acceso,
   ConsultaDeudas,
   ConsultaViajes,
+  LectorDeViajes,
   RepositorioViajes,
   RetiroDeVotos,
 } from '../dominio/puertos.js';
 import { Viaje } from '../dominio/viaje.js';
 
-export class RepositorioViajesPrisma implements RepositorioViajes {
+export class RepositorioViajesPrisma implements RepositorioViajes, LectorDeViajes {
   constructor(private readonly db: ClientePrisma) {}
 
   async obtenerParaModificar(viajeId: string): Promise<Viaje | null> {
     const bloqueado = await this.db.$queryRaw<{ id: string }[]>`
       SELECT id FROM viaje WHERE id = ${viajeId}::uuid FOR UPDATE`;
     if (bloqueado.length === 0) return null;
-    const v = await this.db.viaje.findUniqueOrThrow({
+    return this.obtener(viajeId);
+  }
+
+  async obtener(viajeId: string): Promise<Viaje | null> {
+    const v = await this.db.viaje.findUnique({
       where: { id: viajeId },
       include: { membresias: true },
     });
+    if (!v) return null;
     return Viaje.reconstruir({
       id: v.id,
       nombre: v.nombre,

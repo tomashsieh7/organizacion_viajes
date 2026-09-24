@@ -3,6 +3,8 @@
  * memoria y sobre PostgreSQL, y entregan los repositorios de cada implementación.
  */
 import type { PrismaClient } from '../../src/compartido/infraestructura/prisma.js';
+import type { ConsultaItinerario } from '../../src/modulos/itinerario/dominio/puertos.js';
+import { ConsultaItinerarioPrisma } from '../../src/modulos/itinerario/infraestructura/prisma.js';
 import type {
   ConsultaActividades,
   RepositorioActividades,
@@ -42,6 +44,7 @@ import type {
   BuscadorDeUsuarios,
   ConsultaDeudas,
   ConsultaViajes,
+  LectorDeViajes,
   RepositorioViajes,
   RetiroDeVotos,
 } from '../../src/modulos/viajes/dominio/puertos.js';
@@ -55,6 +58,7 @@ import {
 import { vaciarBase } from './baseDePrueba.js';
 import {
   baseVacia,
+  ConsultaItinerarioEnMemoria,
   ConsultaActividadesEnMemoria,
   RepositorioActividadesEnMemoria,
   ConsultaAlojamientosEnMemoria,
@@ -91,9 +95,11 @@ export interface Repos {
   consultaAlojamientos: ConsultaAlojamientos;
   actividades: RepositorioActividades;
   consultaActividades: ConsultaActividades;
+  itinerario: ConsultaItinerario;
   cuentas: RepositorioCuentas;
   sesiones: RepositorioSesiones;
   viajes: RepositorioViajes;
+  lector: LectorDeViajes;
   consultas: ConsultaViajes;
   deudas: ConsultaDeudas;
   votos: RetiroDeVotos;
@@ -188,9 +194,11 @@ export const implementacionEnMemoria: Implementacion = {
         consultaAlojamientos: new ConsultaAlojamientosEnMemoria(base),
         actividades: new RepositorioActividadesEnMemoria(base),
         consultaActividades: new ConsultaActividadesEnMemoria(base),
+        itinerario: new ConsultaItinerarioEnMemoria(base),
         cuentas: new RepositorioCuentasEnMemoria(base),
         sesiones: new RepositorioSesionesEnMemoria(base),
         viajes: new RepositorioViajesEnMemoria(base),
+        lector: new RepositorioViajesEnMemoria(base),
         consultas: new ConsultaViajesEnMemoria(base),
         deudas: new ConsultaDeudasEnMemoria(base),
         votos: new RetiroDeVotosEnMemoria(base),
@@ -282,9 +290,11 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
           consultaAlojamientos: new ConsultaAlojamientosPrisma(prisma),
           actividades: new RepositorioActividadesPrisma(prisma),
           consultaActividades: new ConsultaActividadesPrisma(prisma),
+          itinerario: new ConsultaItinerarioPrisma(prisma),
           cuentas: new RepositorioCuentasPrisma(prisma),
           sesiones: new RepositorioSesionesPrisma(prisma),
           viajes: new RepositorioViajesPrisma(prisma),
+          lector: new RepositorioViajesPrisma(prisma),
           consultas: new ConsultaViajesPrisma(prisma),
           deudas: new ConsultaDeudasPrisma(prisma),
           votos: new RetiroDeVotosPrisma(prisma),

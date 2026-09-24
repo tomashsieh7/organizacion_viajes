@@ -193,3 +193,23 @@ describe('Viaje', () => {
     expect(Viaje.reconstruir(v.aDatos()).aDatos()).toEqual(v.aDatos());
   });
 });
+
+describe('Viaje.diaInicialDelMapa (RN-M1, P19)', () => {
+  const v = viajeConParticipantes(); // del 2026-12-10 al 2026-12-16
+
+  it('hoy dentro del viaje: muestra hoy, tenga o no actividades', () => {
+    expect(v.diaInicialDelMapa('2026-12-12', ['2026-12-12', '2026-12-14'])).toBe('2026-12-12');
+    expect(v.diaInicialDelMapa('2026-12-13', ['2026-12-12', '2026-12-14'])).toBe('2026-12-13');
+    expect(v.diaInicialDelMapa('2026-12-16', [])).toBe('2026-12-16');
+  });
+
+  it('hoy antes o después del viaje: el primer día con actividades confirmadas', () => {
+    expect(v.diaInicialDelMapa('2026-09-24', ['2026-12-14', '2026-12-12'])).toBe('2026-12-12');
+    expect(v.diaInicialDelMapa('2027-01-05', ['2026-12-15', '2026-12-11'])).toBe('2026-12-11');
+  });
+
+  it('sin actividades confirmadas: el primer día del viaje', () => {
+    expect(v.diaInicialDelMapa('2026-09-24', [])).toBe('2026-12-10');
+    expect(v.diaInicialDelMapa('2027-01-05', [])).toBe('2026-12-10');
+  });
+});

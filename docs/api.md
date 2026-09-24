@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Estado al cierre de F4. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
+Estado al cierre de F5. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
 
 ## Convenciones
 
@@ -93,3 +93,17 @@ Cada actividad es una `propuesta` con `actividad: { titulo, fecha, horaInicio, h
 La superposición se controla solo contra las actividades confirmadas; los intervalos son semiabiertos, así que una actividad que empieza cuando termina otra no choca. En `SUPERPOSICION_HORARIA`, `detalles` es `{ conflictos: [{ id, titulo, fecha, horaInicio, duracionMin }] }`.
 
 Votar, desvotar, confirmar, denegar y cancelar una actividad usan los endpoints comunes de propuestas.
+
+## Itinerario
+
+| Método y ruta | Quién | Parámetros | Respuesta | Errores específicos |
+|---|---|---|---|---|
+| `GET /api/viajes/:viajeId/cronograma` | Participante | — | `200 { dias: [{ fecha, actividades, alojamientos }] }` con todos los días del viaje | — |
+| `GET /api/viajes/:viajeId/mapa?hoy=&dia=` | Participante | `hoy` obligatorio: fecha del dispositivo (`YYYY-MM-DD`); `dia` opcional, dentro del viaje | `200 { dia, diasConActividad, actividades, recorrido, aviso }` | 400 `VALIDACION`, 422 `FUERA_DEL_VIAJE` |
+
+- **Actividades del itinerario:** solo las confirmadas, con la forma `{ id, titulo, descripcion, fecha, horaInicio, horaFin, duracionMin, ubicacion, latitud, longitud }`, ordenadas por hora de inicio y título. En el mapa, la posición en la lista es el número del marcador.
+- **Alojamientos de cada día del cronograma:** `[{ id, nombre, ubicacion }]` con los alojamientos confirmados en los que se pasa esa noche. El día de salida no cuenta. La lista queda vacía si no hay ninguno.
+- **Día que muestra el mapa si no se indica `dia`:** hoy, si cae dentro del viaje; si no, el primer día con actividades confirmadas; y si no hay ninguna, el primer día del viaje.
+- **`recorrido`:** los puntos `{ latitud, longitud }` que unen las actividades en orden. En el MVP son líneas rectas.
+- **`aviso`:** vale `"SIN_ACTIVIDADES_CONFIRMADAS"` cuando el día no tiene actividades, y `null` en otro caso.
+- **Ver una actividad en el mapa (CU18):** se usa `GET …/actividades/:actividadId` para conocer su día y después se pide el mapa de ese día.

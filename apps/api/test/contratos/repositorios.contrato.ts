@@ -112,6 +112,15 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
 
     it('devuelve null si el viaje no existe', async () => {
       expect(await r.viajes.obtenerParaModificar(crypto.randomUUID())).toBeNull();
+      expect(await r.lector.obtener(crypto.randomUUID())).toBeNull();
+    });
+
+    it('LectorDeViajes lee el mismo agregado sin necesidad de transacción', async () => {
+      const ana = await e.usuario('Ana');
+      const id = await e.viaje(ana);
+      expect((await r.lector.obtener(id))?.aDatos()).toEqual(
+        (await r.viajes.obtenerParaModificar(id))?.aDatos(),
+      );
     });
   });
 
@@ -459,6 +468,117 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       ).toEqual([noche.id]);
       expect((await r.consultaActividades.obtener(viaje, alternativa.id, ana))?.miVoto).toBeNull();
       expect(await r.consultaActividades.obtener(await e.viaje(ana), manana.id, ana)).toBeNull();
+    });
+  });
+
+  describe(`ConsultaItinerario — ${impl.nombre}`, () => {
+    const AHORA = new Date('2026-09-24T12:00:00Z');
+    const RESUELTA = new Date('2026-09-25T12:00:00Z');
+
+    async function actividad(
+      viajeId: string,
+      autorId: string,
+      titulo: string,
+      fecha: string,
+      horaInicio: string,
+      confirmar = true,
+    ) {
+      const a = Actividad.proponer({
+        id: crypto.randomUUID(),
+        viajeId,
+        autorId,
+        titulo,
+        descripcion: `desc ${titulo}`,
+        ubicacion: `lugar ${titulo}`,
+        coordenadas: Coordenadas.crear(-41.1, -71.3),
+        fecha,
+        horaInicio,
+        duracionMin: 90,
+        ahora: AHORA,
+      });
+      await r.actividades.crear(a);
+      if (confirmar) await resolver(viajeId, a.id, autorId);
+      return a.id;
+    }
+
+    async function alojamiento(
+      viajeId: string,
+      autorId: string,
+      nombre: string,
+      desde: string,
+      hasta: string,
+      confirmar = true,
+    ) {
+      const p = Propuesta.proponer({
+        id: crypto.randomUUID(),
+        viajeId,
+        autorId,
+        tipo: 'ALOJAMIENTO',
+        descripcion: 'x',
+        ubicacion: `calle ${nombre}`,
+        coordenadas: null,
+        ahora: AHORA,
+      });
+      await r.alojamientos.crear(p, { nombre, estadia: RangoFechas.crear(desde, hasta) });
+      if (confirmar) await resolver(viajeId, p.id, autorId);
+      return p.id;
+    }
+
+    async function resolver(viajeId: string, id: string, adminId: string) {
+      const p = (await r.propuestas.obtenerParaModificar(viajeId, id))!;
+      p.resolver('confirmar', adminId, RESUELTA);
+      await r.propuestas.guardar(p);
+    }
+
+    it('devuelve solo actividades confirmadas del viaje, por fecha, hora y título', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const cena = await actividad(viaje, ana, 'Cena', '2026-12-11', '21:00');
+      const bote = await actividad(viaje, ana, 'Bote', '2026-12-11', '10:00');
+      const alba = await actividad(viaje, ana, 'Alba', '2026-12-11', '10:00');
+      const antes = await actividad(viaje, ana, 'Museo', '2026-12-10', '23:00');
+      await actividad(viaje, ana, 'Pendiente', '2026-12-11', '12:00', false);
+      await actividad(await e.viaje(ana), ana, 'Ajena', '2026-12-11', '12:00');
+
+      const lista = await r.itinerario.actividadesConfirmadas(viaje);
+      expect(lista.map((a) => a.id)).toEqual([antes, alba, bote, cena]);
+      expect(lista[0]).toEqual({
+        id: antes,
+        titulo: 'Museo',
+        descripcion: 'desc Museo',
+        fecha: '2026-12-10',
+        horaInicio: '23:00',
+        horaFin: '00:30',
+        duracionMin: 90,
+        ubicacion: 'lugar Museo',
+        latitud: -41.1,
+        longitud: -71.3,
+      });
+    });
+
+    it('devuelve solo alojamientos confirmados del viaje, con su estadía', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const cabana = await alojamiento(viaje, ana, 'Cabaña', '2026-12-13', '2026-12-16');
+      const hostel = await alojamiento(viaje, ana, 'Hostel', '2026-12-10', '2026-12-13');
+      await alojamiento(viaje, ana, 'Pendiente', '2026-12-10', '2026-12-12', false);
+      await actividad(viaje, ana, 'Kayak', '2026-12-11', '10:00');
+
+      const lista = await r.itinerario.alojamientosConfirmados(viaje);
+      expect(lista).toEqual([
+        {
+          id: hostel,
+          nombre: 'Hostel',
+          ubicacion: 'calle Hostel',
+          estadia: RangoFechas.crear('2026-12-10', '2026-12-13'),
+        },
+        {
+          id: cabana,
+          nombre: 'Cabaña',
+          ubicacion: 'calle Cabaña',
+          estadia: RangoFechas.crear('2026-12-13', '2026-12-16'),
+        },
+      ]);
     });
   });
 }

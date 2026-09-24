@@ -463,3 +463,61 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F4 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada de cierre de F4, más esta entrada en `LOG.md`.
+
+## 2026-09-24 01:39 — Inicio de F5: itinerario, cronograma y mapa
+
+- **Acción:** comienza la fase F5 de `PLAN.md`: consultar el cronograma (CU16, RN-C1 a RN-C4) y el mapa del día con marcadores numerados y recorrido (CU17, RN-M1 a RN-M8), y ver una actividad en el mapa (CU18). Se aplican P19, P20 y P21.
+
+## 2026-09-24 01:46 — F5 terminada: itinerario, cronograma y mapa
+
+- **Acción:** se implementa F5 completa, backend y frontend.
+- **Archivos creados:**
+  - **Módulo `itinerario` del backend:**
+    - dominio: `recorrido.ts` (`ProveedorRecorrido` y `RecorridoEnLineaRecta`) y `puertos.ts` (`ConsultaItinerario`);
+    - casos de uso: `casosDeUsoItinerario.ts` (`ConsultarCronograma` y `ConsultarMapa`);
+    - infraestructura: `prisma.ts` (`ConsultaItinerarioPrisma`);
+    - rutas: `itinerario.rutas.ts`.
+  - **Pruebas del backend:** `casosDeUsoItinerario.test.ts`, `recorrido.contrato.ts` con `recorrido.test.ts`, e `itinerario.bd.test.ts`.
+  - **Frontend:**
+    - cliente `itinerario.ts` y composable `useMapaDelDia`;
+    - componentes `MapaActividades`, `SelectorDia`, `AvisoSinActividades`, `PanelActividad` y `DiaCronograma`;
+    - vistas `MapaVista` y `CronogramaVista`;
+    - utilidades de fechas (`hoyDelDispositivo`, `diasEntre`, `nombreDelDia`);
+    - pruebas de `MapaActividades`, `MapaVista`, `CronogramaVista` y de las utilidades.
+- **Archivos modificados:**
+  - Paquete compartido: `contratos.ts` (tipos del cronograma y del mapa) y `esquemas.ts` (`esquemaConsultaMapa`).
+  - Backend:
+    - `viaje.ts` (`diaInicialDelMapa`), `viajes/dominio/puertos.ts` (`LectorDeViajes`) y `viajes/infraestructura/prisma.ts` (`obtener` sin bloqueo);
+    - `contenedor.ts` y `app.ts`;
+    - las pruebas de `Viaje` y los soportes y contratos de repositorios.
+  - Frontend: `main.ts`, el router y el menú del viaje.
+  - Documentación: `docs/api.md` y `PLAN.md` (sección 5.7).
+- **Decisiones:**
+  - **`LectorDeViajes`:** el mapa necesita la regla del día inicial, que vive en `Viaje` (experto en información). Para no cargar el agregado con bloqueo en una consulta, se agregó este puerto de lectura sin bloqueo, separado de `RepositorioViajes` (segregación de interfaces). Lo implementan los repositorios de viajes en Prisma y en memoria, y tiene prueba de contrato. Se descartó mover la regla a `RangoFechas`, porque "día inicial del mapa" es un concepto del viaje y no de cualquier rango.
+  - **`ProveedorRecorrido` asíncrono:** el trazado por calles del Release 4 va a consultar un servicio externo, así que la interfaz ya es asíncrona y no hará falta cambiarla. Su contrato exige empezar y terminar en las actividades y pasar por todas en orden, lo que admite puntos intermedios.
+  - **Una sola consulta de actividades confirmadas:** el mapa lee todas las del viaje y filtra el día en memoria, porque también necesita la lista de días con actividad. Con el tamaño de un viaje, dos consultas no aportan nada.
+  - **"Hoy":** la web lo calcula con la fecha local del dispositivo y lo manda en cada pedido del mapa (P19, D17). El cronograma lo usa para desplazarse hasta el día actual.
+  - **Marcadores numerados:** son íconos de texto de Leaflet, por el mismo motivo que en F3 (las imágenes de los íconos se rompen al empaquetar).
+  - **Día elegido en la dirección:** el día queda como `?dia=` para poder compartir el enlace o volver atrás.
+  - **Actividad no confirmada en el mapa:** si se abre `?actividad=` con una actividad que no está confirmada, se abre su día y se muestra el panel aclarando que no está en el recorrido. Se descartó responder con un error, porque el enlace puede venir de una actividad que se canceló después.
+- **Desvío respecto del plan:** el cronograma devuelve una lista de alojamientos por noche en lugar de uno solo. Nada impide confirmar dos alojamientos para la misma noche, y con un único valor uno quedaría oculto. Se actualizó la sección 5.7 de `PLAN.md`.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 301 pruebas: 255 del backend y 46 del frontend. Entre ellas:
+    - `Viaje.diaInicialDelMapa()` con hoy dentro del viaje, con y sin actividades; hoy antes y después del viaje con actividades confirmadas; y un viaje sin actividades confirmadas;
+    - cronograma con días vacíos, orden por horario, solo confirmadas y el alojamiento de cada noche sin contar el día de salida;
+    - integración de `GET …/mapa`: aviso del día vacío, cambio de día, día inicial, validación de parámetros y día fuera del viaje;
+    - contrato de `ProveedorRecorrido` y del puerto nuevo de lectura;
+    - prueba de componente de `MapaActividades`: un marcador numerado por actividad y una polilínea con las coordenadas en orden;
+    - `MapaVista` con `?actividad=`: abre el día de la actividad con su panel.
+  - `npm run lint` pasa sin errores.
+  - **Recorrido manual en Chromium:**
+    - el cronograma muestra los cinco días, las actividades del día 11 en orden, la noche en el hostel y la leyenda de los días vacíos;
+    - "Ver en el mapa" abre el día 11 con los marcadores 1, 2 y 3, la línea del recorrido y el panel del Almuerzo;
+    - el día 13 muestra el aviso y queda en la dirección;
+    - un clic en un marcador abre su panel;
+    - sin día elegido, el mapa abre el primer día con actividades.
+
+## 2026-09-24 01:48 — Commit y push de F5
+
+- **Acción:** con autorización del usuario, se hace commit de F5 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F5, más esta entrada en `LOG.md`.

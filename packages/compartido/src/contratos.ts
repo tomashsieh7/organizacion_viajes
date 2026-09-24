@@ -115,3 +115,54 @@ export interface ConflictoHorario {
   horaInicio: string;
   duracionMin: number;
 }
+
+/** Actividad confirmada tal como la muestran el cronograma y el mapa (CU16 y CU17). */
+export interface ActividadDelItinerario {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  duracionMin: number;
+  ubicacion: string;
+  latitud: number;
+  longitud: number;
+}
+
+/** Alojamiento confirmado en el que se pasa una noche (RN-C3). */
+export interface AlojamientoDeLaNoche {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+}
+
+export interface DiaDelCronograma {
+  fecha: string;
+  /** Solo confirmadas, ordenadas por horario (RN-C2); vacía si el día no tiene (RN-C1). */
+  actividades: ActividadDelItinerario[];
+  /** Alojamientos confirmados de esa noche; el día de salida no cuenta (RN-C3). */
+  alojamientos: AlojamientoDeLaNoche[];
+}
+
+export interface Cronograma {
+  dias: DiaDelCronograma[];
+}
+
+export interface PuntoDelRecorrido {
+  latitud: number;
+  longitud: number;
+}
+
+export type AvisoDelMapa = 'SIN_ACTIVIDADES_CONFIRMADAS';
+
+export interface MapaDelDia {
+  dia: string;
+  /** Días del viaje con al menos una actividad confirmada, para resaltarlos en el selector. */
+  diasConActividad: string[];
+  /** Actividades confirmadas del día en orden cronológico; su posición es su número en el mapa. */
+  actividades: ActividadDelItinerario[];
+  /** Puntos de la línea que une las actividades en ese orden (P20). */
+  recorrido: PuntoDelRecorrido[];
+  aviso: AvisoDelMapa | null;
+}

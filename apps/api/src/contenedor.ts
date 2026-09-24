@@ -32,6 +32,12 @@ import {
 } from './modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
 import type { ConsultaViajes, ReposViajes } from './modulos/viajes/dominio/puertos.js';
 import {
+  ConsultarCronograma,
+  ConsultarMapa,
+} from './modulos/itinerario/casos-de-uso/casosDeUsoItinerario.js';
+import { RecorridoEnLineaRecta } from './modulos/itinerario/dominio/recorrido.js';
+import { ConsultaItinerarioPrisma } from './modulos/itinerario/infraestructura/prisma.js';
+import {
   ConsultarAlojamientos,
   ProponerAlojamiento,
 } from './modulos/alojamientos/casos-de-uso/casosDeUsoAlojamientos.js';
@@ -113,6 +119,10 @@ export interface Contenedor {
     proponerAlternativa: ProponerAlternativa;
     consultar: ConsultarActividades;
   };
+  itinerario: {
+    cronograma: ConsultarCronograma;
+    mapa: ConsultarMapa;
+  };
   alojamientos: {
     proponer: ProponerAlojamiento;
     consultar: ConsultarAlojamientos;
@@ -183,6 +193,10 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
     new ReglaOpcionesAlConfirmar(new DenegarOpcionesRestantes()),
   ];
 
+  // Itinerario
+  const viajesSinBloqueo = new RepositorioViajesPrisma(prisma);
+  const consultaItinerario = new ConsultaItinerarioPrisma(prisma);
+
   // Alojamientos
   const unidadAlojamientos = new UnidadDeTrabajoPrisma<ReposAlojamientos>(prisma, (tx) => ({
     alojamientos: new RepositorioAlojamientosPrisma(tx),
@@ -221,6 +235,10 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       proponer: new ProponerActividad(depsActividades),
       proponerAlternativa: new ProponerAlternativa(depsActividades),
       consultar: new ConsultarActividades(new ConsultaActividadesPrisma(prisma)),
+    },
+    itinerario: {
+      cronograma: new ConsultarCronograma(viajesSinBloqueo, consultaItinerario),
+      mapa: new ConsultarMapa(viajesSinBloqueo, consultaItinerario, new RecorridoEnLineaRecta()),
     },
     alojamientos: {
       proponer: new ProponerAlojamiento(

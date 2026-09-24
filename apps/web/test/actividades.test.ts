@@ -37,3 +37,17 @@ describe('formato de actividades', () => {
     );
   });
 });
+
+describe('fechas', () => {
+  it('toma la fecha local del dispositivo', async () => {
+    const { hoyDelDispositivo, diasEntre, nombreDelDia } = await import('../src/utiles/fechas');
+    expect(hoyDelDispositivo(new Date(2026, 11, 11, 23, 59))).toBe('2026-12-11');
+    expect(diasEntre('2026-12-30', '2027-01-02')).toEqual([
+      '2026-12-30',
+      '2026-12-31',
+      '2027-01-01',
+      '2027-01-02',
+    ]);
+    expect(nombreDelDia('2026-12-11')).toBe('viernes 11/12');
+  });
+});

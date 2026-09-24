@@ -10,6 +10,7 @@ import { rutasSalud } from './modulos/salud/salud.rutas.js';
 import { rutasDelViaje, rutasViajes } from './modulos/viajes/viajes.rutas.js';
 import { rutasDeAlojamientos } from './modulos/alojamientos/alojamientos.rutas.js';
 import { rutasDeActividades } from './modulos/actividades/actividades.rutas.js';
+import { rutasDeItinerario } from './modulos/itinerario/itinerario.rutas.js';
 import { rutasDePropuestas } from './modulos/propuestas/propuestas.rutas.js';
 
 /** Arma la aplicación Express con las rutas de la API y el manejo de errores. */
@@ -42,6 +43,7 @@ export function crearApp(c: Contenedor): Express {
   viaje.use(rutasDePropuestas(c.propuestas));
   viaje.use(rutasDeAlojamientos(c.alojamientos));
   viaje.use(rutasDeActividades(c.actividades));
+  viaje.use(rutasDeItinerario(c.itinerario));
   api.use('/viajes/:viajeId', viaje);
   api.use(rutaNoEncontrada);
 

@@ -10,11 +10,13 @@ const store = useViajeStore();
 const route = useRoute();
 const error = ref('');
 
-// Las demás secciones del menú se suman en las fases siguientes (F5 a F8).
+// Las demás secciones del menú se suman en las fases siguientes (F6 a F8).
 const secciones = [
   { nombre: 'Participantes', ruta: 'participantes' },
   { nombre: 'Alojamientos', ruta: 'alojamientos' },
   { nombre: 'Actividades', ruta: 'actividades' },
+  { nombre: 'Cronograma', ruta: 'cronograma' },
+  { nombre: 'Mapa', ruta: 'mapa' },
 ];
 
 watch(

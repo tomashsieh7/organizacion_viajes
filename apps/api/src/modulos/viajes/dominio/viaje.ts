@@ -141,6 +141,18 @@ export class Viaje {
     return RangoFechas.crear(this.datos.fechaInicio, this.datos.fechaFin);
   }
 
+  /**
+   * RN-M1 (P19): el día que muestra el mapa si no se eligió otro. Hoy, si cae dentro del viaje
+   * aunque no tenga actividades; si no, el primer día con actividades confirmadas; y si no hay
+   * ninguna, el primer día del viaje.
+   */
+  diaInicialDelMapa(hoy: Fecha, diasConActividad: Fecha[]): Fecha {
+    const rango = this.rango;
+    if (rango.contiene(hoy)) return hoy;
+    const conActividad = diasConActividad.filter((d) => rango.contiene(d)).sort();
+    return conActividad[0] ?? rango.desde;
+  }
+
   membresiaDe(usuarioId: string): Membresia | undefined {
     return this.membresias.find((m) => m.usuarioId === usuarioId);
   }

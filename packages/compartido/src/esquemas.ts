@@ -66,6 +66,12 @@ export const VALORES_VOTO = ['A_FAVOR', 'EN_CONTRA'] as const;
 export const esquemaVoto = z.object({ valor: z.enum(VALORES_VOTO, 'Elegí a favor o en contra') });
 export type DatosVoto = z.input<typeof esquemaVoto>;
 
+/** CU17: `hoy` es la fecha del dispositivo (P19); `dia`, el que eligió el viajero. */
+export const esquemaConsultaMapa = z.object({
+  hoy: esquemaFecha,
+  dia: esquemaFecha.optional(),
+});
+
 export const esquemaFiltroEstado = z.object({ estado: z.enum(ESTADOS_PROPUESTA).optional() });
 
 const coordenadas = {

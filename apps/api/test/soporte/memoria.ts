@@ -5,6 +5,7 @@
  */
 import {
   sumarMinutos,
+  type ActividadDelItinerario,
   type ActividadVista,
   type AlojamientoVista,
   type DetalleViaje,
@@ -16,6 +17,10 @@ import {
 } from '@viajes/compartido';
 import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
 import { Intervalo } from '../../src/compartido/valores/intervalo.js';
+import type {
+  AlojamientoConfirmado,
+  ConsultaItinerario,
+} from '../../src/modulos/itinerario/dominio/puertos.js';
 import {
   Actividad,
   type DetalleActividad,
@@ -52,6 +57,7 @@ import type {
   BuscadorDeUsuarios,
   ConsultaDeudas,
   ConsultaViajes,
+  LectorDeViajes,
   ReposViajes,
   RepositorioViajes,
   RetiroDeVotos,
@@ -150,10 +156,14 @@ export class RepositorioSesionesEnMemoria implements RepositorioSesiones {
   }
 }
 
-export class RepositorioViajesEnMemoria implements RepositorioViajes {
+export class RepositorioViajesEnMemoria implements RepositorioViajes, LectorDeViajes {
   constructor(private readonly base: BaseEnMemoria) {}
 
   async obtenerParaModificar(viajeId: string): Promise<Viaje | null> {
+    return this.obtener(viajeId);
+  }
+
+  async obtener(viajeId: string): Promise<Viaje | null> {
     const v = this.base.viajes.find((x) => x.id === viajeId);
     return v ? Viaje.reconstruir(structuredClone(v)) : null;
   }
@@ -525,6 +535,55 @@ export class ConsultaActividadesEnMemoria implements ConsultaActividades {
           : null,
       },
     };
+  }
+}
+
+export class ConsultaItinerarioEnMemoria implements ConsultaItinerario {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async actividadesConfirmadas(viajeId: string): Promise<ActividadDelItinerario[]> {
+    return this.base.propuestas
+      .filter(tieneActividad)
+      .filter((p) => p.datos.viajeId === viajeId && p.datos.estado === 'CONFIRMADA')
+      .sort(
+        (a, b) =>
+          a.actividad.fecha.localeCompare(b.actividad.fecha) ||
+          a.actividad.horaInicio.localeCompare(b.actividad.horaInicio) ||
+          a.actividad.titulo.localeCompare(b.actividad.titulo),
+      )
+      .map(({ datos, actividad: a }) => ({
+        id: datos.id,
+        titulo: a.titulo,
+        descripcion: datos.descripcion,
+        fecha: a.fecha,
+        horaInicio: a.horaInicio,
+        horaFin: sumarMinutos(a.horaInicio, a.duracionMin),
+        duracionMin: a.duracionMin,
+        ubicacion: datos.ubicacion,
+        latitud: datos.latitud ?? 0,
+        longitud: datos.longitud ?? 0,
+      }));
+  }
+
+  async alojamientosConfirmados(viajeId: string): Promise<AlojamientoConfirmado[]> {
+    return this.base.propuestas
+      .filter((p) => p.datos.viajeId === viajeId && p.datos.estado === 'CONFIRMADA')
+      .flatMap((p) =>
+        p.alojamiento
+          ? [
+              {
+                id: p.datos.id,
+                nombre: p.alojamiento.nombre,
+                ubicacion: p.datos.ubicacion,
+                estadia: RangoFechas.crear(p.alojamiento.fechaDesde, p.alojamiento.fechaHasta),
+              },
+            ]
+          : [],
+      )
+      .sort(
+        (a, b) =>
+          a.estadia.desde.localeCompare(b.estadia.desde) || a.nombre.localeCompare(b.nombre),
+      );
   }
 }
 
