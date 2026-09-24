@@ -20,6 +20,11 @@ export interface ConsultaDeudas {
   totalAdeudado(viajeId: string, usuarioId: string): Promise<number>;
 }
 
+/** RN-E6: si el usuario tiene saldos pendientes a favor o en contra en el viaje. */
+export interface ConsultaSaldosPendientes {
+  tieneSaldosPendientes(viajeId: string, usuarioId: string): Promise<boolean>;
+}
+
 /** RN-E5: al darse de baja se retiran los votos en propuestas pendientes. */
 export interface RetiroDeVotos {
   retirarVotosPendientes(viajeId: string, usuarioId: string): Promise<void>;

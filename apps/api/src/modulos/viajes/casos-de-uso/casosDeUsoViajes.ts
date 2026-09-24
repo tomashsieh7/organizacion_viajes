@@ -5,6 +5,8 @@ import type {
   Moneda,
   Participante,
   ResumenViaje,
+  Rol,
+  TipoAcceso,
 } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../../compartido/errores.js';
 import type { PublicadorDeEventos } from '../../../compartido/eventos.js';
@@ -14,7 +16,9 @@ import type { EventoDeViaje } from '../dominio/eventos.js';
 import type {
   BuscadorDeUsuarios,
   ConsultaDeudas,
+  ConsultaSaldosPendientes,
   ConsultaViajes,
+  LectorDeViajes,
   ReposViajes,
 } from '../dominio/puertos.js';
 import { Viaje } from '../dominio/viaje.js';
@@ -175,5 +179,24 @@ export class ConsultarViajes {
 
   monedas(): Promise<Moneda[]> {
     return this.consultas.listarMonedas();
+  }
+}
+
+/** RN-E6: tipo de acceso de un usuario al viaje, según su membresía y sus saldos pendientes. */
+export class ConsultarAcceso {
+  constructor(
+    private readonly viajes: LectorDeViajes,
+    private readonly saldos: ConsultaSaldosPendientes,
+  ) {}
+
+  async ejecutar(viajeId: string, usuarioId: string): Promise<{ rol: Rol; tipo: TipoAcceso }> {
+    const membresia = (await this.viajes.obtener(viajeId))?.membresiaDe(usuarioId);
+    const tipo = membresia?.tipoDeAcceso(
+      !membresia.estaActiva() && (await this.saldos.tieneSaldosPendientes(viajeId, usuarioId)),
+    );
+    if (!membresia || !tipo) {
+      throw new ErrorDeDominio('PROHIBIDO', 'NO_PARTICIPANTE', 'No participás de este viaje');
+    }
+    return { rol: membresia.rol, tipo };
   }
 }

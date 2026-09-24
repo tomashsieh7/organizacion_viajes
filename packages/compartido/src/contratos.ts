@@ -40,6 +40,8 @@ export interface ResumenViaje {
   fechaFin: string;
   monedaCodigo: string;
   miRol: Rol;
+  /** RN-E6: con `SOLO_SALDOS` solo se puede entrar a la sección de saldos. */
+  miAcceso: TipoAcceso;
 }
 
 export interface DetalleViaje extends Omit<ResumenViaje, 'monedaCodigo'> {
@@ -218,3 +220,47 @@ export interface EventosClienteChat {
     confirmar: (r: ConfirmacionSocket<{ mensaje: MensajeVista }>) => void,
   ) => void;
 }
+
+/**
+ * RN-E6: `COMPLETO` para quien participa del viaje; `SOLO_SALDOS` para quien se fue o fue
+ * eliminado y todavía tiene saldos pendientes a favor o en contra.
+ */
+export type TipoAcceso = 'COMPLETO' | 'SOLO_SALDOS';
+
+export interface CategoriaGasto {
+  id: string;
+  codigo: string;
+  nombre: string;
+}
+
+export type ModoDivision = 'IGUALES' | 'ARBITRARIA';
+
+export interface PersonaVista {
+  id: string;
+  nombre: string;
+  apodo: string | null;
+}
+
+/** Gasto con su división (CU20). Montos en la unidad mínima de la moneda del viaje. */
+export interface GastoVista {
+  id: string;
+  titulo: string;
+  categoria: CategoriaGasto;
+  monto: number;
+  modoDivision: ModoDivision;
+  pagadoPor: PersonaVista;
+  registradoPor: PersonaVista;
+  creadoEn: string;
+  /** Cuánto le corresponde a cada deudor, de mayor a menor monto. */
+  partes: { usuario: PersonaVista; monto: number }[];
+}
+
+/** Deuda pendiente con otro viajero (CU21 y CU22); `contraparte` es el acreedor o el deudor. */
+export interface DeudaVista {
+  id: string;
+  contraparte: PersonaVista;
+  monto: number;
+  ultimaActualizacion: string;
+}
+
+export type RolEnDeuda = 'deudor' | 'acreedor';

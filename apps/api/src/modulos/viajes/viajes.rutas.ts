@@ -48,16 +48,29 @@ export function rutasViajes(deps: DependenciasRutasViajes): Router {
   return router;
 }
 
+/**
+ * Detalle del viaje: también lo ve quien conserva acceso solo a saldos (RN-E6), así que recibe
+ * su propia guarda en lugar de la del router de viaje.
+ */
+export function rutasDelViajeConSaldos(
+  consultar: ConsultarViajes,
+  guarda: RequestHandler[],
+): Router {
+  const router = Router({ mergeParams: true });
+  router.get('/', ...guarda, async (req, res) => {
+    res.json({
+      viaje: await consultar.detalle(String(req.params['viajeId']), req.usuarioId ?? ''),
+    });
+  });
+  return router;
+}
+
 /** Rutas dentro de un viaje; se montan en el router de viaje, que ya exige participar. */
 export function rutasDelViaje(deps: Omit<DependenciasRutasViajes, 'autenticado'>): Router {
   const viaje = Router({ mergeParams: true });
   const usuario = (req: { usuarioId?: string }) => req.usuarioId ?? '';
   const viajeId = (req: { params: Record<string, string | string[] | undefined> }) =>
     String(req.params['viajeId']);
-
-  viaje.get('/', async (req, res) => {
-    res.json({ viaje: await deps.consultar.detalle(viajeId(req), usuario(req)) });
-  });
 
   viaje.get('/participantes', async (req, res) => {
     res.json({ participantes: await deps.consultar.participantes(viajeId(req)) });

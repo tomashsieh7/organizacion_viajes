@@ -4,11 +4,11 @@ import { ErrorDeDominio } from '../../../compartido/errores.js';
 import type { BusDeEventos } from '../../../compartido/eventos.js';
 import type { Reloj } from '../../../compartido/reloj.js';
 import type { AdministracionTransferida, MiembroDadoDeBaja } from '../../viajes/dominio/eventos.js';
+import type { ConsultaSaldosPendientes } from '../../viajes/dominio/puertos.js';
 import { Mensaje } from '../dominio/mensaje.js';
 import type {
   ConsultaMensajes,
   ConsultaParticipacion,
-  ConsultaSaldosPendientes,
   NotificadorViaje,
   RepositorioMensajes,
 } from '../dominio/puertos.js';

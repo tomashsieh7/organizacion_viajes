@@ -33,11 +33,14 @@ function alCrear(viajeId: string) {
     <p v-else-if="store.viajes.length === 0">Todavía no participás de ningún viaje.</p>
     <ul class="tarjetas">
       <li v-for="v in store.viajes" :key="v.id" class="tarjeta">
-        <RouterLink :to="`/viajes/${v.id}`">
+        <RouterLink
+          :to="v.miAcceso === 'SOLO_SALDOS' ? `/viajes/${v.id}/saldos` : `/viajes/${v.id}`"
+        >
           <strong>{{ v.nombre }}</strong>
           <span>{{ v.destino }}</span>
           <span>{{ formatearFecha(v.fechaInicio) }} al {{ formatearFecha(v.fechaFin) }}</span>
-          <span v-if="v.miRol === 'ADMIN'" class="etiqueta">Admin</span>
+          <span v-if="v.miAcceso === 'SOLO_SALDOS'" class="etiqueta">Solo saldos</span>
+          <span v-else-if="v.miRol === 'ADMIN'" class="etiqueta">Admin</span>
         </RouterLink>
       </li>
     </ul>

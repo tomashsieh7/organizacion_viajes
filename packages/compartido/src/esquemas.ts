@@ -90,6 +90,39 @@ export const esquemaConsultaMensajes = z.object({
   limite: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+const montoEntero = z
+  .number({ error: 'Ingresá un monto' })
+  .int('El monto va en la unidad mínima de la moneda')
+  .max(Number.MAX_SAFE_INTEGER, 'El monto es demasiado grande');
+
+/**
+ * CU20 (RN-G1 a RN-G4): gasto con su pagador, deudores y división. Sin `pagadoPorId`, paga
+ * quien lo anota (P12). En `ARBITRARIA`, `partes` trae el monto de cada deudor.
+ */
+export const esquemaGastoNuevo = z
+  .object({
+    titulo: z.string().trim().min(1, 'Ingresá un título').max(120),
+    categoriaId: z.uuid('Elegí una categoría'),
+    monto: montoEntero.positive('El monto tiene que ser mayor que cero'),
+    pagadoPorId: z.uuid().optional(),
+    deudores: z
+      .array(z.uuid())
+      .min(1, 'Elegí al menos una persona')
+      .refine((d) => new Set(d).size === d.length, 'Hay personas repetidas'),
+    modoDivision: z.enum(['IGUALES', 'ARBITRARIA']),
+    partes: z
+      .array(z.object({ usuarioId: z.uuid(), monto: montoEntero.min(0, 'No puede ser negativo') }))
+      .optional(),
+  })
+  .superRefine((g, ctx) => {
+    if (g.modoDivision === 'ARBITRARIA' && !g.partes) {
+      ctx.addIssue({ code: 'custom', path: ['partes'], message: 'Indicá cuánto paga cada uno' });
+    }
+  });
+export type DatosGastoNuevo = z.input<typeof esquemaGastoNuevo>;
+
+export const esquemaConsultaDeudas = z.object({ rol: z.enum(['deudor', 'acreedor']) });
+
 export const esquemaFiltroEstado = z.object({ estado: z.enum(ESTADOS_PROPUESTA).optional() });
 
 const coordenadas = {

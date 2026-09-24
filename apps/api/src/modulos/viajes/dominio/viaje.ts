@@ -1,3 +1,4 @@
+import type { TipoAcceso } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../../compartido/errores.js';
 import type { Fecha } from '../../../compartido/valores/fecha.js';
 import { RangoFechas } from '../../../compartido/valores/rangoFechas.js';
@@ -5,6 +6,18 @@ import type { EventoDeViaje } from './eventos.js';
 
 export type Rol = 'ADMIN' | 'VIAJERO';
 export type EstadoMembresia = 'ACTIVA' | 'ELIMINADA' | 'RETIRADA';
+
+/**
+ * RN-E6 (P18): quien participa tiene acceso completo; quien se fue o fue eliminado conserva
+ * acceso solo a los saldos mientras le queden saldos pendientes a favor o en contra.
+ */
+export function tipoDeAcceso(
+  estado: EstadoMembresia,
+  tieneSaldosPendientes: boolean,
+): TipoAcceso | null {
+  if (estado === 'ACTIVA') return 'COMPLETO';
+  return tieneSaldosPendientes ? 'SOLO_SALDOS' : null;
+}
 
 export interface DatosMembresia {
   usuarioId: string;
@@ -43,6 +56,11 @@ export class Membresia {
 
   estaActiva(): boolean {
     return this.datos.estado === 'ACTIVA';
+  }
+
+  /** RN-E6. */
+  tipoDeAcceso(tieneSaldosPendientes: boolean): TipoAcceso | null {
+    return tipoDeAcceso(this.datos.estado, tieneSaldosPendientes);
   }
 
   esAdminActivo(): boolean {
@@ -135,6 +153,10 @@ export class Viaje {
 
   get id() {
     return this.datos.id;
+  }
+
+  get monedaCodigo(): string {
+    return this.datos.monedaCodigo;
   }
 
   get rango(): RangoFechas {

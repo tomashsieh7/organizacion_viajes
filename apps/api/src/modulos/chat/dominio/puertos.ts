@@ -28,11 +28,6 @@ export interface ConsultaParticipacion {
   esParticipanteActivo(viajeId: string, usuarioId: string): Promise<boolean>;
 }
 
-/** RN-E6: si el usuario tiene saldos pendientes a favor o en contra en el viaje. */
-export interface ConsultaSaldosPendientes {
-  tieneSaldosPendientes(viajeId: string, usuarioId: string): Promise<boolean>;
-}
-
 /**
  * Entrega en tiempo real los cambios del viaje a quienes están conectados (fabricación pura:
  * el dominio de viajes no conoce la mensajería).

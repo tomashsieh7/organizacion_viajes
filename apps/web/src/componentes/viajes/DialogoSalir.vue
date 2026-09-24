@@ -24,8 +24,16 @@ async function salir() {
     return;
   }
   try {
+    const { id, nombre } = store.actual!;
     await store.salir(store.soyAdmin ? sucesor.value : undefined);
-    await router.push('/viajes');
+    // RN-E6 y RN-E7: con saldos pendientes el viaje sigue en la lista, con acceso solo a saldos.
+    if (store.viajes.some((v) => v.id === id && v.miAcceso === 'SOLO_SALDOS')) {
+      await store.abrir(id);
+      store.aviso = `Saliste de «${nombre}». Podés seguir viendo tus saldos hasta que queden en cero.`;
+      await router.push(`/viajes/${id}/saldos`);
+    } else {
+      await router.push('/viajes');
+    }
   } catch (e) {
     error.value = mensajeDeError(e);
   }

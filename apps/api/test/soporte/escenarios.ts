@@ -5,13 +5,25 @@
 import type { PrismaClient } from '../../src/compartido/infraestructura/prisma.js';
 import type { ConsultaItinerario } from '../../src/modulos/itinerario/dominio/puertos.js';
 import type {
+  ConsultaCategorias,
+  ConsultaGastos,
+  ConsultaSaldos,
+  RepositorioDeudas,
+  RepositorioGastos,
+} from '../../src/modulos/gastos/dominio/puertos.js';
+import {
+  ConsultaCategoriasPrisma,
+  ConsultaGastosPrisma,
+  ConsultaSaldosPrisma,
+  RepositorioDeudasPrisma,
+  RepositorioGastosPrisma,
+} from '../../src/modulos/gastos/infraestructura/prisma.js';
+import type {
   ConsultaMensajes,
-  ConsultaSaldosPendientes,
   RepositorioMensajes,
 } from '../../src/modulos/chat/dominio/puertos.js';
 import {
   ConsultaMensajesPrisma,
-  ConsultaSaldosPendientesPrisma,
   RepositorioMensajesPrisma,
 } from '../../src/modulos/chat/infraestructura/prisma.js';
 import { ConsultaItinerarioPrisma } from '../../src/modulos/itinerario/infraestructura/prisma.js';
@@ -53,6 +65,7 @@ import {
 import type {
   BuscadorDeUsuarios,
   ConsultaDeudas,
+  ConsultaSaldosPendientes,
   ConsultaViajes,
   LectorDeViajes,
   RepositorioViajes,
@@ -61,6 +74,7 @@ import type {
 import type { EstadoMembresia } from '../../src/modulos/viajes/dominio/viaje.js';
 import {
   ConsultaDeudasPrisma,
+  ConsultaSaldosPendientesPrisma,
   ConsultaViajesPrisma,
   RepositorioViajesPrisma,
   RetiroDeVotosPrisma,
@@ -68,6 +82,11 @@ import {
 import { vaciarBase } from './baseDePrueba.js';
 import {
   baseVacia,
+  ConsultaCategoriasEnMemoria,
+  ConsultaGastosEnMemoria,
+  ConsultaSaldosEnMemoria,
+  RepositorioDeudasEnMemoria,
+  RepositorioGastosEnMemoria,
   ConsultaMensajesEnMemoria,
   ConsultaSaldosPendientesEnMemoria,
   RepositorioMensajesEnMemoria,
@@ -98,6 +117,10 @@ export interface Escenario {
   /** Crea una propuesta en el estado dado con un voto de `votanteId` y devuelve su id. */
   voto(viajeId: string, votanteId: string, pendiente: boolean): Promise<string>;
   propuestasVotadasPor(usuarioId: string): Promise<string[]>;
+  /** Id de una categoría de gasto con ese código (COMIDA o TRANSPORTE). */
+  categoria(codigo: 'COMIDA' | 'TRANSPORTE'): Promise<string>;
+  /** Monto guardado de la deuda del par, o null si no existe la fila. */
+  montoDeuda(viajeId: string, deudorId: string, acreedorId: string): Promise<number | null>;
 }
 
 export interface Repos {
@@ -112,6 +135,11 @@ export interface Repos {
   mensajes: RepositorioMensajes;
   consultaMensajes: ConsultaMensajes;
   saldosPendientes: ConsultaSaldosPendientes;
+  gastos: RepositorioGastos;
+  deudasGastos: RepositorioDeudas;
+  consultaGastos: ConsultaGastos;
+  consultaSaldos: ConsultaSaldos;
+  categorias: ConsultaCategorias;
   cuentas: RepositorioCuentas;
   sesiones: RepositorioSesiones;
   viajes: RepositorioViajes;
@@ -194,6 +222,16 @@ export const implementacionEnMemoria: Implementacion = {
         base.propuestas.push(fila);
         return fila.datos.id;
       },
+      async categoria(codigo) {
+        return base.categorias.find((c) => c.codigo === codigo)!.id;
+      },
+      async montoDeuda(viajeId, deudorId, acreedorId) {
+        return (
+          base.deudas.find(
+            (d) => d.viajeId === viajeId && d.deudorId === deudorId && d.acreedorId === acreedorId,
+          )?.monto ?? null
+        );
+      },
       async propuestasVotadasPor(usuarioId) {
         return base.propuestas
           .filter((p) => p.datos.votos.some((v) => v.usuarioId === usuarioId))
@@ -214,6 +252,11 @@ export const implementacionEnMemoria: Implementacion = {
         mensajes: new RepositorioMensajesEnMemoria(base),
         consultaMensajes: new ConsultaMensajesEnMemoria(base),
         saldosPendientes: new ConsultaSaldosPendientesEnMemoria(base),
+        gastos: new RepositorioGastosEnMemoria(base),
+        deudasGastos: new RepositorioDeudasEnMemoria(base),
+        consultaGastos: new ConsultaGastosEnMemoria(base),
+        consultaSaldos: new ConsultaSaldosEnMemoria(base),
+        categorias: new ConsultaCategoriasEnMemoria(base),
         cuentas: new RepositorioCuentasEnMemoria(base),
         sesiones: new RepositorioSesionesEnMemoria(base),
         viajes: new RepositorioViajesEnMemoria(base),
@@ -295,6 +338,22 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
           });
           return p.id;
         },
+        async categoria(codigo) {
+          const nombre = codigo === 'COMIDA' ? 'Comida' : 'Transporte';
+          return (
+            await prisma.categoriaGasto.upsert({
+              where: { codigo },
+              update: {},
+              create: { codigo, nombre },
+            })
+          ).id;
+        },
+        async montoDeuda(viajeId, deudorId, acreedorId) {
+          const d = await prisma.deuda.findUnique({
+            where: { viajeId_deudorId_acreedorId: { viajeId, deudorId, acreedorId } },
+          });
+          return d ? Number(d.monto) : null;
+        },
         async propuestasVotadasPor(usuarioId) {
           return (await prisma.voto.findMany({ where: { usuarioId } })).map((v) => v.propuestaId);
         },
@@ -313,6 +372,11 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
           mensajes: new RepositorioMensajesPrisma(prisma),
           consultaMensajes: new ConsultaMensajesPrisma(prisma),
           saldosPendientes: new ConsultaSaldosPendientesPrisma(prisma),
+          gastos: new RepositorioGastosPrisma(prisma),
+          deudasGastos: new RepositorioDeudasPrisma(prisma),
+          consultaGastos: new ConsultaGastosPrisma(prisma),
+          consultaSaldos: new ConsultaSaldosPrisma(prisma),
+          categorias: new ConsultaCategoriasPrisma(prisma),
           cuentas: new RepositorioCuentasPrisma(prisma),
           sesiones: new RepositorioSesionesPrisma(prisma),
           viajes: new RepositorioViajesPrisma(prisma),

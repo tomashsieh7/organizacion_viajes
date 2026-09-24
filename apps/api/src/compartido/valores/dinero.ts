@@ -1,3 +1,4 @@
+import { repartirEnPartesIguales } from '@viajes/compartido';
 import { ErrorDeDominio } from '../errores.js';
 
 /**
@@ -75,11 +76,7 @@ export class Dinero {
         'No se puede repartir un monto negativo',
       );
     }
-    const base = Math.floor(this.monto / partes);
-    const resto = this.monto - base * partes;
-    return Array.from({ length: partes }, (_, i) =>
-      Dinero.de(base + (i < resto ? 1 : 0), this.moneda),
-    );
+    return repartirEnPartesIguales(this.monto, partes).map((m) => Dinero.de(m, this.moneda));
   }
 
   static sumarTodos(montos: Dinero[], moneda: string): Dinero {

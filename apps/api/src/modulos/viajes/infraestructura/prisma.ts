@@ -4,12 +4,13 @@ import { aFecha, aMonto, deFecha } from '../../../compartido/infraestructura/con
 import type {
   Acceso,
   ConsultaDeudas,
+  ConsultaSaldosPendientes,
   ConsultaViajes,
   LectorDeViajes,
   RepositorioViajes,
   RetiroDeVotos,
 } from '../dominio/puertos.js';
-import { Viaje } from '../dominio/viaje.js';
+import { tipoDeAcceso, Viaje } from '../dominio/viaje.js';
 
 export class RepositorioViajesPrisma implements RepositorioViajes, LectorDeViajes {
   constructor(private readonly db: ClientePrisma) {}
@@ -114,21 +115,48 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
     return m && m.estado === 'ACTIVA' ? { rol: m.rol } : null;
   }
 
+  /** Viajes de los que el usuario tiene saldos pendientes, entre los indicados (RN-E6). */
+  private async conSaldosPendientes(usuarioId: string, viajeIds: string[]): Promise<Set<string>> {
+    if (viajeIds.length === 0) return new Set();
+    const filas = await this.db.deuda.findMany({
+      where: {
+        viajeId: { in: viajeIds },
+        monto: { gt: 0 },
+        OR: [{ deudorId: usuarioId }, { acreedorId: usuarioId }],
+      },
+      select: { viajeId: true },
+      distinct: ['viajeId'],
+    });
+    return new Set(filas.map((f) => f.viajeId));
+  }
+
   async listarDeUsuario(usuarioId: string): Promise<ResumenViaje[]> {
     const membresias = await this.db.membresia.findMany({
-      where: { usuarioId, estado: 'ACTIVA' },
+      where: { usuarioId },
       include: { viaje: true },
       orderBy: { viaje: { fechaInicio: 'asc' } },
     });
-    return membresias.map(({ viaje: v, rol }) => ({
-      id: v.id,
-      nombre: v.nombre,
-      destino: v.destino,
-      fechaInicio: aFecha(v.fechaInicio),
-      fechaFin: aFecha(v.fechaFin),
-      monedaCodigo: v.monedaCodigo,
-      miRol: rol,
-    }));
+    const saldos = await this.conSaldosPendientes(
+      usuarioId,
+      membresias.filter((m) => m.estado !== 'ACTIVA').map((m) => m.viajeId),
+    );
+    return membresias.flatMap(({ viaje: v, rol, estado }) => {
+      const miAcceso = tipoDeAcceso(estado, saldos.has(v.id));
+      return miAcceso
+        ? [
+            {
+              id: v.id,
+              nombre: v.nombre,
+              destino: v.destino,
+              fechaInicio: aFecha(v.fechaInicio),
+              fechaFin: aFecha(v.fechaFin),
+              monedaCodigo: v.monedaCodigo,
+              miRol: rol,
+              miAcceso,
+            },
+          ]
+        : [];
+    });
   }
 
   async obtenerDetalle(
@@ -137,10 +165,14 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
   ): Promise<Omit<DetalleViaje, 'miDeudaPendiente'> | null> {
     const v = await this.db.viaje.findUnique({
       where: { id: viajeId },
-      include: { moneda: true, membresias: { where: { estado: 'ACTIVA' } } },
+      include: { moneda: true, membresias: true },
     });
     const mia = v?.membresias.find((m) => m.usuarioId === usuarioId);
     if (!v || !mia) return null;
+    const saldos =
+      mia.estado !== 'ACTIVA' && (await this.conSaldosPendientes(usuarioId, [viajeId])).size > 0;
+    const miAcceso = tipoDeAcceso(mia.estado, saldos);
+    if (!miAcceso) return null;
     return {
       id: v.id,
       nombre: v.nombre,
@@ -149,7 +181,8 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
       fechaFin: aFecha(v.fechaFin),
       moneda: v.moneda,
       miRol: mia.rol,
-      cantidadParticipantes: v.membresias.length,
+      miAcceso,
+      cantidadParticipantes: v.membresias.filter((m) => m.estado === 'ACTIVA').length,
     };
   }
 
@@ -187,5 +220,21 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
 
   async existeMoneda(codigo: string): Promise<boolean> {
     return (await this.db.moneda.count({ where: { codigo } })) > 0;
+  }
+}
+
+export class ConsultaSaldosPendientesPrisma implements ConsultaSaldosPendientes {
+  constructor(private readonly db: ClientePrisma) {}
+
+  async tieneSaldosPendientes(viajeId: string, usuarioId: string): Promise<boolean> {
+    const pendiente = await this.db.deuda.findFirst({
+      where: {
+        viajeId,
+        monto: { gt: 0 },
+        OR: [{ deudorId: usuarioId }, { acreedorId: usuarioId }],
+      },
+      select: { id: true },
+    });
+    return pendiente !== null;
   }
 }

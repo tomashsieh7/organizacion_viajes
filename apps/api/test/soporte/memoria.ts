@@ -5,6 +5,10 @@
  */
 import {
   sumarMinutos,
+  type CategoriaGasto,
+  type DeudaVista,
+  type GastoVista,
+  type RolEnDeuda,
   type AvisoAdminCambiado,
   type AvisoMembresiaFinalizada,
   type MensajeVista,
@@ -21,10 +25,20 @@ import {
 } from '@viajes/compartido';
 import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
 import { Intervalo } from '../../src/compartido/valores/intervalo.js';
+import { Dinero } from '../../src/compartido/valores/dinero.js';
+import { Deuda } from '../../src/modulos/gastos/dominio/deuda.js';
+import type { DatosGasto, Gasto } from '../../src/modulos/gastos/dominio/gasto.js';
+import type {
+  ConsultaCategorias,
+  ConsultaGastos,
+  ConsultaSaldos,
+  ParDeViajeros,
+  RepositorioDeudas,
+  RepositorioGastos,
+} from '../../src/modulos/gastos/dominio/puertos.js';
 import type { DatosMensaje, Mensaje } from '../../src/modulos/chat/dominio/mensaje.js';
 import type {
   ConsultaMensajes,
-  ConsultaSaldosPendientes,
   NotificadorViaje,
   RepositorioMensajes,
 } from '../../src/modulos/chat/dominio/puertos.js';
@@ -67,13 +81,14 @@ import type {
   Acceso,
   BuscadorDeUsuarios,
   ConsultaDeudas,
+  ConsultaSaldosPendientes,
   ConsultaViajes,
   LectorDeViajes,
   ReposViajes,
   RepositorioViajes,
   RetiroDeVotos,
 } from '../../src/modulos/viajes/dominio/puertos.js';
-import { Viaje, type DatosViaje } from '../../src/modulos/viajes/dominio/viaje.js';
+import { tipoDeAcceso, Viaje, type DatosViaje } from '../../src/modulos/viajes/dominio/viaje.js';
 
 export interface BaseEnMemoria {
   usuarios: { id: string; nombre: string; apodo: string | null }[];
@@ -86,7 +101,16 @@ export interface BaseEnMemoria {
   sesiones: { usuarioId: string; tokenHash: string; expiraEn: Date; revocadaEn: Date | null }[];
   monedas: Moneda[];
   viajes: DatosViaje[];
-  deudas: { viajeId: string; deudorId: string; acreedorId: string; monto: number }[];
+  categorias: CategoriaGasto[];
+  gastos: DatosGasto[];
+  deudas: {
+    viajeId: string;
+    deudorId: string;
+    acreedorId: string;
+    monto: number;
+    id?: string;
+    ultimaActualizacion?: Date;
+  }[];
   mensajes: DatosMensaje[];
   /** Propuestas con sus votos y, según el tipo, los datos propios del alojamiento o la actividad. */
   propuestas: {
@@ -103,6 +127,11 @@ export function baseVacia(): BaseEnMemoria {
     sesiones: [],
     monedas: [{ codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 }],
     viajes: [],
+    categorias: [
+      { id: '00000000-0000-4000-8000-000000000001', codigo: 'COMIDA', nombre: 'Comida' },
+      { id: '00000000-0000-4000-8000-000000000002', codigo: 'TRANSPORTE', nombre: 'Transporte' },
+    ],
+    gastos: [],
     deudas: [],
     mensajes: [],
     propuestas: [],
@@ -227,11 +256,21 @@ export class ConsultaViajesEnMemoria implements ConsultaViajes {
     return m ? { rol: m.rol } : null;
   }
 
+  private tieneSaldos(viajeId: string, usuarioId: string): boolean {
+    return this.base.deudas.some(
+      (d) =>
+        d.viajeId === viajeId &&
+        d.monto > 0 &&
+        (d.deudorId === usuarioId || d.acreedorId === usuarioId),
+    );
+  }
+
   async listarDeUsuario(usuarioId: string): Promise<ResumenViaje[]> {
     return this.base.viajes
       .flatMap((v) => {
-        const m = v.membresias.find((x) => x.usuarioId === usuarioId && x.estado === 'ACTIVA');
-        return m
+        const m = v.membresias.find((x) => x.usuarioId === usuarioId);
+        const miAcceso = m && tipoDeAcceso(m.estado, this.tieneSaldos(v.id, usuarioId));
+        return m && miAcceso
           ? [
               {
                 id: v.id,
@@ -241,6 +280,7 @@ export class ConsultaViajesEnMemoria implements ConsultaViajes {
                 fechaFin: v.fechaFin,
                 monedaCodigo: v.monedaCodigo,
                 miRol: m.rol,
+                miAcceso,
               },
             ]
           : [];
@@ -253,9 +293,10 @@ export class ConsultaViajesEnMemoria implements ConsultaViajes {
     usuarioId: string,
   ): Promise<Omit<DetalleViaje, 'miDeudaPendiente'> | null> {
     const v = this.base.viajes.find((x) => x.id === viajeId);
-    const m = this.activa(viajeId, usuarioId);
+    const m = v?.membresias.find((x) => x.usuarioId === usuarioId);
     const moneda = this.base.monedas.find((x) => x.codigo === v?.monedaCodigo);
-    if (!v || !m || !moneda) return null;
+    const miAcceso = m && tipoDeAcceso(m.estado, this.tieneSaldos(viajeId, usuarioId));
+    if (!v || !m || !moneda || !miAcceso) return null;
     return {
       id: v.id,
       nombre: v.nombre,
@@ -264,6 +305,7 @@ export class ConsultaViajesEnMemoria implements ConsultaViajes {
       fechaFin: v.fechaFin,
       moneda,
       miRol: m.rol,
+      miAcceso,
       cantidadParticipantes: v.membresias.filter((x) => x.estado === 'ACTIVA').length,
     };
   }
@@ -687,6 +729,134 @@ export class NotificadorViajeEnMemoria implements NotificadorViaje {
     for (const c of this.conexiones.filter((x) => x.salas.has(aviso.viajeId))) {
       c.recibidos.push({ nombre: 'viaje:admin-cambiado', datos: aviso });
     }
+  }
+}
+
+export class RepositorioGastosEnMemoria implements RepositorioGastos {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async crear(gasto: Gasto): Promise<void> {
+    this.base.gastos.push(gasto.aDatos());
+  }
+}
+
+export class RepositorioDeudasEnMemoria implements RepositorioDeudas {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async obtenerParaModificar(
+    viajeId: string,
+    pares: ParDeViajeros[],
+    moneda: string,
+  ): Promise<Deuda[]> {
+    const todos = pares.flatMap((p) => [p, { deudorId: p.acreedorId, acreedorId: p.deudorId }]);
+    return todos
+      .map((p) => {
+        let fila = this.base.deudas.find(
+          (d) =>
+            d.viajeId === viajeId && d.deudorId === p.deudorId && d.acreedorId === p.acreedorId,
+        );
+        if (!fila) {
+          fila = { viajeId, ...p, monto: 0 };
+          this.base.deudas.push(fila);
+        }
+        fila.id ??= crypto.randomUUID();
+        fila.ultimaActualizacion ??= new Date(0);
+        return fila;
+      })
+      .filter((f, i, lista) => lista.indexOf(f) === i)
+      .map((f) =>
+        Deuda.reconstruir({
+          id: f.id!,
+          viajeId,
+          deudorId: f.deudorId,
+          acreedorId: f.acreedorId,
+          monto: Dinero.de(f.monto, moneda),
+          ultimaActualizacion: f.ultimaActualizacion!,
+        }),
+      );
+  }
+
+  async guardar(deudas: Deuda[]): Promise<void> {
+    for (const d of deudas) {
+      const datos = d.aDatos();
+      const fila = this.base.deudas.find((f) => f.id === datos.id)!;
+      fila.monto = datos.monto.monto;
+      fila.ultimaActualizacion = datos.ultimaActualizacion;
+    }
+  }
+}
+
+export class ConsultaCategoriasEnMemoria implements ConsultaCategorias {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async listar(): Promise<CategoriaGasto[]> {
+    return [...this.base.categorias].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+
+  async existe(categoriaId: string): Promise<boolean> {
+    return this.base.categorias.some((c) => c.id === categoriaId);
+  }
+}
+
+export class ConsultaGastosEnMemoria implements ConsultaGastos {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  private persona(id: string) {
+    const u = this.base.usuarios.find((x) => x.id === id);
+    return { id, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null };
+  }
+
+  private vista(g: DatosGasto): GastoVista {
+    return {
+      id: g.id,
+      titulo: g.titulo,
+      categoria: this.base.categorias.find((c) => c.id === g.categoriaId)!,
+      monto: g.monto.monto,
+      modoDivision: g.modoDivision,
+      pagadoPor: this.persona(g.pagadoPorId),
+      registradoPor: this.persona(g.registradoPorId),
+      creadoEn: g.creadoEn.toISOString(),
+      partes: g.partes
+        .map((p) => ({ usuario: this.persona(p.usuarioId), monto: p.monto.monto }))
+        .sort((a, b) => b.monto - a.monto || a.usuario.nombre.localeCompare(b.usuario.nombre)),
+    };
+  }
+
+  async listar(viajeId: string): Promise<GastoVista[]> {
+    return this.base.gastos
+      .filter((g) => g.viajeId === viajeId)
+      .sort((a, b) => b.creadoEn.getTime() - a.creadoEn.getTime() || (a.id < b.id ? 1 : -1))
+      .map((g) => this.vista(g));
+  }
+
+  async obtener(viajeId: string, gastoId: string): Promise<GastoVista | null> {
+    const g = this.base.gastos.find((x) => x.id === gastoId && x.viajeId === viajeId);
+    return g ? this.vista(g) : null;
+  }
+}
+
+export class ConsultaSaldosEnMemoria implements ConsultaSaldos {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async deudas(viajeId: string, usuarioId: string, rol: RolEnDeuda): Promise<DeudaVista[]> {
+    return this.base.deudas
+      .filter(
+        (d) =>
+          d.viajeId === viajeId &&
+          d.monto > 0 &&
+          (rol === 'deudor' ? d.deudorId : d.acreedorId) === usuarioId,
+      )
+      .sort((a, b) => b.monto - a.monto || ((a.id ?? '') < (b.id ?? '') ? -1 : 1))
+      .map((d) => {
+        const otro = rol === 'deudor' ? d.acreedorId : d.deudorId;
+        const u = this.base.usuarios.find((x) => x.id === otro);
+        return {
+          id: d.id ?? '',
+          contraparte: { id: otro, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null },
+          monto: d.monto,
+          ultimaActualizacion: (d.ultimaActualizacion ?? new Date(0)).toISOString(),
+        };
+      });
   }
 }
 

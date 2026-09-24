@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import { ErrorDeDominio } from '../compartido/errores.js';
 import type { ObtenerUsuarioDeSesion } from '../modulos/auth/casos-de-uso/casosDeUsoAuth.js';
+import type { ConsultarAcceso } from '../modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
 import type { ConsultaViajes } from '../modulos/viajes/dominio/puertos.js';
 
 export const NOMBRE_COOKIE_SESION = 'sesion';
@@ -29,7 +30,25 @@ export function participanteActivo(consultas: ConsultaViajes): RequestHandler {
       if (!acceso) {
         throw new ErrorDeDominio('PROHIBIDO', 'NO_PARTICIPANTE', 'No participás de este viaje');
       }
-      req.acceso = { viajeId, rol: acceso.rol };
+      req.acceso = { viajeId, rol: acceso.rol, tipo: 'COMPLETO' };
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+/**
+ * RN-E6: para la sección de saldos alcanza con participar o con haberse ido con saldos
+ * pendientes. Deja en `req.acceso` el tipo de acceso.
+ */
+export function accesoSaldos(consultarAcceso: ConsultarAcceso): RequestHandler {
+  return async (req, _res, next) => {
+    try {
+      const viajeId = String(req.params['viajeId']);
+      if (!UUID.test(viajeId))
+        throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El viaje no existe');
+      req.acceso = { viajeId, ...(await consultarAcceso.ejecutar(viajeId, req.usuarioId ?? '')) };
       next();
     } catch (error) {
       next(error);

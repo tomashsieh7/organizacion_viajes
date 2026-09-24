@@ -523,7 +523,7 @@ Eventos de Socket.IO (espacio de nombres `/chat`, solo con transporte WebSocket 
 |---|---|---|---|---|
 | — | `GET /api/categorias-gasto` | Con sesión | Lista de categorías | — |
 | CU20 | `POST /api/viajes/:viajeId/gastos` | Participante | `titulo`, `categoria_id` existente, `monto > 0`, `pagado_por_id` participante activo (por defecto, quien anota; P12), `deudores[]` con al menos un participante activo, que puede no incluir al pagador (P13), `modo_division ∈ {IGUALES, ARBITRARIA}`; en `ARBITRARIA`, `partes[]` con un monto por deudor cuya suma es igual al total | 422 `SUMA_NO_COINCIDE` con `detalles: { total, suma, diferencia }`, 422 `DEUDOR_NO_PARTICIPANTE`, 422 `PAGADOR_NO_PARTICIPANTE`, 422 `CATEGORIA_INEXISTENTE` |
-| — | `GET /api/viajes/:viajeId/gastos` | Participante | Gastos con sus partes, pagador y categoría | — |
+| — | `GET /api/viajes/:viajeId/gastos` | Participante | Gastos con sus partes (de mayor a menor monto, porque `gasto_parte` no guarda el orden de elección; ajustado en F7), pagador y categoría | — |
 | CU21 | `GET /api/viajes/:viajeId/deudas?rol=deudor` | `accesoSaldos` | Deudas con `monto > 0` donde quien llama es deudor, con acreedor, saldo, última actualización e historial de pagos | — |
 | CU22 | `GET /api/viajes/:viajeId/deudas?rol=acreedor` | `accesoSaldos` | Deudas con `monto > 0` donde quien llama es acreedor, con el mismo detalle | — |
 | CU23 | `POST /api/viajes/:viajeId/pagos` | `accesoSaldos`, solo el deudor (P17) | `acreedor_id` con deuda pendiente de quien llama, `monto > 0`, `monto <= saldo` | 404 `SIN_DEUDA_CON_ACREEDOR`, 422 `PAGO_EXCEDE_DEUDA` con `detalles: { saldo }` |

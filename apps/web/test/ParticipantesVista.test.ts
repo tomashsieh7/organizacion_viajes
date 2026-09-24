@@ -5,7 +5,8 @@ import { useSesionStore } from '../src/stores/sesion';
 import { useViajeStore } from '../src/stores/viaje';
 import { clienteAuthFalso, clienteViajesFalso, detalle, montaje } from './soporte/clientesFalsos';
 
-vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const push = vi.fn();
+vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
 
 async function montarComo(miRol: 'ADMIN' | 'VIAJERO', miId: string, extra = {}) {
   const viajes = clienteViajesFalso({ obtener: async () => detalle(miRol, 150_000), ...extra });
@@ -57,5 +58,24 @@ describe('ParticipantesVista', () => {
     await confirmar.trigger('click');
     expect(salir).not.toHaveBeenCalled();
     expect(vista.text()).toContain('tenés que elegir quién va a ser el nuevo Admin');
+  });
+
+  it('RN-E6 y RN-E7: quien sale con saldos pendientes queda en la sección de saldos', async () => {
+    const resumen = { ...detalle('VIAJERO'), monedaCodigo: 'ARS' };
+    const vista = await montarComo('VIAJERO', 'tomas', {
+      salir: async () => ({ bajaConDeuda: true }),
+      listar: async () => [{ ...resumen, miAcceso: 'SOLO_SALDOS' }],
+    });
+    await vista
+      .findAll('button')
+      .find((b) => b.text() === 'Salir del grupo')!
+      .trigger('click');
+    await vista
+      .findAll('[role="dialog"] button')
+      .find((b) => b.text() === 'Salir del grupo')!
+      .trigger('click');
+    await flushPromises();
+    expect(push).toHaveBeenCalledWith('/viajes/v1/saldos');
+    expect(useViajeStore().aviso).toContain('Podés seguir viendo tus saldos');
   });
 });

@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Estado al cierre de F6. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
+Estado al cierre de F7. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
 
 ## Convenciones
 
@@ -40,14 +40,14 @@ Estado al cierre de F6. Esta referencia se actualiza en cada fase que agrega o c
 
 ## Grupo de viaje
 
-Todas requieren sesión. Las rutas bajo `/api/viajes/:viajeId` requieren además participar del viaje.
+Todas requieren sesión. Las rutas bajo `/api/viajes/:viajeId` requieren además participar del viaje, salvo el detalle del viaje y las deudas: esas también las ve quien se fue o fue eliminado y todavía tiene saldos pendientes a favor o en contra (`miAcceso: "SOLO_SALDOS"`). Al quedar en cero, pierde también ese acceso.
 
 | Método y ruta | Quién | Cuerpo | Respuesta | Errores específicos |
 |---|---|---|---|---|
 | `GET /api/monedas` | Con sesión | — | `200 { monedas: [{ codigo, nombre, decimales }] }` | — |
 | `POST /api/viajes` | Con sesión (queda como Admin) | `{ nombre, destino, fechaInicio, fechaFin, monedaCodigo }` | `201 { viaje }` (detalle) | 400 si `fechaInicio > fechaFin`, 422 `MONEDA_INEXISTENTE` |
-| `GET /api/viajes` | Con sesión | — | `200 { viajes: [{ id, nombre, destino, fechaInicio, fechaFin, monedaCodigo, miRol }] }` | — |
-| `GET /api/viajes/:viajeId` | Participante | — | `200 { viaje: { id, nombre, destino, fechaInicio, fechaFin, moneda, miRol, miDeudaPendiente, cantidadParticipantes } }` | — |
+| `GET /api/viajes` | Con sesión | — | `200 { viajes: [{ id, nombre, destino, fechaInicio, fechaFin, monedaCodigo, miRol, miAcceso }] }`; incluye los viajes de los que se fue con saldos pendientes, con `miAcceso: "SOLO_SALDOS"` | — |
+| `GET /api/viajes/:viajeId` | Participante, o exparticipante con saldos pendientes | — | `200 { viaje: { id, nombre, destino, fechaInicio, fechaFin, moneda, miRol, miAcceso, miDeudaPendiente, cantidadParticipantes } }` | — |
 | `GET /api/viajes/:viajeId/participantes` | Participante | — | `200 { participantes: [{ usuarioId, nombre, apodo, rol }] }`, Admin primero | — |
 | `POST /api/viajes/:viajeId/participantes` | Admin | `{ email }` de un usuario registrado | `201 { participante }`; si se había ido, reactiva su membresía | 404 `USUARIO_NO_REGISTRADO`, 409 `YA_ES_PARTICIPANTE` |
 | `DELETE /api/viajes/:viajeId/participantes/:usuarioId` | Admin | — | `200 { bajaConDeuda }`; baja lógica que conserva el historial y retira sus votos en propuestas pendientes | 404, 409 `NO_PUEDE_ELIMINARSE_A_SI_MISMO` |
@@ -128,3 +128,25 @@ Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exig
 | `chat:mensaje` | servidor → sala del viaje | el mensaje con el `idTemporal` de quien lo envió | Llega a todos los que están en la sala, incluido quien lo envió |
 | `viaje:membresia-finalizada` | servidor → conexiones del usuario | `{ viajeId, motivo: "ELIMINADO" \| "RETIRADO", conservaAccesoSaldos }` | Se emite tras una baja; el servidor saca esas conexiones de la sala. `conservaAccesoSaldos` es verdadero si tiene saldos pendientes a favor o en contra |
 | `viaje:admin-cambiado` | servidor → sala del viaje | `{ viajeId, nuevoAdminId, anteriorAdminId }` | Se emite tras un traspaso |
+
+## Gastos y saldos
+
+| Método y ruta | Quién | Cuerpo o parámetros | Respuesta | Errores específicos |
+|---|---|---|---|---|
+| `GET /api/categorias-gasto` | Con sesión | — | `200 { categorias: [{ id, codigo, nombre }] }` | — |
+| `GET /api/viajes/:viajeId/gastos` | Participante | — | `200 { gastos }`, del más reciente al más viejo | — |
+| `POST /api/viajes/:viajeId/gastos` | Participante | `{ titulo, categoriaId, monto, pagadoPorId?, deudores, modoDivision, partes? }` | `201 { gasto }` | 422 `SUMA_NO_COINCIDE` (con `detalles: { total, suma, diferencia }`), `PAGADOR_NO_PARTICIPANTE`, `DEUDOR_NO_PARTICIPANTE` (con `detalles: { usuarios }`) y `CATEGORIA_INEXISTENTE`; 400 `PARTES_NO_COINCIDEN` si las partes no son exactamente de los deudores |
+| `GET /api/viajes/:viajeId/deudas?rol=deudor\|acreedor` | Participante, o exparticipante con saldos pendientes | `rol` obligatorio | `200 { deudas: [{ id, contraparte: { id, nombre, apodo }, monto, ultimaActualizacion }] }`, solo con saldo mayor que cero | 400 si falta `rol` |
+
+**Cuerpo de `POST …/gastos`:**
+- **Montos:** enteros en la unidad mínima de la moneda; `monto` mayor que cero.
+- **Pagador:** `pagadoPorId` es quien pagó y, si falta, se toma a quien anota el gasto.
+- **Deudores:** `deudores` es la lista, sin repetidos y con al menos una persona, de quienes tienen que pagar. El pagador puede no estar.
+- **División:** `modoDivision` es `"IGUALES"` o `"ARBITRARIA"`. En arbitraria, `partes` trae `{ usuarioId, monto }` para cada deudor, y la suma tiene que dar el total.
+
+**Cómo se divide y cómo cambian las deudas:**
+- **Partes iguales:** las unidades que sobran se asignan de a una a los primeros de `deudores`. Por ejemplo, 1000 entre 3 da 334, 333 y 333.
+- **Deudas que genera:** la parte del pagador no genera deuda. Cada otra parte se compensa primero con lo que el pagador le debía a ese deudor, y el resto se suma a la deuda del deudor con el pagador. Así, entre dos viajeros queda una sola deuda con saldo.
+- **Concurrencia:** todo ocurre en una transacción, con las filas de deuda bloqueadas siempre en el mismo orden.
+
+**Vista de un gasto:** `gasto` es `{ id, titulo, categoria, monto, modoDivision, pagadoPor, registradoPor, creadoEn, partes: [{ usuario, monto }] }`. Las partes vienen de mayor a menor monto.

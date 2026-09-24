@@ -1,11 +1,7 @@
 import type { MensajeVista, PaginaDeMensajes } from '@viajes/compartido';
 import type { ClientePrisma } from '../../../compartido/infraestructura/prisma.js';
 import type { Mensaje } from '../dominio/mensaje.js';
-import type {
-  ConsultaMensajes,
-  ConsultaSaldosPendientes,
-  RepositorioMensajes,
-} from '../dominio/puertos.js';
+import type { ConsultaMensajes, RepositorioMensajes } from '../dominio/puertos.js';
 
 export class RepositorioMensajesPrisma implements RepositorioMensajes {
   constructor(private readonly db: ClientePrisma) {}
@@ -71,21 +67,5 @@ export class ConsultaMensajesPrisma implements ConsultaMensajes {
       mensajes: filas.slice(0, limite).reverse().map(aVista),
       hayMas: filas.length > limite,
     };
-  }
-}
-
-export class ConsultaSaldosPendientesPrisma implements ConsultaSaldosPendientes {
-  constructor(private readonly db: ClientePrisma) {}
-
-  async tieneSaldosPendientes(viajeId: string, usuarioId: string): Promise<boolean> {
-    const pendiente = await this.db.deuda.findFirst({
-      where: {
-        viajeId,
-        monto: { gt: 0 },
-        OR: [{ deudorId: usuarioId }, { acreedorId: usuarioId }],
-      },
-      select: { id: true },
-    });
-    return pendiente !== null;
   }
 }

@@ -151,7 +151,10 @@ describe('CU03: eliminar participante', () => {
       (await db.voto.findMany({ where: { usuarioId: tomas.id } })).map((v) => v.propuestaId),
     ).toEqual([confirmada.id]);
     expect(pendiente.id).not.toBe(confirmada.id);
-    expect((await tomas.c.get(url())).status).toBe(403);
+    // RN-E6: con deuda pendiente conserva solo el detalle y los saldos (F7).
+    const detalle = await tomas.c.get(url());
+    expect([detalle.status, detalle.body.viaje?.miAcceso]).toEqual([200, 'SOLO_SALDOS']);
+    expect((await tomas.c.get(url('/participantes'))).status).toBe(403);
     expect((await ana.c.get(url('/participantes'))).body.participantes).toHaveLength(2);
   });
 

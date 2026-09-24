@@ -3,6 +3,12 @@ import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
 import { Coordenadas } from '../../src/compartido/valores/coordenadas.js';
 import { Actividad } from '../../src/modulos/actividades/dominio/actividad.js';
 import { Mensaje } from '../../src/modulos/chat/dominio/mensaje.js';
+import { Dinero } from '../../src/compartido/valores/dinero.js';
+import {
+  DivisionArbitraria,
+  DivisionEnPartesIguales,
+} from '../../src/modulos/gastos/dominio/division.js';
+import { Gasto } from '../../src/modulos/gastos/dominio/gasto.js';
 import { Propuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
 import { Viaje } from '../../src/modulos/viajes/dominio/viaje.js';
 import type { Escenario, Implementacion, Repos } from '../soporte/escenarios.js';
@@ -654,6 +660,137 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       expect(await r.saldosPendientes.tieneSaldosPendientes(viaje, ana)).toBe(true);
       expect(await r.saldosPendientes.tieneSaldosPendientes(viaje, luis)).toBe(false);
       expect(await r.saldosPendientes.tieneSaldosPendientes(await e.viaje(ana), tomas)).toBe(false);
+    });
+  });
+
+  describe(`Gastos y deudas — ${impl.nombre}`, () => {
+    const AHORA = new Date('2026-12-11T20:00:00.000Z');
+
+    it('obtenerParaModificar crea en cero los pares que faltan, en los dos sentidos', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const luis = await e.usuario('Luis');
+      const viaje = await e.viaje(ana);
+      await e.deuda(viaje, tomas, ana, 500);
+      const deudas = await r.deudasGastos.obtenerParaModificar(
+        viaje,
+        [
+          { deudorId: tomas, acreedorId: ana },
+          { deudorId: luis, acreedorId: ana },
+        ],
+        'ARS',
+      );
+      const montos = Object.fromEntries(
+        deudas.map((d) => [`${d.deudorId}>${d.acreedorId}`, d.monto.monto]),
+      );
+      expect(montos).toEqual({
+        [`${tomas}>${ana}`]: 500,
+        [`${ana}>${tomas}`]: 0,
+        [`${luis}>${ana}`]: 0,
+        [`${ana}>${luis}`]: 0,
+      });
+      expect(await e.montoDeuda(viaje, ana, luis)).toBe(0);
+      // Pedirlas de nuevo no duplica filas, aunque el par traiga otros datos (como las deudas
+      // que genera un gasto, que traen el monto).
+      const conMonto = { deudorId: tomas, acreedorId: ana, monto: Dinero.de(1, 'ARS') };
+      expect(await r.deudasGastos.obtenerParaModificar(viaje, [conMonto], 'ARS')).toHaveLength(2);
+    });
+
+    it('guardar persiste el monto y la última actualización', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      const [a, b] = await r.deudasGastos.obtenerParaModificar(
+        viaje,
+        [{ deudorId: tomas, acreedorId: ana }],
+        'ARS',
+      );
+      const deTomas = [a!, b!].find((d) => d.deudorId === tomas)!;
+      deTomas.sumar(Dinero.de(1234, 'ARS'), AHORA);
+      await r.deudasGastos.guardar([a!, b!]);
+      expect(await e.montoDeuda(viaje, tomas, ana)).toBe(1234);
+      const [saldo] = await r.consultaSaldos.deudas(viaje, tomas, 'deudor');
+      expect(saldo).toMatchObject({
+        contraparte: { id: ana, nombre: 'Ana', apodo: null },
+        monto: 1234,
+        ultimaActualizacion: AHORA.toISOString(),
+      });
+    });
+
+    it('ConsultaSaldos lista solo deudas con saldo, como deudor o como acreedor', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const luis = await e.usuario('Luis');
+      const viaje = await e.viaje(ana);
+      await e.deuda(viaje, tomas, ana, 300);
+      await e.deuda(viaje, luis, ana, 900);
+      await e.deuda(viaje, ana, luis, 0);
+      await e.deuda(await e.viaje(ana), tomas, ana, 50);
+      const meDeben = await r.consultaSaldos.deudas(viaje, ana, 'acreedor');
+      expect(meDeben.map((d) => [d.contraparte.nombre, d.monto])).toEqual([
+        ['Luis', 900],
+        ['Tomás', 300],
+      ]);
+      expect(await r.consultaSaldos.deudas(viaje, ana, 'deudor')).toEqual([]);
+      expect((await r.consultaSaldos.deudas(viaje, tomas, 'deudor')).map((d) => d.monto)).toEqual([
+        300,
+      ]);
+    });
+
+    it('crea un gasto con sus partes y lo lista con categoría, pagador y quien lo anotó', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      const comida = await e.categoria('COMIDA');
+      const transporte = await e.categoria('TRANSPORTE');
+      const cena = Gasto.anotar({
+        id: crypto.randomUUID(),
+        viajeId: viaje,
+        titulo: 'Cena',
+        categoriaId: comida,
+        monto: Dinero.de(1001, 'ARS'),
+        pagadoPorId: tomas,
+        registradoPorId: ana,
+        deudores: [ana, tomas],
+        division: new DivisionEnPartesIguales(),
+        ahora: AHORA,
+      });
+      const taxi = Gasto.anotar({
+        id: crypto.randomUUID(),
+        viajeId: viaje,
+        titulo: 'Taxi',
+        categoriaId: transporte,
+        monto: Dinero.de(500, 'ARS'),
+        pagadoPorId: ana,
+        registradoPorId: ana,
+        deudores: [tomas],
+        division: new DivisionArbitraria(new Map([[tomas, 500]])),
+        ahora: new Date(AHORA.getTime() + 1000),
+      });
+      await r.gastos.crear(cena);
+      await r.gastos.crear(taxi);
+
+      const lista = await r.consultaGastos.listar(viaje);
+      expect(lista.map((g) => g.titulo)).toEqual(['Taxi', 'Cena']);
+      expect(lista[1]).toEqual({
+        id: cena.id,
+        titulo: 'Cena',
+        categoria: { id: comida, codigo: 'COMIDA', nombre: 'Comida' },
+        monto: 1001,
+        modoDivision: 'IGUALES',
+        pagadoPor: { id: tomas, nombre: 'Tomás', apodo: null },
+        registradoPor: { id: ana, nombre: 'Ana', apodo: null },
+        creadoEn: AHORA.toISOString(),
+        partes: [
+          { usuario: { id: ana, nombre: 'Ana', apodo: null }, monto: 501 },
+          { usuario: { id: tomas, nombre: 'Tomás', apodo: null }, monto: 500 },
+        ],
+      });
+      expect((await r.consultaGastos.obtener(viaje, taxi.id))?.modoDivision).toBe('ARBITRARIA');
+      expect(await r.consultaGastos.obtener(await e.viaje(ana), taxi.id)).toBeNull();
+      expect(await r.categorias.existe(comida)).toBe(true);
+      expect(await r.categorias.existe(crypto.randomUUID())).toBe(false);
+      expect((await r.categorias.listar()).map((c) => c.codigo)).toEqual(['COMIDA', 'TRANSPORTE']);
     });
   });
 }

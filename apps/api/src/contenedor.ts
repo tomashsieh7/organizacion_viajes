@@ -1,3 +1,4 @@
+import type { DatosGastoNuevo, ModoDivision } from '@viajes/compartido';
 import type { Config } from './config.js';
 import { BusDeEventosEnMemoria, type BusDeEventos } from './compartido/eventos.js';
 import { crearClientePrisma, type PrismaClient } from './compartido/infraestructura/prisma.js';
@@ -23,6 +24,7 @@ import {
 } from './modulos/auth/infraestructura/repositoriosPrisma.js';
 import {
   AgregarViajero,
+  ConsultarAcceso,
   ConsultarViajes,
   CrearViaje,
   EliminarParticipante,
@@ -44,10 +46,27 @@ import {
 } from './modulos/chat/casos-de-uso/casosDeUsoChat.js';
 import {
   ConsultaMensajesPrisma,
-  ConsultaSaldosPendientesPrisma,
   RepositorioMensajesPrisma,
 } from './modulos/chat/infraestructura/prisma.js';
 import { ParticipacionSegunViajes } from './modulos/chat/infraestructura/participacion.js';
+import {
+  AnotarGasto,
+  ConsultarDeudas,
+  ConsultarGastos,
+} from './modulos/gastos/casos-de-uso/casosDeUsoGastos.js';
+import {
+  DivisionArbitraria,
+  DivisionEnPartesIguales,
+  type EstrategiaDivision,
+} from './modulos/gastos/dominio/division.js';
+import type { ReposGastos } from './modulos/gastos/dominio/puertos.js';
+import {
+  ConsultaCategoriasPrisma,
+  ConsultaGastosPrisma,
+  ConsultaSaldosPrisma,
+  RepositorioDeudasPrisma,
+  RepositorioGastosPrisma,
+} from './modulos/gastos/infraestructura/prisma.js';
 import { ConsultaItinerarioPrisma } from './modulos/itinerario/infraestructura/prisma.js';
 import {
   ConsultarAlojamientos,
@@ -93,10 +112,18 @@ import {
 } from './modulos/propuestas/infraestructura/prisma.js';
 import {
   ConsultaDeudasPrisma,
+  ConsultaSaldosPendientesPrisma,
   ConsultaViajesPrisma,
   RepositorioViajesPrisma,
   RetiroDeVotosPrisma,
 } from './modulos/viajes/infraestructura/prisma.js';
+
+/** RN-G4: estrategia de división para cada modo; un modo nuevo se agrega acá (abierto/cerrado). */
+const DIVISIONES: Record<ModoDivision, (datos: DatosGastoNuevo) => EstrategiaDivision> = {
+  IGUALES: () => new DivisionEnPartesIguales(),
+  ARBITRARIA: (datos) =>
+    new DivisionArbitraria(new Map((datos.partes ?? []).map((p) => [p.usuarioId, p.monto]))),
+};
 
 /**
  * Punto de composición (Composition Root): el único lugar donde se eligen las implementaciones
@@ -121,6 +148,12 @@ export interface Contenedor {
     transferirAdministracion: TransferirAdministracion;
     consultar: ConsultarViajes;
     consultas: ConsultaViajes;
+    consultarAcceso: ConsultarAcceso;
+  };
+  gastos: {
+    anotar: AnotarGasto;
+    consultar: ConsultarGastos;
+    deudas: ConsultarDeudas;
   };
   propuestas: {
     votar: Votar<ReposPropuestas>;
@@ -174,6 +207,8 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   }));
   const depsViajes: DependenciasViajes = { unidad: unidadViajes, eventos, reloj };
   const consultasViajes = new ConsultaViajesPrisma(prisma);
+  const viajesSinBloqueo = new RepositorioViajesPrisma(prisma);
+  const saldosPendientes = new ConsultaSaldosPendientesPrisma(prisma);
 
   // Propuestas (comunes a alojamientos y actividades)
   const unidadPropuestas = new UnidadDeTrabajoPrisma<ReposPropuestas>(prisma, (tx) => ({
@@ -212,8 +247,10 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   ];
 
   // Itinerario
-  const viajesSinBloqueo = new RepositorioViajesPrisma(prisma);
   const consultaItinerario = new ConsultaItinerarioPrisma(prisma);
+
+  // Gastos
+  const categorias = new ConsultaCategoriasPrisma(prisma);
 
   // Chat
   const participacion = new ParticipacionSegunViajes(consultasViajes);
@@ -243,6 +280,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       transferirAdministracion: new TransferirAdministracion(depsViajes),
       consultar: new ConsultarViajes(consultasViajes, new ConsultaDeudasPrisma(prisma)),
       consultas: consultasViajes,
+      consultarAcceso: new ConsultarAcceso(viajesSinBloqueo, saldosPendientes),
     },
     propuestas: {
       votar: new Votar(unidadPropuestas, consultasPropuestas, reloj),
@@ -258,6 +296,20 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       proponerAlternativa: new ProponerAlternativa(depsActividades),
       consultar: new ConsultarActividades(new ConsultaActividadesPrisma(prisma)),
     },
+    gastos: {
+      anotar: new AnotarGasto({
+        unidad: new UnidadDeTrabajoPrisma<ReposGastos>(prisma, (tx) => ({
+          gastos: new RepositorioGastosPrisma(tx),
+          deudas: new RepositorioDeudasPrisma(tx),
+        })),
+        viajes: viajesSinBloqueo,
+        categorias,
+        division: (datos) => DIVISIONES[datos.modoDivision](datos),
+        reloj,
+      }),
+      consultar: new ConsultarGastos(new ConsultaGastosPrisma(prisma), categorias),
+      deudas: new ConsultarDeudas(new ConsultaSaldosPrisma(prisma)),
+    },
     chat: {
       unirse: new UnirseAlChat(participacion),
       enviar: new EnviarMensaje(
@@ -267,7 +319,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
         reloj,
       ),
       consultar: new ConsultarMensajes(consultaMensajes),
-      reenviarEventos: new ReenviarEventosDelViaje(new ConsultaSaldosPendientesPrisma(prisma)),
+      reenviarEventos: new ReenviarEventosDelViaje(saldosPendientes),
     },
     itinerario: {
       cronograma: new ConsultarCronograma(viajesSinBloqueo, consultaItinerario),

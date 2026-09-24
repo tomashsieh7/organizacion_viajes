@@ -15,6 +15,7 @@ import { CLIENTE_VIAJES, type ClienteViajes } from '../../src/clientes/viajes';
 import { ErrorDeApi } from '../../src/clientes/http';
 import { useViajeStore } from '../../src/stores/viaje';
 import type { ClienteChat, ConexionChat, OyentesChat } from '../../src/clientes/chat';
+import type { ClienteGastos } from '../../src/clientes/gastos';
 import { vi } from 'vitest';
 
 export const ANA: Usuario = { id: 'ana', nombre: 'Ana', apodo: null };
@@ -25,7 +26,11 @@ export const TOMAS: Participante = {
   rol: 'VIAJERO',
 };
 
-export function detalle(miRol: 'ADMIN' | 'VIAJERO', miDeudaPendiente = 0): DetalleViaje {
+export function detalle(
+  miRol: 'ADMIN' | 'VIAJERO',
+  miDeudaPendiente = 0,
+  miAcceso: 'COMPLETO' | 'SOLO_SALDOS' = 'COMPLETO',
+): DetalleViaje {
   return {
     id: 'v1',
     nombre: 'Bariloche',
@@ -34,6 +39,7 @@ export function detalle(miRol: 'ADMIN' | 'VIAJERO', miDeudaPendiente = 0): Detal
     fechaFin: '2026-12-16',
     moneda: { codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 },
     miRol,
+    miAcceso,
     miDeudaPendiente,
     cantidadParticipantes: 2,
   };
@@ -177,5 +183,18 @@ export function mensaje(
     contenido,
     enviadoEn: '2026-09-24T12:00:00.000Z',
     ...(idTemporal ? { idTemporal } : {}),
+  };
+}
+
+export function clienteGastosFalso(parcial: Partial<ClienteGastos> = {}): ClienteGastos {
+  return {
+    categorias: async () => [
+      { id: 'c-comida', codigo: 'COMIDA', nombre: 'Comida' },
+      { id: 'c-otros', codigo: 'OTROS', nombre: 'Otros' },
+    ],
+    listar: async () => [],
+    anotar: noImplementado,
+    deudas: async () => [],
+    ...parcial,
   };
 }

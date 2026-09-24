@@ -590,3 +590,109 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Acción:** con autorización del usuario, se hace commit de F6 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada de cierre de F6, más esta entrada en `LOG.md`.
 - **Pendiente:** el usuario pidió una explicación de los avisos de seguridad de las dependencias; la decisión sobre ellos queda abierta.
+
+## 2026-09-24 02:16 — Decisión sobre los avisos de seguridad de las dependencias de Prisma
+
+- **Acción:** se le explicó al usuario para qué se usa Prisma y qué problemas hubo con él.
+  - **Usos:** esquema y migraciones de la base; repositorios y consultas de cada módulo; transacciones con `UnidadDeTrabajoPrisma`; semilla de datos de ejemplo; preparación de la base de pruebas.
+  - **Problemas encontrados, todos resueltos dentro de la capa de infraestructura:**
+    - avisos de `npm audit`;
+    - `migrate reset` bloqueado para agentes de IA sin consentimiento explícito;
+    - bloqueo de filas escrito a mano con `SELECT … FOR UPDATE`, porque Prisma no lo ofrece;
+    - restricciones `CHECK` y el índice parcial de Admin único agregados a mano en la migración;
+    - conversiones de `bigint` a número y de `Date` a fechas y horas en texto;
+    - npm marca como última versión la 8.0, que todavía es candidata.
+- **Decisión del usuario:** no tocar las dependencias ahora y evaluar la actualización cuando salga Prisma 8 estable.
+- **Motivo:** `mysql2` y `deepmerge-ts` llegan por la herramienta de línea de comandos `prisma`, que solo corre en desarrollo. La aplicación en funcionamiento usa `@prisma/client` con el adaptador de PostgreSQL y no los ejecuta.
+- **Alternativas descartadas:**
+  - Forzar versiones corregidas con `overrides`: `deepmerge-ts` cambia de versión mayor y podría romper Prisma.
+  - Replantear D4: habría que reescribir la infraestructura de F1 a F6.
+- **Archivos:** esta entrada en `LOG.md`. Se incluye en el próximo commit que el usuario autorice.
+
+## 2026-09-24 02:18 — Inicio de F7: gastos y deudas
+
+- **Acción:** comienza la fase F7 de `PLAN.md`. Incluye:
+  - anotar gastos con pagador, deudores y división en partes iguales o arbitraria (CU20, RN-G1 a RN-G6, P12 a P15);
+  - actualizar la deuda neta de cada par con compensación y filas bloqueadas (D18);
+  - consultar las deudas como deudor y como acreedor (CU21, CU22);
+  - dar acceso solo a saldos a quien dejó el viaje con saldos pendientes (RN-E6, P18).
+
+## 2026-09-24 02:38 — F7 terminada: gastos y deudas
+
+- **Acción:** se implementa F7 completa, backend y frontend.
+- **Archivos creados:**
+  - **Paquete compartido:** `dinero.ts` (`repartirEnPartesIguales`), que usan `Dinero.repartir()` en la API y la vista previa del formulario en la web.
+  - **Módulo `gastos` del backend:**
+    - dominio: `division.ts` (`EstrategiaDivision`, `DivisionEnPartesIguales` y `DivisionArbitraria`), `gasto.ts` (`Gasto`, que crea sus partes), `deuda.ts` (`Deuda` con `sumar()` y `compensarCon()`) y `puertos.ts`;
+    - casos de uso: `casosDeUsoGastos.ts` (`AnotarGasto`, `ConsultarGastos` y `ConsultarDeudas`);
+    - infraestructura: `prisma.ts`, con el repositorio de deudas que crea los pares faltantes y los bloquea en orden;
+    - rutas: `gastos.rutas.ts` (categorías, gastos y deudas).
+  - **Semilla:** `prisma/semilla.ts`, con los datos que antes estaban en `seed.ts`, para cargarlos también en la base de prueba.
+  - **Pruebas del backend:**
+    - `gastos.test.ts`, `casosDeUsoGastos.test.ts` y `estrategiaDivision.contrato.ts` con su prueba;
+    - `gastos.bd.test.ts` e `invarianteSemilla.bd.test.ts`;
+    - el soporte `invarianteSaldos.ts`.
+  - **Frontend:**
+    - cliente `gastos.ts` y store `gastos`;
+    - componentes `SelectorPagador`, `SelectorDeudores`, `SelectorModoDivision`, `TablaPartes`, `TarjetaGasto` y `FilaSaldo`;
+    - vistas `GastosVista`, `GastoFormularioVista` y `SaldosVista`;
+    - pruebas de `SelectorDeudores`, del formulario y de los saldos.
+- **Archivos modificados:**
+  - Paquete compartido: `contratos.ts` (`TipoAcceso`, `miAcceso` en el resumen y el detalle del viaje, y los tipos de gastos y deudas) y `esquemas.ts` (`esquemaGastoNuevo` y `esquemaConsultaDeudas`).
+  - Backend:
+    - `viaje.ts` (`tipoDeAcceso` y `Membresia.tipoDeAcceso()`, `monedaCodigo`), puertos, casos de uso (`ConsultarAcceso`), consultas y rutas del módulo de viajes;
+    - el middleware `accesoSaldos` y el tipo de `req.acceso`;
+    - `dinero.ts`, `app.ts`, `contenedor.ts` y `prisma/seed.ts`;
+    - el módulo de chat, que ahora usa el puerto de saldos pendientes del módulo de viajes;
+    - los soportes en memoria, los escenarios, los contratos de repositorios y la prueba de viajes.
+  - Frontend: `ViajeLayout`, `ViajesVista`, `DialogoSalir`, el router, `main.ts`, los clientes falsos y las pruebas del layout y de participantes.
+  - Documentación: `docs/api.md` y `PLAN.md` (sección 5.9).
+- **Decisiones:**
+  - **Estrategias de división:** `EstrategiaDivision` tiene dos implementaciones (Strategy). `contenedor.ts` elige la del modo pedido con una tabla, así un modo nuevo es una clase y una entrada, sin tocar `Gasto` ni `AnotarGasto` (abierto/cerrado). Las dos cumplen un contrato común: una parte por deudor, en orden, que suman el total.
+  - **Compensación (P15):** `Deuda.compensarCon()` resta a las dos deudas del par el menor de sus montos. `AnotarGasto` suma la parte a la deuda del deudor y después la compensa con la opuesta. El resultado es el mismo que compensar primero y sumar después, con una sola regla en la entidad.
+  - **Bloqueo de deudas (D18):**
+    - el repositorio crea en cero los pares que faltan (`INSERT … ON CONFLICT DO NOTHING`) y después bloquea las filas con `SELECT … FOR UPDATE` ordenadas por id;
+    - bloquear siempre en el mismo orden evita que dos gastos simultáneos se esperen en cruz;
+    - se agregó una prueba que falla si se quita el bloqueo.
+  - **Acceso solo a saldos (RN-E6):**
+    - la regla vive en una función del dominio que usan `Membresia.tipoDeAcceso()` y las consultas de la lista y del detalle, así no se repite;
+    - las rutas del detalle y de las deudas reciben su propia guarda (`accesoSaldos`) y el resto sigue exigiendo participar;
+    - `ConsultaSaldosPendientes`, creada en F6 dentro del chat, pasó al módulo de viajes, que es quien decide el acceso; el chat ahora la importa de ahí.
+  - **Invariante del saldo neto por par:** se calcula desde `gasto_parte` y `pago` y se compara con `deuda`. También verifica que no haya saldos negativos ni dos deudas con saldo en el mismo par. Corre sobre la semilla y después de cada prueba de gastos, y una prueba muestra que detecta un saldo alterado.
+  - **Formulario:**
+    - paga quien anota y no hay nadie elegido al empezar (P12, P13);
+    - la categoría no se preselecciona (RN-G1);
+    - en partes iguales se muestra el reparto antes de guardar, con el mismo cálculo que la API;
+    - en arbitraria se muestran la suma y lo que falta o sobra mientras se escribe.
+  - **Destino al perder el acceso completo:** con saldos pendientes, quien sale o es eliminado queda en la sección de saldos con un aviso; sin saldos, vuelve a la lista de viajes. La lista marca esos viajes como "Solo saldos" y los abre directo en esa sección.
+- **Desvíos respecto del plan:**
+  - Las partes de un gasto se devuelven de mayor a menor monto, porque `gasto_parte` no guarda el orden de elección. Se actualizó la sección 5.9 de `PLAN.md`.
+  - El historial de pagos en las deudas queda para F8, junto con los pagos, como indica su fase.
+- **Errores encontrados y corregidos:**
+  - **Pares con datos de más:** el repositorio de deudas en Prisma recibía los pares con el monto incluido y fallaba al crearlos. Lo detectó la prueba de integración y se agregó el caso al contrato, que la implementación en memoria no detectaba.
+  - **Prueba de F2 desactualizada:** esperaba que un eliminado con deuda perdiera todo acceso; con RN-E6 conserva el detalle y los saldos, y se actualizó.
+  - **Carrera al salir:** el diálogo de salida mandaba a la lista de viajes mientras el aviso por socket mandaba a saldos. Ahora los dos llevan al mismo destino según el acceso que queda, con una prueba.
+  - **Saldos viejos:** la vista mostraba los de una visita anterior hasta que llegaban los nuevos; ahora muestra "Cargando…" hasta tenerlos.
+- **Entorno:** el contenedor de la sesión se reinició y hubo que volver a levantar Docker y las bases.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 392 pruebas: 326 del backend y 66 del frontend. Entre ellas:
+    - reparto con resto (1000 entre 3 da 334, 333 y 333);
+    - división arbitraria cuya suma no coincide, con el detalle de la diferencia;
+    - pagador fuera de los elegidos y parte del pagador sin deuda;
+    - compensación: si A le debe 10.000 a B y paga un gasto con parte de B de 4.000, queda A → B 6.000;
+    - gastos simultáneos sobre el mismo par con el saldo correcto;
+    - un exparticipante con saldos accede al detalle y a `GET …/deudas`, y recibe 403 en el resto; el acreedor también conserva el acceso;
+    - contrato de `EstrategiaDivision`;
+    - invariante del saldo neto sobre la semilla y después de cada prueba de gastos;
+    - prueba de componente de `SelectorDeudores` con el estado inicial vacío y el botón que alterna.
+  - `npm run lint` pasa sin errores.
+  - **Recorrido manual en Chromium con tres usuarios:**
+    - Ana anota una cena de $10 entre los tres, con la vista previa $3,34, $3,33 y $3,33.
+    - Tomás anota nafta de $60 dividida a mano, viendo lo que falta asignar.
+    - Los saldos de Ana muestran que debe $36,67 a Tomás, ya compensado, y que Luis le debe $3,33.
+    - Luis sale con deuda y queda en la sección de saldos, con el menú reducido y el viaje marcado como "Solo saldos" en su lista.
+
+## 2026-09-24 02:41 — Commit y push de F7
+
+- **Acción:** con autorización del usuario, se hace commit de F7 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F7, la entrada sobre los avisos de seguridad de Prisma y esta entrada en `LOG.md`.
