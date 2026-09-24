@@ -1,9 +1,11 @@
-# Integración continua: en cada push y en cada pull request corre las mismas verificaciones que
-# el README pide correr a mano (lint, pruebas de Vitest y pruebas de punta a punta).
+# Integración continua: corre las mismas verificaciones que el README pide correr a mano (lint,
+# pruebas de Vitest y pruebas de punta a punta) en cada pull request y en cada push a main. Las
+# demás ramas se verifican a través de su pull request, así un mismo commit no corre dos veces.
 name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:

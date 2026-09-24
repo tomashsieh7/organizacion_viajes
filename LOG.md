@@ -829,3 +829,11 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - `actionlint` no marca errores y Prettier acepta el formato.
   - En un clon limpio con `CI=true` se repitieron los pasos del flujo contra la base de prueba: pasan `npm ci`, `npm run lint`, `npm test` (345 pruebas del backend y 74 del frontend) y `npm run e2e` (seis flujos).
   - Queda pendiente ver la primera corrida en GitHub, después del push.
+
+## 2026-09-24 17:24 — CI: push solo a main
+
+- **Acción:** a pedido del usuario, el flujo de CI deja de dispararse con cada push y lo hace solo con los push a `main`. Los pull requests lo siguen disparando.
+- **Motivo:** en la primera corrida, cada push a la rama del PR disparó dos corridas iguales sobre el mismo commit, una por el push y otra por el pull request. El grupo de concurrencia no las unificaba, porque cada evento usa una referencia distinta. Ahora las ramas se verifican a través de su PR y `main` después de cada merge.
+- **Alternativa descartada:** dejar solo el disparo por pull request, que habría dejado sin verificar lo que llega a `main`.
+- **Archivos:** `.github/workflows/ci.yml`, `README.md` (el párrafo del CI) y esta entrada en `LOG.md`.
+- **Verificación:** `actionlint` y Prettier sin errores.
