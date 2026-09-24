@@ -1,6 +1,8 @@
 # Referencia de la API
 
-Estado al cierre de F8. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
+Referencia completa de la API del MVP, revisada al cierre de F9. El diseño está en la sección 5 de `PLAN.md` y las reglas de negocio, en la sección 6.
+
+**Secciones:** convenciones, salud, autenticación, grupo de viaje, propuestas, alojamientos, actividades, itinerario, chat (HTTP y Socket.IO), gastos y saldos.
 
 ## Convenciones
 
@@ -18,6 +20,8 @@ Estado al cierre de F8. Esta referencia se actualiza en cada fase que agrega o c
 | 403 | `NO_PARTICIPANTE` | Quien llama no participa del viaje. |
 | 403 | `SOLO_ADMIN` | La acción es del Admin del viaje. |
 | 404 | `NO_ENCONTRADO` | El recurso no existe o el identificador no es válido. |
+| 409 | Según el caso | Conflicto con el estado actual; por ejemplo, `TRANSICION_INVALIDA` o `SUPERPOSICION_HORARIA`. |
+| 422 | Según el caso | Los datos tienen buen formato pero violan una regla de negocio; por ejemplo, `FUERA_DEL_VIAJE` o `PAGO_EXCEDE_DEUDA`. |
 | 429 | `DEMASIADOS_INTENTOS` | Se superó un límite de intentos. |
 | 500 | `ERROR_INTERNO` | Error inesperado (sin detalles). |
 

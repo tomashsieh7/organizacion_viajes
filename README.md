@@ -33,6 +33,11 @@ La web redirige `/api` al backend, así que en desarrollo alcanza con abrir `htt
 
 `npm test` corre las pruebas rápidas y las que usan la base de prueba (`docker compose up -d` tiene que estar levantado). La API y la referencia de endpoints están en `docs/api.md`.
 
+`npm run e2e` corre las pruebas de punta a punta con Playwright en Chromium:
+- **Qué levanta:** su propia API y su propia web, en los puertos 3100 y 5273, contra una base aparte (`viajes_e2e`, que se crea sola en el servidor de pruebas). No interfiere con `npm run dev` ni con `npm test`.
+- **Requisitos:** `docker compose up -d` levantado y el navegador instalado una vez con `npx playwright install chromium`. Si Chromium ya está instalado en otra ruta, se indica con `E2E_CHROMIUM=/ruta/al/chrome npm run e2e`.
+- **Si algo falla:** el informe queda en `playwright-report/`.
+
 ## Scripts
 
 | Script | Qué hace |
@@ -40,6 +45,7 @@ La web redirige `/api` al backend, así que en desarrollo alcanza con abrir `htt
 | `npm run dev` | Levanta el paquete compartido en modo observación, la API y la web. |
 | `npm run build` | Compila los tres paquetes. |
 | `npm test` | Corre las pruebas del backend y del frontend con Vitest. |
+| `npm run e2e` | Corre las pruebas de punta a punta con Playwright. |
 | `npm run lint` | ESLint, verificación de formato con Prettier y chequeo de tipos. |
 | `npm run format` | Aplica el formato de Prettier. |
 | `npm run db:reset` | Resetea la base de desarrollo y carga la semilla. |

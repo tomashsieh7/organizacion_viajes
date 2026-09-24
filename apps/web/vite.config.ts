@@ -1,7 +1,8 @@
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 
-const API = 'http://localhost:3000';
+// Las pruebas de punta a punta levantan su propia API en otro puerto.
+const API = process.env['API_URL'] ?? 'http://localhost:3000';
 
 export default defineConfig({
   plugins: [vue()],

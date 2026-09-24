@@ -38,6 +38,7 @@ export function crearApp(c: Contenedor): Express {
       ...c.auth,
       autenticado: exigirSesion,
       cookieSegura: c.config.NODE_ENV === 'production',
+      registrosPorHora: c.config.REGISTROS_POR_HORA,
     }),
   );
   api.use(rutasViajes({ ...c.viajes, autenticado: exigirSesion }));

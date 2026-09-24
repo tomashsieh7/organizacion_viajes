@@ -107,7 +107,7 @@ const resolverComo = (id: string, accion: 'confirmar' | 'denegar' | 'cancelar') 
   resolver.ejecutar(VIAJE, id, accion, 'ana');
 
 describe('CU10: proponer actividad', () => {
-  it('se guarda pendiente con su horario y se lista con la hora de fin', async () => {
+  it('RN-A3: se guarda pendiente con su horario y se lista con la hora de fin', async () => {
     const id = await proponer(datos('Kayak', '23:00', 120));
     expect(await consultar().obtener(VIAJE, id, 'ana')).toMatchObject({
       id,
@@ -197,7 +197,7 @@ describe('CU11: proponer alternativa', () => {
     });
   });
 
-  it('pasa por el mismo control de fechas y de superposición', async () => {
+  it('RN-B2: pasa por el mismo control de fechas y de superposición', async () => {
     const cena = await proponer(datos('Cena', '21:00', 90));
     await resolverComo(cena, 'confirmar');
     const kayak = await proponer(datos('Kayak'));
@@ -212,7 +212,7 @@ describe('CU11: proponer alternativa', () => {
   });
 });
 
-describe('Resolver actividades (RN-R3 y RN-R4)', () => {
+describe('CU13 a CU15: resolver actividades (RN-R3 y RN-R4)', () => {
   it('confirmar una opción deniega las demás pendientes del grupo y las informa', async () => {
     const kayak = await proponer(datos('Kayak'));
     const trekking = await alternativa(kayak, datos('Trekking'));

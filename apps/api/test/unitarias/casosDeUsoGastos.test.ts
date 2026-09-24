@@ -11,6 +11,7 @@ import {
 } from '../../src/modulos/gastos/dominio/division.js';
 import type { ReposGastos } from '../../src/modulos/gastos/dominio/puertos.js';
 import { ConsultarAcceso } from '../../src/modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
+import { Dinero } from '../../src/compartido/valores/dinero.js';
 import { UnidadDeTrabajoEnMemoria } from '../soporte/unidadDeTrabajoEnMemoria.js';
 import {
   baseVacia,
@@ -88,6 +89,13 @@ describe('CU20: anotar gasto', () => {
     await anotar(ANA, {});
     expect(unidad.confirmado.gastos[0]).toMatchObject({ pagadoPorId: ANA, registradoPorId: ANA });
     expect([monto(TOMAS, ANA), monto(LUIS, ANA), monto(ANA, ANA)]).toEqual([300, 300, 0]);
+  });
+
+  it('RN-X6: el gasto y las deudas quedan en la moneda del viaje', async () => {
+    unidad.prepararEstado((e) => (e.viajes[0]!.monedaCodigo = 'CLP'));
+    await anotar(ANA, { monto: 900 });
+    expect(unidad.confirmado.gastos[0]?.monto).toEqual(Dinero.de(900, 'CLP'));
+    expect(unidad.confirmado.gastos[0]?.partes.every((p) => p.monto.moneda === 'CLP')).toBe(true);
   });
 
   it('P13: el pagador fuera de los elegidos, con otro pagador', async () => {

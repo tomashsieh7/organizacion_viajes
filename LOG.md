@@ -753,3 +753,58 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F8 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada de cierre de F8, más esta entrada en `LOG.md`.
+
+## 2026-09-24 02:53 — Inicio de F9: pruebas de punta a punta y cierre
+
+- **Acción:** comienza la fase F9 de `PLAN.md`. Incluye:
+  - pruebas de Playwright en `e2e/` para los seis flujos previstos, con el script `e2e` de raíz;
+  - `docs/api.md` completo;
+  - la revisión de la tabla de trazabilidad, verificando que cada caso de uso de la sección 1 y cada regla de la sección 6 aparezcan en el nombre de al menos una prueba.
+
+## 2026-09-24 03:00 — F9 terminada: pruebas de punta a punta y cierre
+
+- **Acción:** se implementa F9 completa.
+- **Dependencia nueva:** `@playwright/test` 1.63 en la raíz.
+- **Archivos creados:**
+  - **Configuración:** `e2e/playwright.config.ts` y `e2e/tsconfig.json`.
+  - **Soporte en `e2e/soporte/`:**
+    - `constantes.ts`;
+    - `prepararBase.ts` y `prepararTodo.ts`: crean la base `viajes_e2e`, aplican las migraciones, la vacían y cargan los catálogos;
+    - `fixtures.ts`: viajeros con sesión propia, preparación de datos por la API, mapa sin teselas y Nominatim simulado.
+  - **Flujos:** `grupo.spec.ts`, `actividades.spec.ts`, `itinerario.spec.ts`, `gastos.spec.ts`, `chat.spec.ts` y `administracion.spec.ts`.
+  - **Trazabilidad:** `apps/api/test/unitarias/trazabilidad.test.ts`.
+- **Archivos modificados:**
+  - `package.json`: script `e2e` y chequeo de tipos de `e2e/` en `lint`.
+  - `eslint.config.js`, `.env.example` y `README.md`.
+  - Backend: `config.ts` (`REGISTROS_POR_HORA`), `seguridad.ts`, `auth.rutas.ts` y `app.ts`.
+  - Frontend: `vite.config.ts` (`API_URL` para el proxy).
+  - Nombres de algunas pruebas unitarias y dos pruebas nuevas (RN-R2 y RN-X6).
+  - Documentación: `docs/api.md` y `PLAN.md` (revisión de la tabla de trazabilidad).
+- **Decisiones:**
+  - **Entorno propio:** las pruebas de punta a punta levantan su propia API (puerto 3100) y su propia web (puerto 5273) contra la base `viajes_e2e`, creada en el mismo servidor que la de Vitest. Así no chocan con `npm run dev` ni con `npm test`, que vacía su propia base. Se descartó usar la base de prueba, porque correr las dos suites a la vez borraría datos de la otra.
+  - **Datos de preparación:** cada flujo crea usuarios nuevos y prepara por la API lo que no es parte de lo que prueba (por ejemplo, la actividad ya confirmada). Recorre en el navegador solo el flujo pedido.
+  - **Servicios externos:** las teselas del mapa se bloquean y Nominatim devuelve siempre un lugar, así el flujo de proponer una actividad elige la ubicación del buscador sin depender de la red.
+  - **Límite de registros configurable:** `REGISTROS_POR_HORA` (10 por defecto, D6). Solo lo suben las pruebas de punta a punta, que registran unos doce usuarios desde la misma IP.
+  - **Navegador:** Playwright usa la versión estable vigente (D23). Para un Chromium ya instalado en otra ruta, como en esta sesión, se indica con `E2E_CHROMIUM`; en cualquier otra máquina alcanza con `npx playwright install chromium`.
+  - **Contextos:** los contextos de navegador que abre cada prueba se cierran al terminarla.
+  - **Trazabilidad automática:** una prueba de Vitest lee la tabla de la sección 1 y las reglas de la sección 6 de `PLAN.md`, y falla si algún identificador no aparece en el nombre de al menos una prueba. Reconoce rangos como "RN-G1 a RN-G6". Al medirla por primera vez faltaban siete identificadores:
+    - CU13 a CU15, RN-A3 y RN-B2 ya tenían pruebas sin el identificador en el nombre; se renombraron;
+    - RN-R2 (el Admin resuelve sin umbral de votos) y RN-X6 (los montos van en la moneda del viaje) no tenían pruebas propias; se agregaron.
+- **Errores encontrados y corregidos:** una línea de `auth.rutas.ts` quedó sin el formato de Prettier y el lint lo detectó.
+- **Salida de la consola:** al cerrar un contexto, el proxy de Vite registra `ECONNRESET` porque el navegador corta el WebSocket del chat. Es esperable y no afecta a las pruebas.
+- **Verificación del criterio de terminado:**
+  - `npm run e2e` pasa los seis flujos en Chromium, en tres corridas seguidas sin fallas:
+    - registrarse, crear un grupo y agregar a un viajero;
+    - proponer una actividad que se superpone, ajustar el horario y guardarla;
+    - confirmarla y verla en el cronograma y en el mapa;
+    - anotar un gasto con división arbitraria y pagar parte de la deuda;
+    - conversar en el chat desde dos sesiones;
+    - transferir la administración y salir del grupo.
+  - Cada caso de uso de la sección 1 y cada regla de la sección 6 aparecen en el nombre de al menos una prueba; lo verifica la prueba de trazabilidad.
+  - `npm test` pasa 419 pruebas (345 del backend y 74 del frontend) y `npm run lint` pasa sin errores.
+  - `docs/api.md` documenta todos los endpoints del código, con los códigos de error generales, y la tabla de trazabilidad quedó revisada.
+
+## 2026-09-24 10:58 — Commit y push de F9
+
+- **Acción:** con autorización del usuario, se hace commit de F9 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F9, más esta entrada en `LOG.md`.

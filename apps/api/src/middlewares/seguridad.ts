@@ -61,11 +61,11 @@ export function limitesDeIngreso(): RequestHandler[] {
   ];
 }
 
-/** Límite general al registro por IP, para frenar la creación masiva de cuentas. */
-export function limiteDeRegistro(): RequestHandler {
+/** Límite general al registro por IP, para frenar la creación masiva de cuentas (D6). */
+export function limiteDeRegistro(porHora: number): RequestHandler {
   return rateLimit({
     windowMs: 60 * 60 * 1000,
-    limit: 10,
+    limit: porHora,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     keyGenerator: (req) => `ip:${ipKeyGenerator(req.ip ?? '')}`,

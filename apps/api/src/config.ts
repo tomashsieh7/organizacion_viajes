@@ -6,6 +6,8 @@ const esquema = z.object({
   ORIGEN_WEB: z.url().default('http://localhost:5173'),
   DATABASE_URL: z.string().min(1).default('postgresql://viajes:viajes@localhost:5432/viajes'),
   SESION_DIAS: z.coerce.number().int().positive().default(7),
+  // Solo las pruebas de punta a punta lo suben, porque registran muchos usuarios desde la misma IP.
+  REGISTROS_POR_HORA: z.coerce.number().int().positive().default(10),
 });
 
 export type Config = z.infer<typeof esquema>;

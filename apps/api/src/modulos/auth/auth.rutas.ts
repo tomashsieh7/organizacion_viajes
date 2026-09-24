@@ -19,6 +19,8 @@ export interface DependenciasRutasAuth {
   obtenerPerfil: ObtenerPerfil;
   autenticado: RequestHandler;
   cookieSegura: boolean;
+  /** Registros permitidos por hora y por IP. */
+  registrosPorHora: number;
 }
 
 /** Controlador y rutas de `/api/auth` (sección 5.2 de PLAN.md). */
@@ -45,9 +47,14 @@ export function rutasAuth(deps: DependenciasRutasAuth): Router {
 
   const router = Router();
 
-  router.post('/registro', limiteDeRegistro(), validar(esquemaRegistro), async (req, res) => {
-    responderIngreso(res, 201, await deps.registrarse.ejecutar(req.body));
-  });
+  router.post(
+    '/registro',
+    limiteDeRegistro(deps.registrosPorHora),
+    validar(esquemaRegistro),
+    async (req, res) => {
+      responderIngreso(res, 201, await deps.registrarse.ejecutar(req.body));
+    },
+  );
 
   router.post('/sesion', ...limitesDeIngreso(), validar(esquemaInicioSesion), async (req, res) => {
     responderIngreso(res, 200, await deps.iniciarSesion.ejecutar(req.body));

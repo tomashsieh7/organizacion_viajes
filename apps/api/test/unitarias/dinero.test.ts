@@ -50,7 +50,7 @@ describe('Dinero', () => {
     expect(ars(0).esCero()).toBe(true);
   });
 
-  it('no combina monedas distintas', () => {
+  it('RN-X6: no combina montos de monedas distintas', () => {
     expect(() => ars(10).sumar(Dinero.de(1, 'USD'))).toThrow(
       expect.objectContaining({ codigo: 'MONEDAS_DISTINTAS' }),
     );

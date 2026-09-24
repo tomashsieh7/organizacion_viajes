@@ -9,6 +9,7 @@ import {
   Votar,
 } from '../../src/modulos/propuestas/casos-de-uso/casosDeUsoPropuestas.js';
 import type {
+  ConsultaPropuestas,
   ReglaAlResolver,
   ReposPropuestas,
 } from '../../src/modulos/propuestas/dominio/puertos.js';
@@ -157,6 +158,28 @@ describe('Votar y resolver', () => {
     expect(r.propuesta.estado).toBe('CONFIRMADA');
     expect(r.afectadas).toEqual(['otra-propuesta']);
     expect(vistas).toEqual(['confirmar:CONFIRMADA']);
+  });
+
+  it('RN-R2: el Admin confirma o deniega libremente, sin umbral de votos', async () => {
+    const otra = await proponer('2026-12-13', '2026-12-16');
+    unidadDePropuestasSobre(unidadAlojamientos.confirmado);
+    const lector: ConsultaPropuestas = {
+      obtenerVista: (...a) => consultas().obtenerVista(...a),
+    };
+    const votar = new Votar(unidadPropuestas, lector, reloj);
+    const resolver = new ResolverPropuesta(unidadPropuestas, lector, reloj);
+    // Confirma una propuesta con más votos en contra que a favor.
+    await votar.votar(VIAJE, id, 'ana', 'EN_CONTRA');
+    await votar.votar(VIAJE, id, 'tomas', 'EN_CONTRA');
+    expect((await resolver.ejecutar(VIAJE, id, 'confirmar', 'ana')).propuesta).toMatchObject({
+      estado: 'CONFIRMADA',
+      votosEnContra: 2,
+    });
+    // Y deniega otra que solo tiene votos a favor.
+    await votar.votar(VIAJE, otra, 'tomas', 'A_FAVOR');
+    expect((await resolver.ejecutar(VIAJE, otra, 'denegar', 'ana')).propuesta.estado).toBe(
+      'DENEGADA',
+    );
   });
 
   it('si una regla rechaza la resolución, no se guarda nada', async () => {

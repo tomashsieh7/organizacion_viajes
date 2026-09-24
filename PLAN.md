@@ -37,6 +37,8 @@ El MVP cubre las 23 historias de "Página-13" más tres casos agregados por deci
 
 El registro, el inicio y el cierre de sesión no figuran en los diagramas, pero todos los casos anteriores los necesitan para identificar al viajero; se implementan en F2 como soporte transversal según P3.
 
+**Revisión de F9.** Las rutas y pantallas de la tabla coinciden con lo implementado. La prueba `apps/api/test/unitarias/trazabilidad.test.ts` lee esta tabla y la sección 6, y falla si algún caso de uso o alguna regla no aparece en el nombre de al menos una prueba de `apps/*/test` o de `e2e/`. Los flujos de punta a punta de `e2e/` recorren CU01, CU02, CU04, CU10, CU13, CU16 a CU21, CU23 y CU24 en el navegador.
+
 ## 2. Arquitectura y estructura del repositorio
 
 ### 2.1 Vista general
