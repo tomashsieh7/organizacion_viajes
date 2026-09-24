@@ -4,6 +4,16 @@
  */
 import type { PrismaClient } from '../../src/compartido/infraestructura/prisma.js';
 import type { ConsultaItinerario } from '../../src/modulos/itinerario/dominio/puertos.js';
+import type {
+  ConsultaMensajes,
+  ConsultaSaldosPendientes,
+  RepositorioMensajes,
+} from '../../src/modulos/chat/dominio/puertos.js';
+import {
+  ConsultaMensajesPrisma,
+  ConsultaSaldosPendientesPrisma,
+  RepositorioMensajesPrisma,
+} from '../../src/modulos/chat/infraestructura/prisma.js';
 import { ConsultaItinerarioPrisma } from '../../src/modulos/itinerario/infraestructura/prisma.js';
 import type {
   ConsultaActividades,
@@ -58,6 +68,9 @@ import {
 import { vaciarBase } from './baseDePrueba.js';
 import {
   baseVacia,
+  ConsultaMensajesEnMemoria,
+  ConsultaSaldosPendientesEnMemoria,
+  RepositorioMensajesEnMemoria,
   ConsultaItinerarioEnMemoria,
   ConsultaActividadesEnMemoria,
   RepositorioActividadesEnMemoria,
@@ -96,6 +109,9 @@ export interface Repos {
   actividades: RepositorioActividades;
   consultaActividades: ConsultaActividades;
   itinerario: ConsultaItinerario;
+  mensajes: RepositorioMensajes;
+  consultaMensajes: ConsultaMensajes;
+  saldosPendientes: ConsultaSaldosPendientes;
   cuentas: RepositorioCuentas;
   sesiones: RepositorioSesiones;
   viajes: RepositorioViajes;
@@ -195,6 +211,9 @@ export const implementacionEnMemoria: Implementacion = {
         actividades: new RepositorioActividadesEnMemoria(base),
         consultaActividades: new ConsultaActividadesEnMemoria(base),
         itinerario: new ConsultaItinerarioEnMemoria(base),
+        mensajes: new RepositorioMensajesEnMemoria(base),
+        consultaMensajes: new ConsultaMensajesEnMemoria(base),
+        saldosPendientes: new ConsultaSaldosPendientesEnMemoria(base),
         cuentas: new RepositorioCuentasEnMemoria(base),
         sesiones: new RepositorioSesionesEnMemoria(base),
         viajes: new RepositorioViajesEnMemoria(base),
@@ -291,6 +310,9 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
           actividades: new RepositorioActividadesPrisma(prisma),
           consultaActividades: new ConsultaActividadesPrisma(prisma),
           itinerario: new ConsultaItinerarioPrisma(prisma),
+          mensajes: new RepositorioMensajesPrisma(prisma),
+          consultaMensajes: new ConsultaMensajesPrisma(prisma),
+          saldosPendientes: new ConsultaSaldosPendientesPrisma(prisma),
           cuentas: new RepositorioCuentasPrisma(prisma),
           sesiones: new RepositorioSesionesPrisma(prisma),
           viajes: new RepositorioViajesPrisma(prisma),

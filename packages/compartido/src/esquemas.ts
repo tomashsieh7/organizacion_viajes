@@ -72,6 +72,24 @@ export const esquemaConsultaMapa = z.object({
   dia: esquemaFecha.optional(),
 });
 
+/** CU19: mensaje del chat. */
+export const esquemaMensajeNuevo = z.object({
+  viajeId: z.uuid('Viaje inválido'),
+  contenido: z
+    .string()
+    .trim()
+    .min(1, 'Escribí un mensaje')
+    .max(2000, 'El mensaje puede tener hasta 2000 caracteres'),
+  idTemporal: z.string().min(1).max(100),
+});
+export type DatosMensajeNuevo = z.input<typeof esquemaMensajeNuevo>;
+
+/** CU19: página del historial, hacia atrás desde `antesDe`. */
+export const esquemaConsultaMensajes = z.object({
+  antesDe: z.uuid().optional(),
+  limite: z.coerce.number().int().min(1).max(100).default(50),
+});
+
 export const esquemaFiltroEstado = z.object({ estado: z.enum(ESTADOS_PROPUESTA).optional() });
 
 const coordenadas = {

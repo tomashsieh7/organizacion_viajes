@@ -1,22 +1,26 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { onBeforeUnmount, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import { mensajeDeError } from '../clientes/http';
+import { useChatStore } from '../stores/chat';
 import { useViajeStore } from '../stores/viaje';
 import { formatearFecha } from '../utiles/formato';
 
 const store = useViajeStore();
+const chat = useChatStore();
 const route = useRoute();
+const router = useRouter();
 const error = ref('');
 
-// Las demás secciones del menú se suman en las fases siguientes (F6 a F8).
+// Las demás secciones del menú se suman en las fases siguientes (F7 y F8).
 const secciones = [
   { nombre: 'Participantes', ruta: 'participantes' },
   { nombre: 'Alojamientos', ruta: 'alojamientos' },
   { nombre: 'Actividades', ruta: 'actividades' },
   { nombre: 'Cronograma', ruta: 'cronograma' },
   { nombre: 'Mapa', ruta: 'mapa' },
+  { nombre: 'Chat', ruta: 'chat' },
 ];
 
 watch(
@@ -26,12 +30,35 @@ watch(
     error.value = '';
     try {
       await store.abrir(id);
+      // La conexión en tiempo real acompaña al viaje abierto, en cualquier sección.
+      await chat.entrar(id);
     } catch (e) {
       error.value = mensajeDeError(e);
     }
   },
   { immediate: true },
 );
+
+/** RN-E4: si la membresía termina mientras el viaje está abierto, se vuelve a la lista. */
+watch(
+  () => chat.finalizada,
+  async (aviso) => {
+    if (!aviso || !store.actual) return;
+    const nombre = store.actual.nombre;
+    const motivo =
+      aviso.motivo === 'ELIMINADO'
+        ? `El Admin te quitó de «${nombre}».`
+        : `Saliste de «${nombre}».`;
+    const saldos = aviso.conservaAccesoSaldos
+      ? ' Todavía tenés saldos pendientes en ese viaje.'
+      : '';
+    chat.desconectar();
+    await store.cerrarPorBaja(motivo + saldos);
+    await router.push('/viajes');
+  },
+);
+
+onBeforeUnmount(() => chat.desconectar());
 </script>
 
 <template>

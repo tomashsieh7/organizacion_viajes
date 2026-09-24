@@ -18,6 +18,8 @@ export const useViajeStore = defineStore('viaje', () => {
   const monedas = ref<Moneda[]>([]);
   const actual = ref<DetalleViaje | null>(null);
   const participantes = ref<Participante[]>([]);
+  /** Aviso para mostrar en la lista de viajes, por ejemplo cuando a alguien lo quitan de uno. */
+  const aviso = ref('');
   const soyAdmin = computed(() => actual.value?.miRol === 'ADMIN');
 
   async function cargarViajes() {
@@ -76,8 +78,17 @@ export const useViajeStore = defineStore('viaje', () => {
     await cargarViajes();
   }
 
+  /** RN-E4: la membresía terminó mientras el viaje estaba abierto. */
+  async function cerrarPorBaja(mensaje: string) {
+    actual.value = null;
+    participantes.value = [];
+    aviso.value = mensaje;
+    await cargarViajes();
+  }
+
   return {
     viajes,
+    aviso,
     monedas,
     actual,
     participantes,
@@ -91,5 +102,7 @@ export const useViajeStore = defineStore('viaje', () => {
     eliminarParticipante,
     transferirAdministracion,
     salir,
+    refrescar,
+    cerrarPorBaja,
   };
 });

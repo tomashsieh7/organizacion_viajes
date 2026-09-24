@@ -36,6 +36,18 @@ import {
   ConsultarMapa,
 } from './modulos/itinerario/casos-de-uso/casosDeUsoItinerario.js';
 import { RecorridoEnLineaRecta } from './modulos/itinerario/dominio/recorrido.js';
+import {
+  ConsultarMensajes,
+  EnviarMensaje,
+  ReenviarEventosDelViaje,
+  UnirseAlChat,
+} from './modulos/chat/casos-de-uso/casosDeUsoChat.js';
+import {
+  ConsultaMensajesPrisma,
+  ConsultaSaldosPendientesPrisma,
+  RepositorioMensajesPrisma,
+} from './modulos/chat/infraestructura/prisma.js';
+import { ParticipacionSegunViajes } from './modulos/chat/infraestructura/participacion.js';
 import { ConsultaItinerarioPrisma } from './modulos/itinerario/infraestructura/prisma.js';
 import {
   ConsultarAlojamientos,
@@ -123,6 +135,12 @@ export interface Contenedor {
     cronograma: ConsultarCronograma;
     mapa: ConsultarMapa;
   };
+  chat: {
+    unirse: UnirseAlChat;
+    enviar: EnviarMensaje;
+    consultar: ConsultarMensajes;
+    reenviarEventos: ReenviarEventosDelViaje;
+  };
   alojamientos: {
     proponer: ProponerAlojamiento;
     consultar: ConsultarAlojamientos;
@@ -197,6 +215,10 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   const viajesSinBloqueo = new RepositorioViajesPrisma(prisma);
   const consultaItinerario = new ConsultaItinerarioPrisma(prisma);
 
+  // Chat
+  const participacion = new ParticipacionSegunViajes(consultasViajes);
+  const consultaMensajes = new ConsultaMensajesPrisma(prisma);
+
   // Alojamientos
   const unidadAlojamientos = new UnidadDeTrabajoPrisma<ReposAlojamientos>(prisma, (tx) => ({
     alojamientos: new RepositorioAlojamientosPrisma(tx),
@@ -235,6 +257,17 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       proponer: new ProponerActividad(depsActividades),
       proponerAlternativa: new ProponerAlternativa(depsActividades),
       consultar: new ConsultarActividades(new ConsultaActividadesPrisma(prisma)),
+    },
+    chat: {
+      unirse: new UnirseAlChat(participacion),
+      enviar: new EnviarMensaje(
+        participacion,
+        new RepositorioMensajesPrisma(prisma),
+        consultaMensajes,
+        reloj,
+      ),
+      consultar: new ConsultarMensajes(consultaMensajes),
+      reenviarEventos: new ReenviarEventosDelViaje(new ConsultaSaldosPendientesPrisma(prisma)),
     },
     itinerario: {
       cronograma: new ConsultarCronograma(viajesSinBloqueo, consultaItinerario),

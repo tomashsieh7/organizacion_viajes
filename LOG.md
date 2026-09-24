@@ -521,3 +521,72 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F5 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada de cierre de F5, más esta entrada en `LOG.md`.
+
+## 2026-09-24 01:49 — Inicio de F6: chat en tiempo real
+
+- **Acción:** comienza la fase F6 de `PLAN.md`: chat del viaje con historial paginado y mensajes en tiempo real por Socket.IO (CU19, RN-X5), y avisos de baja de participante y de traspaso de Admin entregados por `NotificadorViaje` a partir de los eventos de dominio de F2 (RN-E4, D11).
+
+## 2026-09-24 02:04 — F6 terminada: chat en tiempo real
+
+- **Acción:** se implementa F6 completa, backend y frontend.
+- **Dependencias nuevas:** `socket.io` en la API; `socket.io-client` en la web y, para las pruebas, en la API.
+- **Archivos creados:**
+  - **Módulo `chat` del backend:**
+    - dominio: `mensaje.ts` (entidad `Mensaje`) y `puertos.ts` (`RepositorioMensajes`, `ConsultaMensajes`, `ConsultaParticipacion`, `ConsultaSaldosPendientes` y `NotificadorViaje`);
+    - casos de uso: `casosDeUsoChat.ts` (`UnirseAlChat`, `EnviarMensaje`, `ConsultarMensajes` y `ReenviarEventosDelViaje`);
+    - infraestructura: `prisma.ts`, `participacion.ts` (adaptador sobre la consulta de viajes) y `socketIO.ts` (gateway y `NotificadorViajeSocketIO`);
+    - rutas: `chat.rutas.ts`.
+  - **Backend, conexión con el servidor:** `src/tiempoReal.ts`, que conecta Socket.IO al servidor HTTP.
+  - **Pruebas del backend:** `chat.test.ts`, `notificadorViaje.contrato.ts` con `notificadorViaje.test.ts` (en memoria y sobre Socket.IO) y `chat.bd.test.ts`.
+  - **Frontend:**
+    - cliente `chat.ts` (interfaz `ClienteChat` y adaptador de Socket.IO) y store `chat`;
+    - componentes `ListaMensajes` y `CampoMensaje`, y vista `ChatVista`;
+    - pruebas del store, de la vista y de `ViajeLayout`.
+- **Archivos modificados:**
+  - Paquete compartido: `contratos.ts` (mensajes, avisos y tipos de los eventos de Socket.IO) y `esquemas.ts` (`esquemaMensajeNuevo` y `esquemaConsultaMensajes`).
+  - Backend: `servidor.ts`, `contenedor.ts` y `app.ts`; soportes en memoria, escenarios y contratos de repositorios.
+  - Frontend: `main.ts`, el router, `ViajeLayout` (conexión y aviso de baja), `ViajesVista` (aviso), el store de viaje (`aviso`, `refrescar` y `cerrarPorBaja`) y los clientes falsos de las pruebas.
+  - Documentación: `docs/api.md` y `PLAN.md` (sección 5.8).
+- **Decisiones:**
+  - **`NotificadorViaje` como Observer:** `ReenviarEventosDelViaje` se suscribe a los eventos de baja y de traspaso que publica el módulo de viajes desde F2. Ese módulo no se modificó y sigue sin conocer el chat. El notificador tiene un contrato que cumplen la implementación sobre Socket.IO y la de memoria (Liskov).
+  - **`conservaAccesoSaldos`:** se calcula con saldos pendientes a favor o en contra (RN-E6) mediante una consulta nueva sobre `deuda`. El dato `bajaConDeuda` del evento no alcanza, porque a un acreedor también le quedan saldos pendientes.
+  - **Seguridad del canal:**
+    - el handshake exige el `Origin` de la aplicación y una sesión vigente;
+    - cada evento vuelve a validar la sesión, así un cierre de sesión corta la conexión abierta;
+    - el id del viaje que llega por socket se valida antes de consultar la base.
+  - **Salas:** una por viaje (`viaje:<id>`) y una por usuario (`usuario:<id>`). La del usuario permite avisarle la baja en todas sus conexiones y sacarlo de la sala del viaje.
+  - **Paginación:** el cursor es `(enviado_en, id)` y no solo la fecha, para no repetir ni perder mensajes del mismo instante.
+  - **Conexión en el frontend:** se abre al entrar a un viaje en `ViajeLayout` y no solo en la vista del chat. Así los avisos de baja y de traspaso llegan desde cualquier sección, como pide la sección 4 del plan.
+  - **Mensajes optimistas:** el mensaje propio se muestra enseguida con un `idTemporal` (un UUID) y se reemplaza con la confirmación o con el eco de la sala, lo que llegue primero, sin duplicarse. Solo se reemplaza un mensaje con el mismo `idTemporal` y el mismo autor.
+  - **Reconexión:** al reconectarse, el cliente vuelve a unirse a la sala y pide la última página del historial, para recuperar lo que se envió mientras la conexión estaba cortada.
+  - **Límite de espera:** unirse y enviar esperan hasta 10 segundos la confirmación. Si no llega, el mensaje queda marcado como no enviado y el error se muestra en la pantalla.
+- **Desvío respecto del plan:** Socket.IO usa solo el transporte WebSocket. En el recorrido manual, el servidor rechazó la conexión con `ORIGEN_NO_PERMITIDO`. El primer pedido del transporte de sondeo es un GET del mismo origen, y el navegador no le agrega el encabezado `Origin`. El handshake de WebSocket, en cambio, siempre lo trae. Se descartó relajar la verificación cuando falta el encabezado, porque dejaría pasar conexiones de otros sitios sin comprobar su origen. Las pruebas de integración no lo detectaron porque el cliente de Node agrega el encabezado en todos los pedidos. Se agregó una prueba que verifica que el sondeo se rechaza. Se actualizó la sección 5.8 de `PLAN.md`.
+- **Errores encontrados y corregidos:**
+  - Con la sesión cerrada, el servidor cortaba la conexión antes de responder, y el cliente no recibía la confirmación con `NO_AUTENTICADO`. Ahora responde primero y corta después. Lo detectó la prueba de integración.
+  - La vista del chat pedía el historial al montarse, a veces antes de que el chat tuviera el viaje abierto. Ahora lo pide cuando el viaje está disponible. Lo detectó la prueba de la vista.
+- **Dependencias con avisos de seguridad:** `npm audit` informa cuatro avisos altos en `mysql2` y `deepmerge-ts`. Llegan por la herramienta de línea de comandos `prisma` y ya estaban antes de esta fase. El arreglo automático propone bajar Prisma a la versión 6, un cambio incompatible, así que no se aplicó y queda para consultarlo con el usuario.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 336 pruebas: 282 del backend y 54 del frontend. Entre ellas, pruebas de integración con `socket.io-client` que verifican:
+    - dos participantes del mismo viaje reciben el mismo mensaje;
+    - un usuario de otro viaje no puede unirse ni enviar, y no recibe nada;
+    - la conexión sin cookie, con una cookie inválida, con otro `Origin` o por sondeo se rechaza;
+    - el participante eliminado recibe `viaje:membresia-finalizada` y deja de recibir mensajes;
+    - quien sale con saldos pendientes conserva el acceso a saldos;
+    - el traspaso emite `viaje:admin-cambiado`;
+    - el historial pagina hacia atrás sin repetir mensajes;
+    - el contenido se valida y la sesión cerrada corta la conexión.
+  - Otras pruebas:
+    - contrato de `NotificadorViaje`;
+    - contratos de los repositorios de mensajes y de saldos pendientes, incluida la paginación con mensajes del mismo instante.
+  - `npm run lint` pasa sin errores. Se repitieron cuatro veces seguidas las pruebas que dependen de tiempos, sin fallas.
+  - **Recorrido manual en Chromium con dos sesiones y el proxy de Vite:**
+    - Ana escribe y Tomás recibe el mensaje en vivo; Ana ve el suyo confirmado.
+    - Tomás responde y Ana lo recibe; al recargar, el historial se conserva.
+    - Ana transfiere la administración y Tomás pasa a ver las acciones de Admin sin volver a abrir el viaje.
+    - Tomás elimina a Ana, que vuelve a su lista de viajes con el aviso "El Admin te quitó de «Bariloche 2026»."
+
+## 2026-09-24 02:07 — Commit y push de F6
+
+- **Acción:** con autorización del usuario, se hace commit de F6 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F6, más esta entrada en `LOG.md`.
+- **Pendiente:** el usuario pidió una explicación de los avisos de seguridad de las dependencias; la decisión sobre ellos queda abierta.

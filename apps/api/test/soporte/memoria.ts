@@ -5,6 +5,10 @@
  */
 import {
   sumarMinutos,
+  type AvisoAdminCambiado,
+  type AvisoMembresiaFinalizada,
+  type MensajeVista,
+  type PaginaDeMensajes,
   type ActividadDelItinerario,
   type ActividadVista,
   type AlojamientoVista,
@@ -17,6 +21,13 @@ import {
 } from '@viajes/compartido';
 import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
 import { Intervalo } from '../../src/compartido/valores/intervalo.js';
+import type { DatosMensaje, Mensaje } from '../../src/modulos/chat/dominio/mensaje.js';
+import type {
+  ConsultaMensajes,
+  ConsultaSaldosPendientes,
+  NotificadorViaje,
+  RepositorioMensajes,
+} from '../../src/modulos/chat/dominio/puertos.js';
 import type {
   AlojamientoConfirmado,
   ConsultaItinerario,
@@ -76,6 +87,7 @@ export interface BaseEnMemoria {
   monedas: Moneda[];
   viajes: DatosViaje[];
   deudas: { viajeId: string; deudorId: string; acreedorId: string; monto: number }[];
+  mensajes: DatosMensaje[];
   /** Propuestas con sus votos y, según el tipo, los datos propios del alojamiento o la actividad. */
   propuestas: {
     datos: DatosPropuesta;
@@ -92,6 +104,7 @@ export function baseVacia(): BaseEnMemoria {
     monedas: [{ codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 }],
     viajes: [],
     deudas: [],
+    mensajes: [],
     propuestas: [],
   };
 }
@@ -584,6 +597,96 @@ export class ConsultaItinerarioEnMemoria implements ConsultaItinerario {
         (a, b) =>
           a.estadia.desde.localeCompare(b.estadia.desde) || a.nombre.localeCompare(b.nombre),
       );
+  }
+}
+
+export class RepositorioMensajesEnMemoria implements RepositorioMensajes {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async guardar(mensaje: Mensaje): Promise<void> {
+    this.base.mensajes.push(mensaje.aDatos());
+  }
+}
+
+/** Orden cronológico con desempate por id, como el índice de la base. */
+const cronologico = (a: DatosMensaje, b: DatosMensaje) =>
+  a.enviadoEn.getTime() - b.enviadoEn.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+export class ConsultaMensajesEnMemoria implements ConsultaMensajes {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async obtener(viajeId: string, mensajeId: string): Promise<MensajeVista | null> {
+    const m = this.base.mensajes.find((x) => x.id === mensajeId && x.viajeId === viajeId);
+    return m ? this.vista(m) : null;
+  }
+
+  async pagina(
+    viajeId: string,
+    antesDe: string | undefined,
+    limite: number,
+  ): Promise<PaginaDeMensajes | null> {
+    const delViaje = this.base.mensajes.filter((m) => m.viajeId === viajeId).sort(cronologico);
+    let hasta = delViaje.length;
+    if (antesDe) {
+      hasta = delViaje.findIndex((m) => m.id === antesDe);
+      if (hasta < 0) return null;
+    }
+    const desde = Math.max(0, hasta - limite);
+    return { mensajes: delViaje.slice(desde, hasta).map((m) => this.vista(m)), hayMas: desde > 0 };
+  }
+
+  private vista(m: DatosMensaje): MensajeVista {
+    const u = this.base.usuarios.find((x) => x.id === m.autorId);
+    return {
+      id: m.id,
+      viajeId: m.viajeId,
+      autor: { id: m.autorId, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null },
+      contenido: m.contenido,
+      enviadoEn: m.enviadoEn.toISOString(),
+    };
+  }
+}
+
+export class ConsultaSaldosPendientesEnMemoria implements ConsultaSaldosPendientes {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async tieneSaldosPendientes(viajeId: string, usuarioId: string): Promise<boolean> {
+    return this.base.deudas.some(
+      (d) =>
+        d.viajeId === viajeId &&
+        d.monto > 0 &&
+        (d.deudorId === usuarioId || d.acreedorId === usuarioId),
+    );
+  }
+}
+
+/** Evento recibido por una conexión del notificador en memoria. */
+export type EventoRecibido =
+  | { nombre: 'viaje:membresia-finalizada'; datos: AvisoMembresiaFinalizada }
+  | { nombre: 'viaje:admin-cambiado'; datos: AvisoAdminCambiado };
+
+/** Notificador en memoria: cada conexión es una lista de eventos recibidos y un conjunto de salas. */
+export class NotificadorViajeEnMemoria implements NotificadorViaje {
+  readonly conexiones: { usuarioId: string; salas: Set<string>; recibidos: EventoRecibido[] }[] =
+    [];
+
+  conectar(usuarioId: string, viajeId: string): EventoRecibido[] {
+    const conexion = { usuarioId, salas: new Set([viajeId]), recibidos: [] as EventoRecibido[] };
+    this.conexiones.push(conexion);
+    return conexion.recibidos;
+  }
+
+  async membresiaFinalizada(usuarioId: string, aviso: AvisoMembresiaFinalizada): Promise<void> {
+    for (const c of this.conexiones.filter((x) => x.usuarioId === usuarioId)) {
+      c.salas.delete(aviso.viajeId);
+      c.recibidos.push({ nombre: 'viaje:membresia-finalizada', datos: aviso });
+    }
+  }
+
+  async adminCambiado(aviso: AvisoAdminCambiado): Promise<void> {
+    for (const c of this.conexiones.filter((x) => x.salas.has(aviso.viajeId))) {
+      c.recibidos.push({ nombre: 'viaje:admin-cambiado', datos: aviso });
+    }
   }
 }
 

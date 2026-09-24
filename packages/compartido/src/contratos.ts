@@ -166,3 +166,55 @@ export interface MapaDelDia {
   recorrido: PuntoDelRecorrido[];
   aviso: AvisoDelMapa | null;
 }
+
+/** Mensaje del chat del viaje (CU19); también es la carga del evento `chat:mensaje`. */
+export interface MensajeVista {
+  id: string;
+  viajeId: string;
+  autor: { id: string; nombre: string; apodo: string | null };
+  contenido: string;
+  enviadoEn: string;
+  /** Identificador que puso el cliente al enviarlo, para reemplazar su versión optimista. */
+  idTemporal?: string;
+}
+
+export interface PaginaDeMensajes {
+  /** En orden cronológico, del más viejo al más nuevo. */
+  mensajes: MensajeVista[];
+  /** Si hay mensajes anteriores al primero de la página. */
+  hayMas: boolean;
+}
+
+/** Confirmación de los eventos que el cliente envía por Socket.IO. */
+export type ConfirmacionSocket<T = object> =
+  ({ ok: true } & T) | { ok: false; error: { codigo: string; mensaje: string } };
+
+export interface AvisoMembresiaFinalizada {
+  viajeId: string;
+  motivo: 'ELIMINADO' | 'RETIRADO';
+  /** RN-E6: si conserva acceso a la sección de saldos por tener saldos pendientes. */
+  conservaAccesoSaldos: boolean;
+}
+
+export interface AvisoAdminCambiado {
+  viajeId: string;
+  nuevoAdminId: string;
+  anteriorAdminId: string;
+}
+
+/** Eventos que el servidor emite en el espacio de nombres `/chat`. */
+export interface EventosServidorChat {
+  'chat:mensaje': (mensaje: MensajeVista) => void;
+  'viaje:membresia-finalizada': (aviso: AvisoMembresiaFinalizada) => void;
+  'viaje:admin-cambiado': (aviso: AvisoAdminCambiado) => void;
+}
+
+/** Eventos que el cliente emite en el espacio de nombres `/chat`, con su confirmación. */
+export interface EventosClienteChat {
+  'chat:unirse': (datos: { viajeId: string }, confirmar: (r: ConfirmacionSocket) => void) => void;
+  'chat:salir': (datos: { viajeId: string }, confirmar?: (r: ConfirmacionSocket) => void) => void;
+  'chat:enviar': (
+    datos: { viajeId: string; contenido: string; idTemporal: string },
+    confirmar: (r: ConfirmacionSocket<{ mensaje: MensajeVista }>) => void,
+  ) => void;
+}

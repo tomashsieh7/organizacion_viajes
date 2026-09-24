@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
 import { Coordenadas } from '../../src/compartido/valores/coordenadas.js';
 import { Actividad } from '../../src/modulos/actividades/dominio/actividad.js';
+import { Mensaje } from '../../src/modulos/chat/dominio/mensaje.js';
 import { Propuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
 import { Viaje } from '../../src/modulos/viajes/dominio/viaje.js';
 import type { Escenario, Implementacion, Repos } from '../soporte/escenarios.js';
@@ -579,6 +580,80 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
           estadia: RangoFechas.crear('2026-12-13', '2026-12-16'),
         },
       ]);
+    });
+  });
+
+  describe(`Mensajes y saldos pendientes — ${impl.nombre}`, () => {
+    const escribir = (viajeId: string, autorId: string, contenido: string, ahora: Date) =>
+      r.mensajes.guardar(
+        Mensaje.escribir({ id: crypto.randomUUID(), viajeId, autorId, contenido, ahora }),
+      );
+
+    it('guarda un mensaje y lo devuelve con su autor', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const m = Mensaje.escribir({
+        id: crypto.randomUUID(),
+        viajeId: viaje,
+        autorId: ana,
+        contenido: '  Hola  ',
+        ahora: new Date('2026-09-24T12:00:00.123Z'),
+      });
+      await r.mensajes.guardar(m);
+      expect(await r.consultaMensajes.obtener(viaje, m.id)).toEqual({
+        id: m.id,
+        viajeId: viaje,
+        autor: { id: ana, nombre: 'Ana', apodo: null },
+        contenido: 'Hola',
+        enviadoEn: '2026-09-24T12:00:00.123Z',
+      });
+      expect(await r.consultaMensajes.obtener(await e.viaje(ana), m.id)).toBeNull();
+    });
+
+    it('pagina hacia atrás sin repetir ni perder mensajes, aunque compartan el instante', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const mismoInstante = new Date('2026-09-24T12:00:05Z');
+      for (let i = 0; i < 7; i++) {
+        const ahora =
+          i >= 2 && i <= 4 ? mismoInstante : new Date(Date.UTC(2026, 8, 24, 12, 0, i * 3));
+        await escribir(viaje, ana, `m${i}`, ahora);
+      }
+      await escribir(await e.viaje(ana), ana, 'otro viaje', new Date());
+
+      const vistos: string[] = [];
+      let antesDe: string | undefined;
+      let hayMas = true;
+      let paginas = 0;
+      while (hayMas) {
+        const p = (await r.consultaMensajes.pagina(viaje, antesDe, 3))!;
+        // Cada página viene en orden cronológico y es anterior a la que ya se vio.
+        const fechas = p.mensajes.map((m) => m.enviadoEn);
+        expect([...fechas].sort()).toEqual(fechas);
+        vistos.unshift(...p.mensajes.map((m) => m.id));
+        antesDe = p.mensajes[0]?.id;
+        hayMas = p.hayMas;
+        paginas++;
+      }
+      expect(paginas).toBe(3);
+      expect(new Set(vistos).size).toBe(7);
+      const todos = (await r.consultaMensajes.pagina(viaje, undefined, 100))!;
+      expect(todos.hayMas).toBe(false);
+      expect(todos.mensajes.map((m) => m.id)).toEqual(vistos);
+      expect(await r.consultaMensajes.pagina(viaje, crypto.randomUUID(), 10)).toBeNull();
+    });
+
+    it('saldos pendientes cuentan como deudor o como acreedor, con monto mayor que cero', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const luis = await e.usuario('Luis');
+      const viaje = await e.viaje(ana);
+      await e.deuda(viaje, tomas, ana, 1500);
+      await e.deuda(viaje, luis, ana, 0);
+      expect(await r.saldosPendientes.tieneSaldosPendientes(viaje, tomas)).toBe(true);
+      expect(await r.saldosPendientes.tieneSaldosPendientes(viaje, ana)).toBe(true);
+      expect(await r.saldosPendientes.tieneSaldosPendientes(viaje, luis)).toBe(false);
+      expect(await r.saldosPendientes.tieneSaldosPendientes(await e.viaje(ana), tomas)).toBe(false);
     });
   });
 }

@@ -506,7 +506,7 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 |---|---|---|---|---|
 | CU19 | `GET /api/viajes/:viajeId/mensajes?antesDe=<id>&limite=50` | Participante | `limite` entre 1 y 100 | — |
 
-Eventos de Socket.IO (espacio de nombres `/chat`). El handshake verifica el encabezado `Origin` y la cookie de sesión; si alguno falla, la conexión se rechaza.
+Eventos de Socket.IO (espacio de nombres `/chat`, solo con transporte WebSocket desde F6, porque el primer pedido del transporte de sondeo no trae `Origin`). El handshake verifica el encabezado `Origin` y la cookie de sesión; si alguno falla, la conexión se rechaza. Cada evento vuelve a validar la sesión. El historial responde `{ mensajes, hayMas }` con los mensajes en orden cronológico.
 
 | Evento | Sentido | Carga | Reglas y errores |
 |---|---|---|---|

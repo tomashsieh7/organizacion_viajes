@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Estado al cierre de F5. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
+Estado al cierre de F6. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
 
 ## Convenciones
 
@@ -107,3 +107,24 @@ Votar, desvotar, confirmar, denegar y cancelar una actividad usan los endpoints 
 - **`recorrido`:** los puntos `{ latitud, longitud }` que unen las actividades en orden. En el MVP son líneas rectas.
 - **`aviso`:** vale `"SIN_ACTIVIDADES_CONFIRMADAS"` cuando el día no tiene actividades, y `null` en otro caso.
 - **Ver una actividad en el mapa (CU18):** se usa `GET …/actividades/:actividadId` para conocer su día y después se pide el mapa de ese día.
+
+## Chat
+
+| Método y ruta | Quién | Parámetros | Respuesta | Errores específicos |
+|---|---|---|---|---|
+| `GET /api/viajes/:viajeId/mensajes?antesDe=&limite=` | Participante | `limite` de 1 a 100 (por defecto 50); `antesDe`, id del mensaje más viejo que ya se tiene | `200 { mensajes, hayMas }`, con los mensajes en orden cronológico | 400 `VALIDACION`, 404 si `antesDe` no es un mensaje del viaje |
+
+Cada mensaje es `{ id, viajeId, autor: { id, nombre, apodo }, contenido, enviadoEn }`. La paginación usa `(enviadoEn, id)` como cursor, así dos mensajes del mismo instante no se repiten ni se pierden.
+
+### Socket.IO
+
+Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exige el encabezado `Origin` de la aplicación y la cookie de sesión, y los rechaza con `ORIGEN_NO_PERMITIDO` o `NO_AUTENTICADO` en el error de conexión. Además, cada evento vuelve a validar la sesión: si se cerró o venció, responde `NO_AUTENTICADO` y corta la conexión.
+
+| Evento | Sentido | Carga | Confirmación y reglas |
+|---|---|---|---|
+| `chat:unirse` | cliente → servidor | `{ viajeId }` | `{ ok: true }`, o `{ ok: false, error: { codigo: "NO_PARTICIPANTE" } }` si no tiene membresía activa |
+| `chat:salir` | cliente → servidor | `{ viajeId }` | `{ ok: true }` |
+| `chat:enviar` | cliente → servidor | `{ viajeId, contenido, idTemporal }`; contenido de 1 a 2000 caracteres, sin contar los espacios de los extremos | `{ ok: true, mensaje }`, o `{ ok: false, error }` con `VALIDACION` o `NO_PARTICIPANTE` |
+| `chat:mensaje` | servidor → sala del viaje | el mensaje con el `idTemporal` de quien lo envió | Llega a todos los que están en la sala, incluido quien lo envió |
+| `viaje:membresia-finalizada` | servidor → conexiones del usuario | `{ viajeId, motivo: "ELIMINADO" \| "RETIRADO", conservaAccesoSaldos }` | Se emite tras una baja; el servidor saca esas conexiones de la sala. `conservaAccesoSaldos` es verdadero si tiene saldos pendientes a favor o en contra |
+| `viaje:admin-cambiado` | servidor → sala del viaje | `{ viajeId, nuevoAdminId, anteriorAdminId }` | Se emite tras un traspaso |

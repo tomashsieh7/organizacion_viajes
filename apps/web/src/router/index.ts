@@ -36,6 +36,7 @@ export const rutas: RouteRecordRaw[] = [
       },
       { path: 'cronograma', component: () => import('../vistas/CronogramaVista.vue') },
       { path: 'mapa', component: () => import('../vistas/MapaVista.vue') },
+      { path: 'chat', component: () => import('../vistas/ChatVista.vue') },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/viajes' },

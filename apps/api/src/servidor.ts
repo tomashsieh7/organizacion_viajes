@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { crearApp } from './app.js';
 import { leerConfig } from './config.js';
 import { crearContenedor } from './contenedor.js';
+import { conectarTiempoReal } from './tiempoReal.js';
 
 try {
   process.loadEnvFile();
@@ -10,8 +11,9 @@ try {
 }
 
 const config = leerConfig();
-const app = crearApp(crearContenedor(config));
-const servidor = createServer(app);
+const contenedor = crearContenedor(config);
+const servidor = createServer(crearApp(contenedor));
+conectarTiempoReal(servidor, contenedor);
 
 servidor.listen(config.PORT, () => {
   console.log(`API escuchando en http://localhost:${config.PORT}`);

@@ -5,6 +5,8 @@ import {
   sumarMinutos,
   type ActividadVista,
   type DetalleViaje,
+  type MensajeVista,
+  type PaginaDeMensajes,
   type Participante,
   type Usuario,
 } from '@viajes/compartido';
@@ -12,6 +14,8 @@ import { CLIENTE_AUTH, type ClienteAuth } from '../../src/clientes/auth';
 import { CLIENTE_VIAJES, type ClienteViajes } from '../../src/clientes/viajes';
 import { ErrorDeApi } from '../../src/clientes/http';
 import { useViajeStore } from '../../src/stores/viaje';
+import type { ClienteChat, ConexionChat, OyentesChat } from '../../src/clientes/chat';
+import { vi } from 'vitest';
 
 export const ANA: Usuario = { id: 'ana', nombre: 'Ana', apodo: null };
 export const TOMAS: Participante = {
@@ -142,4 +146,36 @@ export async function abrirViaje(opciones: ReturnType<typeof montaje>, viajeId =
     opciones,
   );
   await viaje.abrir(viajeId);
+}
+
+/** Cliente de chat falso: guarda los oyentes para simular lo que llega del servidor. */
+export function clienteChatFalso(historial: PaginaDeMensajes = { mensajes: [], hayMas: false }) {
+  let oyentes: OyentesChat | undefined;
+  const conexion = {
+    unirse: vi.fn(async () => undefined),
+    salir: vi.fn(),
+    enviar: vi.fn<ConexionChat['enviar']>(),
+    cerrar: vi.fn(),
+  };
+  const cliente = {
+    historial: vi.fn<ClienteChat['historial']>(async () => historial),
+    conectar: vi.fn((o: OyentesChat) => ((oyentes = o), conexion)),
+  };
+  return { cliente, conexion, servidor: () => oyentes! };
+}
+
+export function mensaje(
+  id: string,
+  autorId: string,
+  contenido: string,
+  idTemporal?: string,
+): MensajeVista {
+  return {
+    id,
+    viajeId: 'v1',
+    autor: { id: autorId, nombre: autorId === 'ana' ? 'Ana' : 'Tomás', apodo: null },
+    contenido,
+    enviadoEn: '2026-09-24T12:00:00.000Z',
+    ...(idTemporal ? { idTemporal } : {}),
+  };
 }

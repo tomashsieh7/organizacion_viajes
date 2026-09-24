@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import DialogoNuevoViaje from '../componentes/viajes/DialogoNuevoViaje.vue';
@@ -13,6 +13,8 @@ const creando = ref(false);
 const error = ref('');
 
 onMounted(() => store.cargarViajes().catch((e) => (error.value = mensajeDeError(e))));
+// El aviso se muestra una sola vez.
+onBeforeUnmount(() => (store.aviso = ''));
 
 function alCrear(viajeId: string) {
   creando.value = false;
@@ -26,6 +28,7 @@ function alCrear(viajeId: string) {
       <h1>Mis grupos de viaje</h1>
       <button class="boton boton--principal" @click="creando = true">Nuevo grupo</button>
     </div>
+    <AvisoMensaje v-if="store.aviso" tipo="info">{{ store.aviso }}</AvisoMensaje>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <p v-else-if="store.viajes.length === 0">Todavía no participás de ningún viaje.</p>
     <ul class="tarjetas">
