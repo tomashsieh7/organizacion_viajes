@@ -6,8 +6,9 @@ import type { ResolverPropuesta, Votar } from './casos-de-uso/casosDeUsoPropuest
 import type { ReposPropuestas } from './dominio/puertos.js';
 
 export interface DependenciasRutasPropuestas {
-  votar: Votar<ReposPropuestas>;
-  resolver: ResolverPropuesta<ReposPropuestas>;
+  votar: Pick<Votar<ReposPropuestas>, 'votar' | 'desvotar'>;
+  /** Genérico sobre los repositorios de la transacción: las reglas de cada tipo los amplían. */
+  resolver: Pick<ResolverPropuesta<ReposPropuestas>, 'ejecutar'>;
 }
 
 const ACCIONES: AccionSobrePropuesta[] = ['confirmar', 'denegar', 'cancelar'];

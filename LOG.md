@@ -392,3 +392,74 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - **Acción:** con autorización del usuario, se hace commit de F3 y push a `claude/elegant-maxwell-60322c`.
 - **Archivos:** los de la entrada de cierre de F3, más esta entrada en `LOG.md`.
+
+## 2026-09-24 01:14 — Inicio de F4: actividades y alternativas
+
+- **Acción:** comienza la fase F4 de `PLAN.md`: proponer actividades y alternativas con control de superposición horaria (CU10, CU11, RN-A1 a RN-A3, RN-B1 a RN-B3), consultar una actividad (CU18), y resolverlas con el mecanismo de F3 sumando las políticas de superposición y de opciones como reglas inyectadas (RN-R3, RN-R4). CU12 a CU15 y CU26 reutilizan los endpoints de propuestas.
+
+## 2026-09-24 01:34 — F4 terminada: actividades y alternativas
+
+- **Acción:** se implementa F4 completa, backend y frontend.
+- **Archivos creados:**
+  - **Paquete compartido:** `hora.ts`, con `sumarMinutos` y `pasaLaMedianoche`. Los usan la API para calcular la hora de fin y la web para mostrar horarios y conflictos.
+  - **Módulo `actividades` del backend:**
+    - dominio: `actividad.ts` (entidad `Actividad` con `proponer()`, `crearAlternativa()`, `intervalo` y `grupo`), `politicas.ts` (`PoliticaSuperposicion` con `SinSuperposicionConConfirmadas`, y `PoliticaResolucionOpciones` con `DenegarOpcionesRestantes`) y `puertos.ts`;
+    - casos de uso: `casosDeUsoActividades.ts` (`ProponerActividad`, `ProponerAlternativa`, `ConsultarActividades`), `reglasDeResolucion.ts` (`ReglaSuperposicionAlConfirmar` y `ReglaOpcionesAlConfirmar`) y `agendaBloqueadaPrimero.ts`;
+    - infraestructura: `prisma.ts` (repositorio y consulta);
+    - rutas: `actividades.rutas.ts`.
+  - **Pruebas del backend:**
+    - `actividad.test.ts`, `casosDeUsoActividades.test.ts`, `agendaBloqueadaPrimero.test.ts` y `hora.test.ts`;
+    - `politicas.contrato.ts` con `politicas.test.ts`;
+    - `actividades.bd.test.ts`.
+  - **Frontend:**
+    - componentes `TarjetaActividad`, `ListaAlternativas`, `CampoFechaHora` y `AvisoSuperposicion`;
+    - vistas `ActividadesVista` y `ActividadFormularioVista`, que sirve para proponer una actividad y una alternativa;
+    - utilidad `agruparOpciones`;
+    - pruebas de las dos vistas, de la agrupación y del formato de horarios.
+- **Archivos modificados:**
+  - Paquete compartido: `esquemas.ts` (`esquemaHora` y `esquemaActividadNueva`), `contratos.ts` (`ActividadVista` y `ConflictoHorario`) e `index.ts`.
+  - Backend: `app.ts`, `contenedor.ts`, `propuestas.rutas.ts`, `conversiones.ts` (`aHora` y `deHora`), y los soportes de prueba (implementaciones en memoria, escenarios y contratos de repositorios).
+  - Frontend: el cliente y el store de propuestas, `formato.ts`, el router, el menú del viaje y los clientes falsos de las pruebas.
+  - Documentación: `docs/api.md` y `PLAN.md` (listado de actividades de la sección 5.6).
+- **Decisiones:**
+  - **Reglas de resolución:** la superposición al confirmar (RN-R3) y la denegación de las demás opciones (RN-R4) son dos `ReglaAlResolver` que se registran en `contenedor.ts`. `ResolverPropuesta` no se modificó, así que el punto de extensión de F3 cumplió su función (abierto/cerrado).
+  - **Políticas como estrategias:** las dos políticas son interfaces con una implementación del MVP. Son el punto de variación previsto para los subgrupos del Release 3, que motivaron la reserva del usuario sobre P9. Cada política tiene pruebas de contrato que cualquier implementación futura tiene que pasar (Liskov).
+  - **GRASP:** `Actividad` es experta en su intervalo y en su grupo de opciones, y crea sus alternativas. Por eso la regla de que una alternativa se vincule siempre a la original vive en la entidad y no en el caso de uso.
+  - **Rutas de propuestas:** ahora dependen solo de los métodos que usan (`Pick<…, 'ejecutar'>`). `ResolverPropuesta` se arma con los repositorios ampliados de actividades, y TypeScript no acepta esa instancia donde se espera la versión con los repositorios mínimos (segregación de interfaces).
+  - **Bloqueos:** la regla de superposición bloquea la fila del viaje antes de leer las confirmadas, así dos confirmaciones simultáneas de actividades superpuestas no pasan las dos.
+  - **`sumarMinutos` al paquete compartido:** se había creado en la API. Se movió cuando la web también lo necesitó, para no duplicar el cálculo.
+  - **Formulario de alternativa:** arranca con el día, la hora y la duración de la original, porque las alternativas suelen competir por el mismo horario. Todo se puede cambiar.
+  - **Recarga después de resolver:** si la respuesta trae `afectadas`, el store vuelve a pedir la lista de actividades para mostrar el estado nuevo de las demás opciones. Se descartó marcarlas como denegadas del lado del cliente, porque eso repetiría la política en el frontend.
+- **Desvíos respecto del plan:**
+  - La sección 5.6 decía que el listado anidaba las alternativas en su original. La API devuelve una lista plana en la que cada alternativa trae `alternativaDe` con el id y el título de la original, y el frontend las agrupa. Así el filtro por estado sigue funcionando cuando la original y sus alternativas están en estados distintos, y la misma vista sirve para la consulta de CU18. Se actualizó `PLAN.md`.
+  - Se agregó el decorador `PropuestasConAgendaBloqueadaPrimero`, que el plan no preveía; se explica en el error siguiente.
+- **Errores encontrados y corregidos:**
+  - **Bloqueo mutuo:** si el Admin confirmaba al mismo tiempo dos opciones del mismo grupo, cada transacción bloqueaba su propuesta y esperaba la fila del viaje que tenía la otra. PostgreSQL cortaba una de las dos, que respondía 500 después de un segundo.
+    - **Causa:** los bloqueos se tomaban en distinto orden.
+    - **Arreglo:** el decorador hace que, dentro de la transacción de resolución, se bloquee la agenda del viaje antes de cargar la propuesta. Ahora la segunda confirmación espera, encuentra su opción ya denegada y responde 409 `TRANSICION_INVALIDA`.
+    - **Por qué un decorador:** se armó en `contenedor.ts` para no modificar `ResolverPropuesta`. Se descartó sumar un método "antes de cargar" a `ReglaAlResolver`, porque cambiaría el contrato de F3 por una necesidad de infraestructura.
+    - Lo cubren una prueba de integración y una unitaria del orden de los bloqueos.
+  - **Duración:** el campo numérico de la duración entrega un número y el formulario lo trataba como texto, así que fallaba al enviar. Lo detectó la prueba de la vista.
+  - **Texto del aviso:** el aviso de superposición sugería cambiar el horario también cuando el Admin confirmaba desde la lista, donde no hay formulario. Ahora, en la lista, sugiere cancelar primero la actividad que ocupa ese horario.
+- **Verificación del criterio de terminado:**
+  - `npm test` pasa 265 pruebas: 227 del backend y 38 del frontend. Entre ellas:
+    - superposición con intervalos que se tocan en el borde, que se contienen, que se cruzan en parte y que pasan la medianoche;
+    - solo cuentan las confirmadas: se puede proponer sobre el horario de una pendiente;
+    - la alternativa de una alternativa queda vinculada a la original;
+    - confirmar una opción deniega las demás pendientes del grupo, y denegar la original no afecta a las alternativas;
+    - confirmar una actividad que choca con otra confirmada devuelve 409 y no cambia nada;
+    - dos confirmaciones simultáneas de actividades superpuestas: solo una prospera. La prueba falla si se quita el bloqueo;
+    - dos confirmaciones simultáneas de opciones del mismo grupo: una responde 200 y la otra 409;
+    - contratos de las dos políticas y de los repositorios nuevos, en memoria y en Prisma;
+    - CU26 con el endpoint común de desvoto.
+  - `npm run lint` pasa sin errores. En un clon limpio también pasan `npm ci`, la compilación, las pruebas y el lint.
+  - **Recorrido manual en Chromium:**
+    - Tomás propone Kayak de 10:00 a 12:00 y, como alternativa, Trekking, que aparece anidada. También propone un Almuerzo a las 11:30.
+    - Ana confirma Trekking y Kayak queda denegada. Al confirmar el Almuerzo, ve el aviso con el conflicto.
+    - Tomás propone Bici a las 11:00, ve el conflicto y el formulario conserva lo cargado. La vuelve a proponer a las 12:00 y se acepta.
+    - Tomás vota y desvota la Bici.
+
+## 2026-09-24 01:37 — Commit y push de F4
+
+- **Acción:** con autorización del usuario, se hace commit de F4 y push a `claude/elegant-maxwell-60322c`.
+- **Archivos:** los de la entrada de cierre de F4, más esta entrada en `LOG.md`.

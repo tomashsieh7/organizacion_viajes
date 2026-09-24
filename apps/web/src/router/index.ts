@@ -25,6 +25,15 @@ export const rutas: RouteRecordRaw[] = [
         path: 'alojamientos/nuevo',
         component: () => import('../vistas/AlojamientoFormularioVista.vue'),
       },
+      { path: 'actividades', component: () => import('../vistas/ActividadesVista.vue') },
+      {
+        path: 'actividades/nueva',
+        component: () => import('../vistas/ActividadFormularioVista.vue'),
+      },
+      {
+        path: 'actividades/:actividadId/alternativa',
+        component: () => import('../vistas/ActividadFormularioVista.vue'),
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/viajes' },

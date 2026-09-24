@@ -490,7 +490,7 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 |---|---|---|---|---|
 | CU10 | `POST /api/viajes/:viajeId/actividades` | Participante | `titulo`, `fecha`, `hora_inicio`, `duracion_min > 0`, `ubicacion` con coordenadas y `descripcion` obligatorios; `precio >= 0` opcional (RN-A1, P8); fecha dentro del viaje (P11); sin superposición con actividades confirmadas (RN-A2) | 409 `SUPERPOSICION_HORARIA` con `detalles.conflictos`, 422 `FUERA_DEL_VIAJE` |
 | CU11 | `POST /api/viajes/:viajeId/actividades/:actividadId/alternativas` | Participante | Mismos campos y controles que CU10; la actividad elegida existe en el viaje y está `PENDIENTE`; si es a su vez una alternativa, la nueva se vincula a la original (P9) | 409 `ORIGINAL_NO_PENDIENTE`, 409 `SUPERPOSICION_HORARIA`, 422 `FUERA_DEL_VIAJE` |
-| — | `GET /api/viajes/:viajeId/actividades?estado=` | Participante | Cada actividad original con sus alternativas anidadas | — |
+| — | `GET /api/viajes/:viajeId/actividades?estado=` | Participante | Lista plana ordenada por fecha y hora; cada alternativa trae `alternativaDe` con el id y el título de la original, y el frontend las agrupa (ajustado en F4) | — |
 | CU18 | `GET /api/viajes/:viajeId/actividades/:actividadId` | Participante | — | — |
 
 ### 5.7 Seguir el itinerario

@@ -15,3 +15,12 @@ export function aMonto(valor: bigint): number {
   if (!Number.isSafeInteger(n)) throw new Error(`Monto fuera de rango: ${valor}`);
   return n;
 }
+
+/** Columna TIME (llega como 1970-01-01 a esa hora en UTC) a `HH:mm`. */
+export function aHora(valor: Date): string {
+  return valor.toISOString().slice(11, 16);
+}
+
+export function deHora(hora: string): Date {
+  return new Date(`1970-01-01T${hora}:00Z`);
+}

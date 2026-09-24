@@ -4,6 +4,14 @@
  */
 import type { PrismaClient } from '../../src/compartido/infraestructura/prisma.js';
 import type {
+  ConsultaActividades,
+  RepositorioActividades,
+} from '../../src/modulos/actividades/dominio/puertos.js';
+import {
+  ConsultaActividadesPrisma,
+  RepositorioActividadesPrisma,
+} from '../../src/modulos/actividades/infraestructura/prisma.js';
+import type {
   ConsultaAlojamientos,
   RepositorioAlojamientos,
 } from '../../src/modulos/alojamientos/dominio/puertos.js';
@@ -47,6 +55,8 @@ import {
 import { vaciarBase } from './baseDePrueba.js';
 import {
   baseVacia,
+  ConsultaActividadesEnMemoria,
+  RepositorioActividadesEnMemoria,
   ConsultaAlojamientosEnMemoria,
   ConsultaFechasDeViajeEnMemoria,
   ConsultaPropuestasEnMemoria,
@@ -79,6 +89,8 @@ export interface Repos {
   fechas: ConsultaFechasDeViaje;
   alojamientos: RepositorioAlojamientos;
   consultaAlojamientos: ConsultaAlojamientos;
+  actividades: RepositorioActividades;
+  consultaActividades: ConsultaActividades;
   cuentas: RepositorioCuentas;
   sesiones: RepositorioSesiones;
   viajes: RepositorioViajes;
@@ -174,6 +186,8 @@ export const implementacionEnMemoria: Implementacion = {
         fechas: new ConsultaFechasDeViajeEnMemoria(base),
         alojamientos: new RepositorioAlojamientosEnMemoria(base),
         consultaAlojamientos: new ConsultaAlojamientosEnMemoria(base),
+        actividades: new RepositorioActividadesEnMemoria(base),
+        consultaActividades: new ConsultaActividadesEnMemoria(base),
         cuentas: new RepositorioCuentasEnMemoria(base),
         sesiones: new RepositorioSesionesEnMemoria(base),
         viajes: new RepositorioViajesEnMemoria(base),
@@ -266,6 +280,8 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
           fechas: new ConsultaFechasDeViajePrisma(prisma),
           alojamientos: new RepositorioAlojamientosPrisma(prisma),
           consultaAlojamientos: new ConsultaAlojamientosPrisma(prisma),
+          actividades: new RepositorioActividadesPrisma(prisma),
+          consultaActividades: new ConsultaActividadesPrisma(prisma),
           cuentas: new RepositorioCuentasPrisma(prisma),
           sesiones: new RepositorioSesionesPrisma(prisma),
           viajes: new RepositorioViajesPrisma(prisma),

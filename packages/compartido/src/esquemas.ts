@@ -102,3 +102,21 @@ export const esquemaAlojamientoNuevo = z
     path: ['fechaHasta'],
   });
 export type DatosAlojamientoNuevo = z.input<typeof esquemaAlojamientoNuevo>;
+
+export const esquemaHora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Usá el formato HH:MM');
+
+/** RN-A1 y RN-B2: datos de una actividad o de una alternativa; las coordenadas son obligatorias (P8). */
+export const esquemaActividadNueva = z.object({
+  titulo: z.string().trim().min(1, 'Ingresá un título').max(120),
+  ...baseDePropuesta,
+  latitud: z.number({ error: 'Marcá la ubicación en el mapa' }).min(-90).max(90),
+  longitud: z.number({ error: 'Marcá la ubicación en el mapa' }).min(-180).max(180),
+  fecha: esquemaFecha,
+  horaInicio: esquemaHora,
+  duracionMin: z
+    .number({ error: 'Ingresá la duración en minutos' })
+    .int('La duración va en minutos enteros')
+    .min(1, 'La duración tiene que ser mayor que cero')
+    .max(24 * 60, 'La duración puede ser de hasta 24 horas'),
+});
+export type DatosActividadNueva = z.input<typeof esquemaActividadNueva>;

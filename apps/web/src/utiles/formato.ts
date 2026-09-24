@@ -1,4 +1,4 @@
-import type { Moneda } from '@viajes/compartido';
+import { pasaLaMedianoche, sumarMinutos, type Moneda } from '@viajes/compartido';
 
 /** Formatea un monto en la unidad mínima de la moneda (D16), por ejemplo 150000 ARS → "$ 1.500,00". */
 export function formatearMonto(monto: number, moneda: Moneda): string {
@@ -47,3 +47,17 @@ export const NOMBRES_ESTADO: Record<string, string> = {
   DENEGADA: 'Denegada',
   CANCELADA: 'Cancelada',
 };
+
+/** 150 → "2 h 30 min". */
+export function formatearDuracion(minutos: number): string {
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  return [h ? `${h} h` : '', m ? `${m} min` : ''].filter(Boolean).join(' ');
+}
+
+/** "11/12/2026 · 23:30 a 01:00 del día siguiente". */
+export function formatearHorario(a: { fecha: string; horaInicio: string; duracionMin: number }) {
+  const fin = sumarMinutos(a.horaInicio, a.duracionMin);
+  const siguiente = pasaLaMedianoche(a.horaInicio, a.duracionMin) ? ' del día siguiente' : '';
+  return `${formatearFecha(a.fecha)} · ${a.horaInicio} a ${fin}${siguiente}`;
+}

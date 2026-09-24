@@ -46,6 +46,29 @@ import {
 } from './modulos/propuestas/casos-de-uso/casosDeUsoPropuestas.js';
 import type { ReposPropuestas } from './modulos/propuestas/dominio/puertos.js';
 import {
+  ConsultarActividades,
+  ProponerActividad,
+  ProponerAlternativa,
+  type DependenciasProponerActividad,
+} from './modulos/actividades/casos-de-uso/casosDeUsoActividades.js';
+import { PropuestasConAgendaBloqueadaPrimero } from './modulos/actividades/casos-de-uso/agendaBloqueadaPrimero.js';
+import {
+  ReglaOpcionesAlConfirmar,
+  ReglaSuperposicionAlConfirmar,
+} from './modulos/actividades/casos-de-uso/reglasDeResolucion.js';
+import {
+  DenegarOpcionesRestantes,
+  SinSuperposicionConConfirmadas,
+} from './modulos/actividades/dominio/politicas.js';
+import type {
+  ReposActividades,
+  ReposResolucionConActividades,
+} from './modulos/actividades/dominio/puertos.js';
+import {
+  ConsultaActividadesPrisma,
+  RepositorioActividadesPrisma,
+} from './modulos/actividades/infraestructura/prisma.js';
+import {
   ConsultaFechasDeViajePrisma,
   ConsultaPropuestasPrisma,
   RepositorioPropuestasPrisma,
@@ -83,7 +106,12 @@ export interface Contenedor {
   };
   propuestas: {
     votar: Votar<ReposPropuestas>;
-    resolver: ResolverPropuesta<ReposPropuestas>;
+    resolver: ResolverPropuesta<ReposResolucionConActividades>;
+  };
+  actividades: {
+    proponer: ProponerActividad;
+    proponerAlternativa: ProponerAlternativa;
+    consultar: ConsultarActividades;
   };
   alojamientos: {
     proponer: ProponerAlojamiento;
@@ -125,6 +153,36 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   }));
   const consultasPropuestas = new ConsultaPropuestasPrisma(prisma);
 
+  // Actividades: las políticas de superposición (P10) y de opciones (P9) se eligen acá.
+  const superposicion = new SinSuperposicionConConfirmadas();
+  const unidadActividades = new UnidadDeTrabajoPrisma<ReposActividades>(prisma, (tx) => ({
+    actividades: new RepositorioActividadesPrisma(tx),
+  }));
+  const depsActividades: DependenciasProponerActividad = {
+    unidad: unidadActividades,
+    fechas: new ConsultaFechasDeViajePrisma(prisma),
+    superposicion,
+    reloj,
+  };
+  // La resolución de propuestas suma las reglas de actividades sin modificar ResolverPropuesta (F3).
+  const unidadResolucion = new UnidadDeTrabajoPrisma<ReposResolucionConActividades>(
+    prisma,
+    (tx) => {
+      const actividades = new RepositorioActividadesPrisma(tx);
+      return {
+        propuestas: new PropuestasConAgendaBloqueadaPrimero(
+          new RepositorioPropuestasPrisma(tx),
+          actividades,
+        ),
+        actividades,
+      };
+    },
+  );
+  const reglasDeResolucion = [
+    new ReglaSuperposicionAlConfirmar(superposicion),
+    new ReglaOpcionesAlConfirmar(new DenegarOpcionesRestantes()),
+  ];
+
   // Alojamientos
   const unidadAlojamientos = new UnidadDeTrabajoPrisma<ReposAlojamientos>(prisma, (tx) => ({
     alojamientos: new RepositorioAlojamientosPrisma(tx),
@@ -152,7 +210,17 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
     },
     propuestas: {
       votar: new Votar(unidadPropuestas, consultasPropuestas, reloj),
-      resolver: new ResolverPropuesta(unidadPropuestas, consultasPropuestas, reloj),
+      resolver: new ResolverPropuesta(
+        unidadResolucion,
+        consultasPropuestas,
+        reloj,
+        reglasDeResolucion,
+      ),
+    },
+    actividades: {
+      proponer: new ProponerActividad(depsActividades),
+      proponerAlternativa: new ProponerAlternativa(depsActividades),
+      consultar: new ConsultarActividades(new ConsultaActividadesPrisma(prisma)),
     },
     alojamientos: {
       proponer: new ProponerAlojamiento(

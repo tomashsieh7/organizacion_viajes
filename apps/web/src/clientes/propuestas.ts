@@ -1,7 +1,9 @@
 import type { InjectionKey } from 'vue';
 import type {
   AccionSobrePropuesta,
+  ActividadVista,
   AlojamientoVista,
+  DatosActividadNueva,
   DatosAlojamientoNuevo,
   EstadoPropuesta,
   PropuestaVista,
@@ -13,6 +15,14 @@ import { pedir } from './http';
 export interface ClientePropuestas {
   listarAlojamientos(viajeId: string, estado?: EstadoPropuesta): Promise<AlojamientoVista[]>;
   proponerAlojamiento(viajeId: string, datos: DatosAlojamientoNuevo): Promise<AlojamientoVista>;
+  listarActividades(viajeId: string, estado?: EstadoPropuesta): Promise<ActividadVista[]>;
+  obtenerActividad(viajeId: string, actividadId: string): Promise<ActividadVista>;
+  proponerActividad(viajeId: string, datos: DatosActividadNueva): Promise<ActividadVista>;
+  proponerAlternativa(
+    viajeId: string,
+    actividadId: string,
+    datos: DatosActividadNueva,
+  ): Promise<ActividadVista>;
   votar(viajeId: string, propuestaId: string, valor: ValorVoto): Promise<PropuestaVista>;
   desvotar(viajeId: string, propuestaId: string): Promise<PropuestaVista>;
   resolver(
@@ -42,6 +52,41 @@ export class ClientePropuestasHttp implements ClientePropuestas {
         datos,
       )
     ).alojamiento;
+  }
+  async listarActividades(viajeId: string, estado?: EstadoPropuesta) {
+    const filtro = estado ? `?estado=${estado}` : '';
+    return (
+      await pedir<{ actividades: ActividadVista[] }>(
+        'GET',
+        `/api/viajes/${viajeId}/actividades${filtro}`,
+      )
+    ).actividades;
+  }
+  async obtenerActividad(viajeId: string, actividadId: string) {
+    return (
+      await pedir<{ actividad: ActividadVista }>(
+        'GET',
+        `/api/viajes/${viajeId}/actividades/${actividadId}`,
+      )
+    ).actividad;
+  }
+  async proponerActividad(viajeId: string, datos: DatosActividadNueva) {
+    return (
+      await pedir<{ actividad: ActividadVista }>(
+        'POST',
+        `/api/viajes/${viajeId}/actividades`,
+        datos,
+      )
+    ).actividad;
+  }
+  async proponerAlternativa(viajeId: string, actividadId: string, datos: DatosActividadNueva) {
+    return (
+      await pedir<{ actividad: ActividadVista }>(
+        'POST',
+        `/api/viajes/${viajeId}/actividades/${actividadId}/alternativas`,
+        datos,
+      )
+    ).actividad;
   }
   async votar(viajeId: string, propuestaId: string, valor: ValorVoto) {
     return (

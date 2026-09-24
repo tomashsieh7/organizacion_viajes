@@ -92,3 +92,26 @@ export interface RespuestaResolucion {
   /** Otras propuestas que cambiaron de estado como consecuencia (por ejemplo, alternativas denegadas en F4). */
   afectadas: string[];
 }
+
+export interface ActividadVista extends PropuestaVista {
+  tipo: 'ACTIVIDAD';
+  actividad: {
+    titulo: string;
+    fecha: string;
+    horaInicio: string;
+    /** Hora de fin calculada con la duración; puede ser del día siguiente. */
+    horaFin: string;
+    duracionMin: number;
+    /** Actividad original de la que esta es alternativa, o null si es una original. */
+    alternativaDe: { id: string; titulo: string } | null;
+  };
+}
+
+/** Actividad confirmada con la que choca una propuesta (detalle del error SUPERPOSICION_HORARIA). */
+export interface ConflictoHorario {
+  id: string;
+  titulo: string;
+  fecha: string;
+  horaInicio: string;
+  duracionMin: number;
+}

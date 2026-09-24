@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Estado al cierre de F3. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
+Estado al cierre de F4. Esta referencia se actualiza en cada fase que agrega o cambia endpoints; el diseño completo está en la sección 5 de `PLAN.md`.
 
 ## Convenciones
 
@@ -66,7 +66,9 @@ Requieren participar del viaje. `propuesta` es la vista común: `{ id, tipo, est
 | `POST /api/viajes/:viajeId/propuestas/:propuestaId/denegar` | Admin | — | `200 { propuesta, afectadas }` | 409 `TRANSICION_INVALIDA` |
 | `POST /api/viajes/:viajeId/propuestas/:propuestaId/cancelar` | Admin | — | `200 { propuesta, afectadas }` | 409 `TRANSICION_INVALIDA` |
 
-Transiciones válidas: pendiente → confirmada o denegada; confirmada → cancelada. `afectadas` lista otras propuestas que cambiaron de estado como consecuencia (se usa desde F4).
+Transiciones válidas: pendiente → confirmada o denegada; confirmada → cancelada. `afectadas` lista otras propuestas que cambiaron de estado como consecuencia: al confirmar una actividad, las demás opciones pendientes de su grupo quedan denegadas.
+
+Al confirmar una actividad se vuelve a controlar la superposición con las confirmadas; si choca, responde 409 `SUPERPOSICION_HORARIA` y no cambia nada.
 
 ## Alojamientos
 
@@ -76,3 +78,18 @@ Transiciones válidas: pendiente → confirmada o denegada; confirmada → cance
 | `POST /api/viajes/:viajeId/alojamientos` | Participante | `{ nombre, descripcion, ubicacion, latitud?, longitud?, fechaDesde, fechaHasta, precio? }`; coordenadas ambas o ninguna; precio total estimado en la unidad mínima de la moneda | `201 { alojamiento }` pendiente de votación | 422 `FUERA_DEL_VIAJE` (con `detalles: { desde, hasta }`) |
 
 Cada alojamiento es una `propuesta` con `alojamiento: { nombre, fechaDesde, fechaHasta }`.
+
+## Actividades
+
+| Método y ruta | Quién | Cuerpo | Respuesta | Errores específicos |
+|---|---|---|---|---|
+| `GET /api/viajes/:viajeId/actividades?estado=` | Participante | Filtro opcional por estado | `200 { actividades }`, ordenadas por fecha, hora de inicio y creación; las alternativas van en la misma lista | 400 si el estado no existe |
+| `POST /api/viajes/:viajeId/actividades` | Participante | `{ titulo, descripcion, ubicacion, latitud, longitud, fecha, horaInicio, duracionMin, precio? }`; `horaInicio` en formato `HH:mm`; duración en minutos, de 1 a 1440; coordenadas obligatorias | `201 { actividad }` pendiente de votación | 409 `SUPERPOSICION_HORARIA`, 422 `FUERA_DEL_VIAJE` |
+| `GET /api/viajes/:viajeId/actividades/:actividadId` | Participante | — | `200 { actividad }` | 404 |
+| `POST /api/viajes/:viajeId/actividades/:actividadId/alternativas` | Participante | El mismo cuerpo que para proponer | `201 { actividad }`, vinculada a la original aunque se haya elegido una alternativa | 404, 409 `ORIGINAL_NO_PENDIENTE`, 409 `SUPERPOSICION_HORARIA`, 422 `FUERA_DEL_VIAJE` |
+
+Cada actividad es una `propuesta` con `actividad: { titulo, fecha, horaInicio, horaFin, duracionMin, alternativaDe }`. `horaFin` se calcula con la duración y puede ser del día siguiente; `alternativaDe` es `{ id, titulo }` de la original, o `null` si es una original. Solo se controla que el día de inicio caiga dentro del viaje.
+
+La superposición se controla solo contra las actividades confirmadas; los intervalos son semiabiertos, así que una actividad que empieza cuando termina otra no choca. En `SUPERPOSICION_HORARIA`, `detalles` es `{ conflictos: [{ id, titulo, fecha, horaInicio, duracionMin }] }`.
+
+Votar, desvotar, confirmar, denegar y cancelar una actividad usan los endpoints comunes de propuestas.

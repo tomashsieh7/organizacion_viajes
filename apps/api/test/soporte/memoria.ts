@@ -3,16 +3,28 @@
  * sobre una misma `BaseEnMemoria`, así se comportan como tablas de una misma base. Las pruebas de
  * contrato verifican que se comporten igual que las implementaciones con Prisma.
  */
-import type {
-  AlojamientoVista,
-  DetalleViaje,
-  EstadoPropuesta,
-  Moneda,
-  Participante,
-  PropuestaVista,
-  ResumenViaje,
+import {
+  sumarMinutos,
+  type ActividadVista,
+  type AlojamientoVista,
+  type DetalleViaje,
+  type EstadoPropuesta,
+  type Moneda,
+  type Participante,
+  type PropuestaVista,
+  type ResumenViaje,
 } from '@viajes/compartido';
 import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
+import { Intervalo } from '../../src/compartido/valores/intervalo.js';
+import {
+  Actividad,
+  type DetalleActividad,
+} from '../../src/modulos/actividades/dominio/actividad.js';
+import type { ActividadAgendada } from '../../src/modulos/actividades/dominio/politicas.js';
+import type {
+  ConsultaActividades,
+  RepositorioActividades,
+} from '../../src/modulos/actividades/dominio/puertos.js';
 import type {
   ConsultaAlojamientos,
   DetalleAlojamiento,
@@ -58,10 +70,11 @@ export interface BaseEnMemoria {
   monedas: Moneda[];
   viajes: DatosViaje[];
   deudas: { viajeId: string; deudorId: string; acreedorId: string; monto: number }[];
-  /** Propuestas con sus votos y, según el tipo, los datos propios del alojamiento. */
+  /** Propuestas con sus votos y, según el tipo, los datos propios del alojamiento o la actividad. */
   propuestas: {
     datos: DatosPropuesta;
     alojamiento?: { nombre: string; fechaDesde: string; fechaHasta: string };
+    actividad?: DetalleActividad;
   }[];
 }
 
@@ -400,6 +413,117 @@ export class ConsultaAlojamientosEnMemoria implements ConsultaAlojamientos {
       ...aVistaEnMemoria(this.base, p.datos, usuarioId),
       tipo: 'ALOJAMIENTO',
       alojamiento: { ...p.alojamiento! },
+    };
+  }
+}
+
+type FilaConActividad = BaseEnMemoria['propuestas'][number] & { actividad: DetalleActividad };
+
+const tieneActividad = (p: BaseEnMemoria['propuestas'][number]): p is FilaConActividad =>
+  p.actividad !== undefined;
+
+const porHorario = (a: FilaConActividad, b: FilaConActividad) =>
+  a.actividad.fecha.localeCompare(b.actividad.fecha) ||
+  a.actividad.horaInicio.localeCompare(b.actividad.horaInicio) ||
+  a.datos.creadaEn.getTime() - b.datos.creadaEn.getTime();
+
+export class RepositorioActividadesEnMemoria implements RepositorioActividades {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async crear(actividad: Actividad): Promise<void> {
+    this.base.propuestas.push({
+      datos: actividad.propuesta.aDatos(),
+      actividad: { ...actividad.detalle },
+    });
+  }
+
+  async obtenerParaModificar(viajeId: string, actividadId: string): Promise<Actividad | null> {
+    const fila = this.base.propuestas
+      .filter(tieneActividad)
+      .find((p) => p.datos.id === actividadId && p.datos.viajeId === viajeId);
+    return fila ? this.reconstruir(fila) : null;
+  }
+
+  async confirmadas(viajeId: string): Promise<ActividadAgendada[]> {
+    return this.base.propuestas
+      .filter(tieneActividad)
+      .filter((p) => p.datos.viajeId === viajeId && p.datos.estado === 'CONFIRMADA')
+      .sort(porHorario)
+      .map(({ datos, actividad: a }) => ({
+        id: datos.id,
+        titulo: a.titulo,
+        fecha: a.fecha,
+        horaInicio: a.horaInicio,
+        duracionMin: a.duracionMin,
+        intervalo: Intervalo.deActividad(a.fecha, a.horaInicio, a.duracionMin),
+      }));
+  }
+
+  async opcionesDelGrupo(viajeId: string, grupoId: string): Promise<Actividad[]> {
+    return this.base.propuestas
+      .filter(tieneActividad)
+      .filter(
+        (p) =>
+          p.datos.viajeId === viajeId &&
+          (p.datos.id === grupoId || p.actividad.alternativaDeId === grupoId),
+      )
+      .sort((a, b) => a.datos.id.localeCompare(b.datos.id))
+      .map((p) => this.reconstruir(p));
+  }
+
+  /** Las transacciones en memoria ya se ejecutan de a una. */
+  async bloquearAgenda(): Promise<void> {}
+
+  private reconstruir(fila: FilaConActividad): Actividad {
+    return Actividad.reconstruir(
+      Propuesta.reconstruir(structuredClone(fila.datos)),
+      structuredClone(fila.actividad),
+    );
+  }
+}
+
+export class ConsultaActividadesEnMemoria implements ConsultaActividades {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async listar(
+    viajeId: string,
+    usuarioId: string,
+    estado?: EstadoPropuesta,
+  ): Promise<ActividadVista[]> {
+    return this.base.propuestas
+      .filter(tieneActividad)
+      .filter((p) => p.datos.viajeId === viajeId && (!estado || p.datos.estado === estado))
+      .sort(porHorario)
+      .map((p) => this.vista(p, usuarioId));
+  }
+
+  async obtener(
+    viajeId: string,
+    actividadId: string,
+    usuarioId: string,
+  ): Promise<ActividadVista | null> {
+    const p = this.base.propuestas
+      .filter(tieneActividad)
+      .find((x) => x.datos.id === actividadId && x.datos.viajeId === viajeId);
+    return p ? this.vista(p, usuarioId) : null;
+  }
+
+  private vista(p: FilaConActividad, usuarioId: string): ActividadVista {
+    const a = p.actividad;
+    const original = this.base.propuestas.find((x) => x.datos.id === a.alternativaDeId);
+    return {
+      ...aVistaEnMemoria(this.base, p.datos, usuarioId),
+      tipo: 'ACTIVIDAD',
+      actividad: {
+        titulo: a.titulo,
+        fecha: a.fecha,
+        horaInicio: a.horaInicio,
+        horaFin: sumarMinutos(a.horaInicio, a.duracionMin),
+        duracionMin: a.duracionMin,
+        alternativaDe: original?.actividad
+          ? { id: original.datos.id, titulo: original.actividad.titulo }
+          : null,
+      },
     };
   }
 }

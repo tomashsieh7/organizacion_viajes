@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
+import { Coordenadas } from '../../src/compartido/valores/coordenadas.js';
+import { Actividad } from '../../src/modulos/actividades/dominio/actividad.js';
 import { Propuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
 import { Viaje } from '../../src/modulos/viajes/dominio/viaje.js';
 import type { Escenario, Implementacion, Repos } from '../soporte/escenarios.js';
@@ -295,6 +297,168 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
         miVoto: 'EN_CONTRA',
         tipo: 'ALOJAMIENTO',
       });
+    });
+  });
+
+  describe(`Actividades — ${impl.nombre}`, () => {
+    let segundos = 0;
+    const actividad = (
+      viajeId: string,
+      autorId: string,
+      titulo: string,
+      fecha: string,
+      horaInicio: string,
+      duracionMin: number,
+    ) => ({
+      id: crypto.randomUUID(),
+      viajeId,
+      autorId,
+      titulo,
+      descripcion: `desc ${titulo}`,
+      ubicacion: 'Cerro',
+      coordenadas: Coordenadas.crear(-41.1, -71.4),
+      precio: 5000,
+      fecha,
+      horaInicio,
+      duracionMin,
+      // Cada actividad se crea un segundo después de la anterior, para que el orden sea estable.
+      ahora: new Date(Date.UTC(2026, 8, 24, 12, 0, segundos++)),
+    });
+
+    async function confirmar(viajeId: string, id: string, adminId: string) {
+      const p = (await r.propuestas.obtenerParaModificar(viajeId, id))!;
+      p.resolver('confirmar', adminId, new Date('2026-09-25T12:00:00Z'));
+      await r.propuestas.guardar(p);
+    }
+
+    it('crea una actividad y la reconstruye con su detalle', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const kayak = Actividad.proponer(actividad(viaje, ana, 'Kayak', '2026-12-11', '10:00', 120));
+      await r.actividades.crear(kayak);
+
+      const cargada = await r.actividades.obtenerParaModificar(viaje, kayak.id);
+      expect(cargada?.propuesta.aDatos()).toEqual(kayak.propuesta.aDatos());
+      expect(cargada?.detalle).toEqual(kayak.detalle);
+      expect(await r.actividades.obtenerParaModificar(await e.viaje(ana), kayak.id)).toBeNull();
+      // Una propuesta de otro tipo no es una actividad.
+      const alojamiento = await e.voto(viaje, ana, true);
+      expect(await r.actividades.obtenerParaModificar(viaje, alojamiento)).toBeNull();
+    });
+
+    it('confirmadas devuelve solo las confirmadas del viaje, por horario y con su intervalo', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const otroViaje = await e.viaje(ana);
+      const tarde = Actividad.proponer(actividad(viaje, ana, 'Cena', '2026-12-11', '21:00', 90));
+      const temprano = Actividad.proponer(
+        actividad(viaje, ana, 'Kayak', '2026-12-11', '10:00', 120),
+      );
+      const pendiente = Actividad.proponer(
+        actividad(viaje, ana, 'Museo', '2026-12-12', '10:00', 60),
+      );
+      const ajena = Actividad.proponer(
+        actividad(otroViaje, ana, 'Otro', '2026-12-11', '10:00', 60),
+      );
+      for (const a of [tarde, temprano, pendiente, ajena]) await r.actividades.crear(a);
+      await confirmar(viaje, tarde.id, ana);
+      await confirmar(viaje, temprano.id, ana);
+      await confirmar(otroViaje, ajena.id, ana);
+
+      const confirmadas = await r.actividades.confirmadas(viaje);
+      expect(confirmadas.map(({ intervalo: _i, ...c }) => c)).toEqual([
+        {
+          id: temprano.id,
+          titulo: 'Kayak',
+          fecha: '2026-12-11',
+          horaInicio: '10:00',
+          duracionMin: 120,
+        },
+        { id: tarde.id, titulo: 'Cena', fecha: '2026-12-11', horaInicio: '21:00', duracionMin: 90 },
+      ]);
+      expect(confirmadas[0]!.intervalo).toEqual(temprano.intervalo);
+    });
+
+    it('opcionesDelGrupo devuelve la original y sus alternativas', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const original = Actividad.proponer(
+        actividad(viaje, ana, 'Kayak', '2026-12-11', '10:00', 120),
+      );
+      const alt1 = original.crearAlternativa(
+        actividad(viaje, ana, 'Trekking', '2026-12-11', '10:00', 120),
+      );
+      const alt2 = original.crearAlternativa(
+        actividad(viaje, ana, 'Bici', '2026-12-11', '10:00', 90),
+      );
+      const suelta = Actividad.proponer(actividad(viaje, ana, 'Cena', '2026-12-11', '21:00', 90));
+      for (const a of [original, alt1, alt2, suelta]) await r.actividades.crear(a);
+
+      const esperado = [original.id, alt1.id, alt2.id].sort();
+      expect((await r.actividades.opcionesDelGrupo(viaje, original.id)).map((a) => a.id)).toEqual(
+        esperado,
+      );
+      expect(await r.actividades.opcionesDelGrupo(await e.viaje(ana), original.id)).toEqual([]);
+      await expect(r.actividades.bloquearAgenda(viaje)).resolves.toBeUndefined();
+    });
+
+    it('lista por fecha y hora, con hora de fin, alternativa, voto propio y filtro por estado', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      const noche = Actividad.proponer(
+        actividad(viaje, tomas, 'Boliche', '2026-12-11', '23:30', 180),
+      );
+      const manana = Actividad.proponer(actividad(viaje, ana, 'Kayak', '2026-12-11', '10:00', 120));
+      const alternativa = manana.crearAlternativa(
+        actividad(viaje, tomas, 'Trekking', '2026-12-11', '10:00', 60),
+      );
+      for (const a of [noche, manana, alternativa]) await r.actividades.crear(a);
+      await r.alojamientos.crear(
+        Propuesta.proponer({
+          id: crypto.randomUUID(),
+          viajeId: viaje,
+          autorId: ana,
+          tipo: 'ALOJAMIENTO',
+          descripcion: 'x',
+          ubicacion: 'y',
+          coordenadas: null,
+          ahora: new Date(),
+        }),
+        { nombre: 'Hostel', estadia: RangoFechas.crear('2026-12-10', '2026-12-12') },
+      );
+      const p = (await r.propuestas.obtenerParaModificar(viaje, manana.id))!;
+      p.votar(tomas, 'A_FAVOR', new Date('2026-09-25T12:00:00Z'));
+      await r.propuestas.guardar(p);
+      await confirmar(viaje, noche.id, ana);
+
+      const lista = await r.consultaActividades.listar(viaje, tomas);
+      expect(lista.map((a) => a.actividad.titulo)).toEqual(['Kayak', 'Trekking', 'Boliche']);
+      expect(lista[0]).toMatchObject({
+        tipo: 'ACTIVIDAD',
+        estado: 'PENDIENTE',
+        precio: 5000,
+        latitud: -41.1,
+        longitud: -71.4,
+        votosAFavor: 1,
+        miVoto: 'A_FAVOR',
+        autor: { usuarioId: ana, nombre: 'Ana' },
+        actividad: {
+          titulo: 'Kayak',
+          fecha: '2026-12-11',
+          horaInicio: '10:00',
+          horaFin: '12:00',
+          duracionMin: 120,
+          alternativaDe: null,
+        },
+      });
+      expect(lista[1]!.actividad.alternativaDe).toEqual({ id: manana.id, titulo: 'Kayak' });
+      expect(lista[2]!.actividad.horaFin).toBe('02:30');
+      expect(
+        (await r.consultaActividades.listar(viaje, tomas, 'CONFIRMADA')).map((a) => a.id),
+      ).toEqual([noche.id]);
+      expect((await r.consultaActividades.obtener(viaje, alternativa.id, ana))?.miVoto).toBeNull();
+      expect(await r.consultaActividades.obtener(await e.viaje(ana), manana.id, ana)).toBeNull();
     });
   });
 }

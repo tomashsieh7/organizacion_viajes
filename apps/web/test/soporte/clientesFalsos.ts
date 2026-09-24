@@ -1,8 +1,17 @@
+import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import type { DetalleViaje, Participante, Usuario } from '@viajes/compartido';
+import { defineComponent, h } from 'vue';
+import {
+  sumarMinutos,
+  type ActividadVista,
+  type DetalleViaje,
+  type Participante,
+  type Usuario,
+} from '@viajes/compartido';
 import { CLIENTE_AUTH, type ClienteAuth } from '../../src/clientes/auth';
 import { CLIENTE_VIAJES, type ClienteViajes } from '../../src/clientes/viajes';
 import { ErrorDeApi } from '../../src/clientes/http';
+import { useViajeStore } from '../../src/stores/viaje';
 
 export const ANA: Usuario = { id: 'ana', nombre: 'Ana', apodo: null };
 export const TOMAS: Participante = {
@@ -80,3 +89,57 @@ export function montaje(
 
 export const errorDeApi = (codigo: string, mensaje: string, estado = 400) =>
   new ErrorDeApi(estado, codigo, mensaje);
+
+/** Actividad de ejemplo para las pruebas de la web. */
+export function actividad(
+  id: string,
+  titulo: string,
+  cambios: {
+    estado?: ActividadVista['estado'];
+    alternativaDe?: { id: string; titulo: string } | null;
+    horaInicio?: string;
+    duracionMin?: number;
+  } = {},
+): ActividadVista {
+  const horaInicio = cambios.horaInicio ?? '10:00';
+  const duracionMin = cambios.duracionMin ?? 120;
+  return {
+    id,
+    tipo: 'ACTIVIDAD',
+    estado: cambios.estado ?? 'PENDIENTE',
+    descripcion: 'desc',
+    precio: null,
+    ubicacion: 'Lago',
+    latitud: -41,
+    longitud: -71,
+    autor: { usuarioId: 'tomas', nombre: 'Tomás' },
+    votosAFavor: 0,
+    votosEnContra: 0,
+    miVoto: null,
+    creadaEn: '2026-09-24T12:00:00.000Z',
+    resueltaEn: null,
+    actividad: {
+      titulo,
+      fecha: '2026-12-11',
+      horaInicio,
+      horaFin: sumarMinutos(horaInicio, duracionMin),
+      duracionMin,
+      alternativaDe: cambios.alternativaDe ?? null,
+    },
+  };
+}
+
+/**
+ * Abre el viaje antes de montar una vista que lo necesita, como hace `ViajeLayout`. El store se
+ * crea dentro de un componente auxiliar para que pueda inyectar su cliente.
+ */
+export async function abrirViaje(opciones: ReturnType<typeof montaje>, viajeId = 'v1') {
+  let viaje!: ReturnType<typeof useViajeStore>;
+  mount(
+    defineComponent({
+      setup: () => ((viaje = useViajeStore()), () => h('div')),
+    }),
+    opciones,
+  );
+  await viaje.abrir(viajeId);
+}
