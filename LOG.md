@@ -853,3 +853,27 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Verificación:** con la API levantada en el puerto 3000, `ana@ejemplo.com` inicia sesión con la contraseña del README y ve el viaje a Bariloche como Admin.
 - **Rama:** como el PR #1 ya estaba mergeado, antes de esta entrada `claude/elegant-maxwell-60322c` se adelantó hasta `main` (`b1c1d9d`), sin reescribir historia.
 - **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-09-26 07:00 — Instrucciones globales en CLAUDE.md
+
+- **Acción:** el usuario compartió un `CLAUDE.md` con instrucciones globales:
+  - flujo de diagramas, plan y aprobación antes de escribir código;
+  - diagramas como contrato de diseño;
+  - principios de diseño, patrones GoF solo con aprobación previa, antipatrones y sobreingeniería;
+  - arquitectura y consistencia entre iteraciones.
+
+  Preguntó si se estaban siguiendo. El archivo no estaba en el repositorio ni en `~/.claude/`, así que ninguna sesión lo había cargado. A pedido del usuario se copia sin cambios a la raíz del repositorio.
+- **Revisión del cumplimiento:** gran parte de sus reglas ya se aplicaba, porque coinciden con lo que el usuario pidió al armar `PLAN.md`:
+  - plan aprobado antes de cada fase;
+  - diferencias con `docs/diagramas.drawio` decididas por el usuario;
+  - SOLID y GRASP;
+  - tabla de patrones usados y tabla de descartados por sobreingeniería.
+
+  Se encontraron tres incumplimientos:
+  - el decorador `PropuestasConAgendaBloqueadaPrimero` (F4) se implementó sin aprobación previa; quedó registrado como desvío, pero no figura en la tabla 2.2.3 de `PLAN.md`;
+  - el flujo de CI se escribió sin presentar antes un plan con los archivos y la estructura, y no se avisó explícitamente que el repositorio no tiene archivos `.puml` (los diagramas están en `docs/diagramas.drawio`);
+  - no quedó registrado que el código se haya comparado con los diagramas del drawio en cada fase; la verificación se hizo contra `PLAN.md`.
+- **Decisión:** el archivo va en la raíz del repositorio, para que lo cargue cualquier sesión que clone el repositorio. Se descartó `~/.claude/CLAUDE.md`, porque en este entorno el contenedor se descarta al terminar la sesión.
+- **Ofrecido y no pedido:** agregar el Decorator a la tabla 2.2.3 para su aprobación, y auditar el código contra los diagramas de clases del drawio. Quedan pendientes, a decisión del usuario.
+- **Rama:** como el PR #2 ya estaba mergeado, antes de este cambio `claude/elegant-maxwell-60322c` se adelantó hasta `main` (`fe740ec`), sin reescribir historia.
+- **Archivos:** `CLAUDE.md` (nuevo) y esta entrada en `LOG.md`.
