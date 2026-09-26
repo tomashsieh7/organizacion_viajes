@@ -11,7 +11,7 @@ import type { UnidadDeTrabajo } from '../../../compartido/unidadDeTrabajo.js';
 import { Coordenadas } from '../../../compartido/valores/coordenadas.js';
 import type { ConsultaFechasDeViaje } from '../../propuestas/dominio/puertos.js';
 import { Actividad, type DatosNuevaActividad } from '../dominio/actividad.js';
-import type { ActividadAgendada, PoliticaSuperposicion } from '../dominio/politicas.js';
+import { conflictosDeHorario, type ActividadAgendada } from '../dominio/politicas.js';
 import type { ConsultaActividades, ReposActividades } from '../dominio/puertos.js';
 
 /** Error de RN-A2 con las actividades confirmadas que chocan. */
@@ -29,7 +29,6 @@ export function errorDeSuperposicion(conflictos: ActividadAgendada[]): ErrorDeDo
 export interface DependenciasProponerActividad {
   unidad: UnidadDeTrabajo<ReposActividades>;
   fechas: ConsultaFechasDeViaje;
-  superposicion: PoliticaSuperposicion;
   reloj: Reloj;
 }
 
@@ -68,12 +67,8 @@ function datosDeActividad(
 }
 
 /** RN-A2: si choca con alguna confirmada, no se guarda. */
-async function exigirSinSuperposicion(
-  deps: DependenciasProponerActividad,
-  repos: ReposActividades,
-  actividad: Actividad,
-) {
-  const conflictos = deps.superposicion.conflictos(
+async function exigirSinSuperposicion(repos: ReposActividades, actividad: Actividad) {
+  const conflictos = conflictosDeHorario(
     { id: actividad.id, intervalo: actividad.intervalo },
     await repos.actividades.confirmadas(actividad.propuesta.viajeId),
   );
@@ -91,7 +86,7 @@ export class ProponerActividad {
       viajeId,
     });
     await this.deps.unidad.ejecutar(async (repos) => {
-      await exigirSinSuperposicion(this.deps, repos, actividad);
+      await exigirSinSuperposicion(repos, actividad);
       await repos.actividades.crear(actividad);
     });
     return actividad.id;
@@ -116,7 +111,7 @@ export class ProponerAlternativa {
       const alternativa = elegida.crearAlternativa(
         datosDeActividad(autorId, datos, this.deps.reloj.ahora()),
       );
-      await exigirSinSuperposicion(this.deps, repos, alternativa);
+      await exigirSinSuperposicion(repos, alternativa);
       await repos.actividades.crear(alternativa);
       return alternativa.id;
     });

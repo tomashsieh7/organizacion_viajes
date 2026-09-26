@@ -10,10 +10,6 @@ import {
   ReglaOpcionesAlConfirmar,
   ReglaSuperposicionAlConfirmar,
 } from '../../src/modulos/actividades/casos-de-uso/reglasDeResolucion.js';
-import {
-  DenegarOpcionesRestantes,
-  SinSuperposicionConConfirmadas,
-} from '../../src/modulos/actividades/dominio/politicas.js';
 import type { ReposResolucionConActividades } from '../../src/modulos/actividades/dominio/puertos.js';
 import {
   ResolverPropuesta,
@@ -60,7 +56,6 @@ beforeEach(() => {
   deps = {
     unidad,
     fechas: { rango: (id) => new ConsultaFechasDeViajeEnMemoria(unidad.confirmado).rango(id) },
-    superposicion: new SinSuperposicionConConfirmadas(),
     reloj,
   };
 });
@@ -98,10 +93,7 @@ const resolver = new ResolverPropuesta<ReposResolucionConActividades>(
   { ejecutar: (t) => unidad.ejecutar(t) },
   consultas,
   reloj,
-  [
-    new ReglaSuperposicionAlConfirmar(new SinSuperposicionConConfirmadas()),
-    new ReglaOpcionesAlConfirmar(new DenegarOpcionesRestantes()),
-  ],
+  [new ReglaSuperposicionAlConfirmar(), new ReglaOpcionesAlConfirmar()],
 );
 const resolverComo = (id: string, accion: 'confirmar' | 'denegar' | 'cancelar') =>
   resolver.ejecutar(VIAJE, id, accion, 'ana');

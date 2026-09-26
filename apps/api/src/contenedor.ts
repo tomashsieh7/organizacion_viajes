@@ -37,7 +37,6 @@ import {
   ConsultarCronograma,
   ConsultarMapa,
 } from './modulos/itinerario/casos-de-uso/casosDeUsoItinerario.js';
-import { RecorridoEnLineaRecta } from './modulos/itinerario/dominio/recorrido.js';
 import {
   ConsultarMensajes,
   EnviarMensaje,
@@ -98,10 +97,6 @@ import {
   ReglaOpcionesAlConfirmar,
   ReglaSuperposicionAlConfirmar,
 } from './modulos/actividades/casos-de-uso/reglasDeResolucion.js';
-import {
-  DenegarOpcionesRestantes,
-  SinSuperposicionConConfirmadas,
-} from './modulos/actividades/dominio/politicas.js';
 import type {
   ReposActividades,
   ReposResolucionConActividades,
@@ -222,15 +217,13 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   }));
   const consultasPropuestas = new ConsultaPropuestasPrisma(prisma);
 
-  // Actividades: las políticas de superposición (P10) y de opciones (P9) se eligen acá.
-  const superposicion = new SinSuperposicionConConfirmadas();
+  // Actividades
   const unidadActividades = new UnidadDeTrabajoPrisma<ReposActividades>(prisma, (tx) => ({
     actividades: new RepositorioActividadesPrisma(tx, new RepositorioPropuestasPrisma(tx)),
   }));
   const depsActividades: DependenciasProponerActividad = {
     unidad: unidadActividades,
     fechas: new ConsultaFechasDeViajePrisma(prisma),
-    superposicion,
     reloj,
   };
   // La resolución de propuestas suma las reglas de actividades sin modificar ResolverPropuesta (F3).
@@ -245,10 +238,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       };
     },
   );
-  const reglasDeResolucion = [
-    new ReglaSuperposicionAlConfirmar(superposicion),
-    new ReglaOpcionesAlConfirmar(new DenegarOpcionesRestantes()),
-  ];
+  const reglasDeResolucion = [new ReglaSuperposicionAlConfirmar(), new ReglaOpcionesAlConfirmar()];
 
   // Itinerario
   const consultaItinerario = new ConsultaItinerarioPrisma(prisma);
@@ -339,7 +329,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
     },
     itinerario: {
       cronograma: new ConsultarCronograma(viajesSinBloqueo, consultaItinerario),
-      mapa: new ConsultarMapa(viajesSinBloqueo, consultaItinerario, new RecorridoEnLineaRecta()),
+      mapa: new ConsultarMapa(viajesSinBloqueo, consultaItinerario),
     },
     alojamientos: {
       proponer: new ProponerAlojamiento(

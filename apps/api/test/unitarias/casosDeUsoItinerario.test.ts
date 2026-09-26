@@ -3,7 +3,6 @@ import {
   ConsultarCronograma,
   ConsultarMapa,
 } from '../../src/modulos/itinerario/casos-de-uso/casosDeUsoItinerario.js';
-import { RecorridoEnLineaRecta } from '../../src/modulos/itinerario/dominio/recorrido.js';
 import {
   baseVacia,
   ConsultaItinerarioEnMemoria,
@@ -63,7 +62,6 @@ const mapa = (hoy: string, dia?: string) =>
   new ConsultarMapa(
     new RepositorioViajesEnMemoria(base),
     new ConsultaItinerarioEnMemoria(base),
-    new RecorridoEnLineaRecta(),
   ).ejecutar(VIAJE, hoy, dia);
 
 describe('CU16: cronograma', () => {

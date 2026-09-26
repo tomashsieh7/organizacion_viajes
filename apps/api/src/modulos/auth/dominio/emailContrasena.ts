@@ -1,11 +1,6 @@
 import { esContrasenaComun } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../../compartido/errores.js';
-import type {
-  Cuenta,
-  HasheadorDeContrasenas,
-  ProveedorAutenticacion,
-  RepositorioCuentas,
-} from './puertos.js';
+import type { Cuenta, HasheadorDeContrasenas, RepositorioCuentas } from './puertos.js';
 
 export interface DatosEmailContrasena {
   email: string;
@@ -30,7 +25,7 @@ const credencialesInvalidas = () =>
   );
 
 /** Ingreso con email y contraseña (P3), sin envío de correos. */
-export class EmailContrasena implements ProveedorAutenticacion<DatosEmailContrasena> {
+export class EmailContrasena {
   readonly tipo = 'EMAIL_CONTRASENA' as const;
   private hashFicticio: Promise<string> | undefined;
 
