@@ -57,7 +57,7 @@ async function modificarViaje<T>(
 export class CrearViaje {
   constructor(
     private readonly deps: DependenciasViajes,
-    private readonly consultas: ConsultaViajes,
+    private readonly consultas: Pick<ConsultaViajes, 'existeMoneda'>,
   ) {}
 
   async ejecutar(creadorId: string, datos: DatosViajeNuevo): Promise<string> {

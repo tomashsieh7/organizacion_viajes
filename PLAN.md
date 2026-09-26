@@ -99,6 +99,7 @@ Patrones que usa el proyecto:
 | Value Object | `Dinero` (monto entero y moneda), `RangoFechas`, `Intervalo` | Encapsulan reglas pequeñas y repetidas (reparto con resto, pertenencia a un rango, superposición) en objetos inmutables, en lugar de números y fechas sueltos. |
 | Composition Root | `contenedor.ts` en el backend y `main.ts` en el frontend | Único lugar donde se eligen las implementaciones. |
 | Chain of Responsibility | Middlewares de Express | Lo provee Express; no se construye nada propio. |
+| Decorator | `PropuestasConAgendaBloqueadaPrimero`, que envuelve al repositorio de propuestas en la transacción de resolución | Al confirmar dos opciones del mismo grupo a la vez, las transacciones tomaban los bloqueos en distinto orden y PostgreSQL cortaba una por bloqueo mutuo. El decorador bloquea la agenda del viaje antes de cargar la propuesta, así el orden es siempre el mismo, sin modificar `ResolverPropuesta`. Se descartó sumar un método "antes de cargar" a `ReglaAlResolver`, porque cambiaba su contrato por una necesidad de infraestructura. Se agregó en F4 y el usuario lo aprobó después, en la revisión contra `CLAUDE.md`. |
 
 Patrones y técnicas que se descartan por sobreingeniería:
 
@@ -214,6 +215,7 @@ Vue y Express están fijados por la consigna. El resto se decide acá; cada deci
 | D22 | Ubicación de las reglas de negocio | Modelo de dominio con comportamiento: entidades y objetos de valor que aplican las reglas de las que son expertos, y casos de uso que coordinan (sección 2.2.2) | Cumple el principio de experto en información de GRASP, evita repetir una misma regla en varios casos de uso y permite probar las reglas sin repositorios ni base. | Modelo anémico con toda la lógica en servicios: más directo al principio, pero dispersa reglas como la superposición o la resta de una deuda entre varios casos de uso. |
 | D23 | Versiones y herramientas de base (F0) | TypeScript 6, Express 5, Zod 4, Vue 3.5, Vue Router 5, Pinia 4, Vite 8 y Vitest 5, las versiones estables vigentes al empezar F0; `happy-dom` como entorno de pruebas de componentes; `concurrently` para levantar los tres paquetes en desarrollo; `tsx` para el backend en desarrollo; `process.loadEnvFile()` de Node para leer `.env`; el paquete compartido se compila a `dist` como módulo ES | Empezar con versiones vigentes evita migraciones durante el cuatrimestre. `happy-dom` es más liviano que `jsdom` y alcanza para montar componentes. `process.loadEnvFile()` viene con Node 22 y evita una dependencia. Compilar el paquete compartido permite que el backend compilado lo importe con Node sin transpilar en tiempo de ejecución. | `jsdom`: más completo pero más pesado. `dotenv`: dependencia innecesaria con Node 22. Importar el paquete compartido como TypeScript sin compilar: funciona en desarrollo pero no con `node dist/servidor.js`. |
 | D24 | Montos en la base y en el dominio (F1) | Columnas `BIGINT` en PostgreSQL y enteros seguros de JavaScript (`number`, hasta 2^53) en el dominio, con la conversión en los repositorios; el objeto de valor `Dinero` rechaza montos que no sean enteros seguros | Un `INTEGER` de 32 bits llega a unos 21 millones de pesos en centavos, un límite alcanzable para las deudas acumuladas de un viaje en pesos. `number` evita que `bigint` llegue al JSON de la API, que no lo serializa. | `INTEGER`: límite demasiado bajo. `bigint` de JavaScript en todo el dominio: obliga a convertir en cada respuesta y complica los cálculos. |
+| D25 | Integración continua | GitHub Actions (`.github/workflows/ci.yml`) en cada pull request y en cada push a `main`, con tres trabajos en paralelo: lint y tipos, pruebas de Vitest y pruebas de punta a punta. Las pruebas usan PostgreSQL 16 como servicio, con la misma base y el mismo puerto que `db-test` de `docker-compose.yml`. | Repite en GitHub las verificaciones que el README pide correr a mano, sin variables de entorno nuevas; los trabajos separados muestran enseguida qué parte falló. | Un único trabajo con todos los pasos: más lento y con un solo resultado. Disparar también en cada push a cualquier rama: duplicaba las corridas de las ramas con pull request abierto. |
 
 ## 4. Modelo de datos
 
@@ -233,6 +235,8 @@ El esquema agrega lo que los diagramas de actividad y las decisiones del usuario
 | Tabla `categoria_gasto` | P16 |
 | Tabla `moneda` y `moneda_codigo` en viaje | P16 |
 | `registrado_por_id` en pago | P17 |
+| `registrado_por_id` en gasto, distinto de `pagado_por_id` | P12 |
+| `resuelta_por_id` y `resuelta_en` en propuesta | P7 |
 
 Los tipos del conceptual se adaptan así: los montos `float` pasan a enteros en la unidad mínima de la moneda (D16), `duración: float` pasa a minutos enteros, `Fecha` pasa a `DATE` o `TIMESTAMPTZ` según sea un día del viaje o un instante de registro (D17), `RangoFechas` pasa a `fecha_desde` y `fecha_hasta`, `EstadoPropuesta` toma los valores de P7 y `CategoriaGasto` pasa a ser una tabla (P16).
 
@@ -865,6 +869,7 @@ Estas diferencias surgieron de las decisiones del usuario y ya están incorporad
 | Diagrama conceptual | Viaje suma moneda; `CategoriaGasto` y `Moneda` pasan a ser clases. | P16 |
 | Diagrama conceptual | Gasto se divide en partes (`GastoParte`); la relación Gasto — Deuda pasa a ser indirecta y la deuda es acumulada por par. | P12, P14 |
 | Diagrama conceptual | Pago suma quién lo registró. | P17 |
+| Diagrama conceptual | Gasto suma quién lo registró, que puede no ser el pagador; Propuesta suma quién la resolvió y cuándo. | P12, P7 |
 | Diagrama conceptual | `EstadoPropuesta` toma los valores pendiente, confirmada, denegada y cancelada. | P7 |
 | "Proponiendo alternativa de actividad" | Se agrega el control de superposición y la verificación de que la original esté pendiente. | P9 |
 | "Anotando gasto" | Se agrega la elección del pagador; el reparto en partes iguales es entre los elegidos, no entre todos; se agrega la compensación de deudas. | P12, P13, P15 |

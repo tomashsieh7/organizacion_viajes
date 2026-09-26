@@ -877,3 +877,41 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Ofrecido y no pedido:** agregar el Decorator a la tabla 2.2.3 para su aprobación, y auditar el código contra los diagramas de clases del drawio. Quedan pendientes, a decisión del usuario.
 - **Rama:** como el PR #2 ya estaba mergeado, antes de este cambio `claude/elegant-maxwell-60322c` se adelantó hasta `main` (`fe740ec`), sin reescribir historia.
 - **Archivos:** `CLAUDE.md` (nuevo) y esta entrada en `LOG.md`.
+
+## 2026-09-26 07:16 — Revisión del código contra CLAUDE.md y correcciones
+
+- **Acción:** a pedido del usuario se revisó todo el código contra `CLAUDE.md` y se corrigieron los incumplimientos, salvo el punto 2, que el usuario decidió dejar como está. Antes de escribir código se presentó un plan y el usuario lo aprobó.
+- **Cómo se revisó:**
+  - dependencias entre capas y entre módulos;
+  - instanciaciones concretas fuera del punto de composición;
+  - interfaces grandes y quiénes las usan;
+  - condicionales por tipo;
+  - duplicación de código, con jscpd: 0% en TypeScript;
+  - reglas de negocio repetidas en el frontend;
+  - correspondencia del esquema con el diagrama conceptual del drawio.
+- **Lo que ya cumplía:**
+  - el dominio y los casos de uso no dependen de Prisma, Express ni Socket.IO, y ninguna ruta accede a la base;
+  - las vistas reciben los clientes inyectados desde `main.ts`;
+  - la estrategia de división se elige sin condicionales en el dominio;
+  - las diferencias grandes con el diagrama conceptual ya estaban aprobadas en la sección 10.2.
+- **Incumplimientos y correcciones:**
+  1. **Patrón sin aprobación previa:** el Decorator `PropuestasConAgendaBloqueadaPrimero` (F4). Se agregó a la tabla 2.2.3 de `PLAN.md` con el problema que resuelve y la alternativa descartada, y quedó aprobado con el plan.
+  2. **Interfaces con una sola implementación que anticipan variantes del story mapping:** `ProveedorAutenticacion`, `PoliticaSuperposicion`, `PoliticaResolucionOpciones` y `ProveedorRecorrido`. Chocan con YAGNI según `CLAUDE.md`, pero están aprobadas en el plan. Por decisión del usuario quedan como están.
+  3. **Dependencias concretas entre adaptadores:**
+     - `RepositorioActividadesPrisma` creaba adentro un `RepositorioPropuestasPrisma`; ahora lo recibe por el constructor, y se arma en `contenedor.ts` y en `test/soporte/escenarios.ts`;
+     - el mapeo común de propuestas (`FilaPropuesta`, `INCLUIR_VISTA` y `aVistaPropuesta`) pasó a `propuestas/infraestructura/vistaPropuesta.ts`, así los adaptadores de actividades y alojamientos dejan de importar el archivo del repositorio de propuestas.
+  4. **Segregación de interfaces:** `CrearViaje` recibe `Pick<ConsultaViajes, 'existeMoneda'>` y el middleware `participanteActivo` recibe `Pick<ConsultaViajes, 'obtenerAcceso'>`, en lugar de los siete métodos de `ConsultaViajes`.
+  5. **Segundo punto de composición:** `tiempoReal.ts` creaba `NotificadorViajeSocketIO`. Ahora `contenedor.ts` expone `chat.conectarNotificador(espacio)`, y `tiempoReal.ts` solo arma Socket.IO, registra el gateway y llama a esa función. El contenedor dejó de exponer el bus de eventos, que ya no usaba nadie de afuera.
+  6. **Rama muerta:** `BuscadorDeUsuariosPrisma` preguntaba por un tipo de credencial que solo admite un valor; ahora normaliza el email directamente.
+  7. **Campos que faltaban en el diagrama conceptual:** `gasto.registrado_por_id` (P12), `propuesta.resuelta_por_id` y `propuesta.resuelta_en` (P7).
+     - Se agregaron al diagrama conceptual de `docs/diagramas.drawio` las asociaciones Gasto — Viajero "registrado por" (1 — 0..\*) y Propuesta — Viajero "resuelta por" (0..1 — 0..\*), y el atributo `resueltaEn` en Propuesta.
+     - También se agregaron a las tablas 4.1 y 10.2 de `PLAN.md`.
+     - **Desvío del skill de diagramas:** el skill regenera el `.drawio` completo a partir de un `.puml`. Este archivo tiene 13 páginas y no trae el `.puml` embebido, así que regenerarlo habría borrado las otras 12. Se editó solo la página del diagrama conceptual, con el mismo estilo que las asociaciones existentes, y se verificó dibujándola a partir de las coordenadas: las asociaciones nuevas no cruzan otras. El validador del skill no reconoce las clases agrupadas de esta página, así que su resultado no sirvió como verificación.
+  8. **CI sin plan previo:** se documentó como la decisión D25 de `PLAN.md`, con su justificación y las alternativas descartadas.
+- **Archivos:**
+  - backend: `contenedor.ts`, `tiempoReal.ts`, `middlewares/acceso.ts`, `casosDeUsoViajes.ts`, `buscadorDeUsuariosPrisma.ts`, los adaptadores Prisma de propuestas, actividades y alojamientos, y `vistaPropuesta.ts` (nuevo);
+  - pruebas: `test/soporte/escenarios.ts`;
+  - documentación: `docs/diagramas.drawio`, `PLAN.md` y esta entrada en `LOG.md`.
+- **Verificación:**
+  - `npm run lint` pasa, y `npm test` pasa las 419 pruebas: 345 del backend y 74 del frontend;
+  - `npm run e2e` pasa los seis flujos; el de administración y el de chat ejercitan el notificador conectado desde el contenedor.

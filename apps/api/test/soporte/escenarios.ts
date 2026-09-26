@@ -366,7 +366,10 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
           fechas: new ConsultaFechasDeViajePrisma(prisma),
           alojamientos: new RepositorioAlojamientosPrisma(prisma),
           consultaAlojamientos: new ConsultaAlojamientosPrisma(prisma),
-          actividades: new RepositorioActividadesPrisma(prisma),
+          actividades: new RepositorioActividadesPrisma(
+            prisma,
+            new RepositorioPropuestasPrisma(prisma),
+          ),
           consultaActividades: new ConsultaActividadesPrisma(prisma),
           itinerario: new ConsultaItinerarioPrisma(prisma),
           mensajes: new RepositorioMensajesPrisma(prisma),
