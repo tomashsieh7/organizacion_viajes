@@ -7,9 +7,8 @@ export class BuscadorDeUsuariosPrisma implements BuscadorDeUsuarios {
   constructor(private readonly db: ClientePrisma) {}
 
   async buscarPorIdentificador(tipo: 'EMAIL_CONTRASENA', valor: string): Promise<string | null> {
-    const identificador = tipo === 'EMAIL_CONTRASENA' ? normalizarEmail(valor) : valor;
     const c = await this.db.credencial.findUnique({
-      where: { tipo_identificador: { tipo, identificador } },
+      where: { tipo_identificador: { tipo, identificador: normalizarEmail(valor) } },
     });
     return c?.usuarioId ?? null;
   }

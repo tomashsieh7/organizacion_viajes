@@ -6,7 +6,7 @@ import {
   aVistaPropuesta,
   INCLUIR_VISTA,
   type FilaPropuesta,
-} from '../../propuestas/infraestructura/prisma.js';
+} from '../../propuestas/infraestructura/vistaPropuesta.js';
 import type {
   ConsultaAlojamientos,
   DetalleAlojamiento,

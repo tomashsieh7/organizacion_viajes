@@ -2,11 +2,7 @@ import type { Server as ServidorHttp } from 'node:http';
 import { Server } from 'socket.io';
 import type { Contenedor } from './contenedor.js';
 import { NOMBRE_COOKIE_SESION } from './middlewares/acceso.js';
-import {
-  NotificadorViajeSocketIO,
-  registrarGatewayChat,
-  type EspacioChat,
-} from './modulos/chat/infraestructura/socketIO.js';
+import { registrarGatewayChat, type EspacioChat } from './modulos/chat/infraestructura/socketIO.js';
 
 /**
  * Conecta Socket.IO al servidor HTTP (D11): espacio de nombres `/chat` con su gateway, y el
@@ -27,6 +23,6 @@ export function conectarTiempoReal(servidor: ServidorHttp, c: Contenedor): Serve
     unirse: c.chat.unirse,
     enviar: c.chat.enviar,
   });
-  c.chat.reenviarEventos.suscribir(c.eventos, new NotificadorViajeSocketIO(espacio));
+  c.chat.conectarNotificador(espacio);
   return io;
 }

@@ -1,6 +1,6 @@
 import type { DatosGastoNuevo, ModoDivision } from '@viajes/compartido';
 import type { Config } from './config.js';
-import { BusDeEventosEnMemoria, type BusDeEventos } from './compartido/eventos.js';
+import { BusDeEventosEnMemoria } from './compartido/eventos.js';
 import { crearClientePrisma, type PrismaClient } from './compartido/infraestructura/prisma.js';
 import { UnidadDeTrabajoPrisma } from './compartido/infraestructura/unidadDeTrabajoPrisma.js';
 import { relojDelSistema, type Reloj } from './compartido/reloj.js';
@@ -49,6 +49,10 @@ import {
   RepositorioMensajesPrisma,
 } from './modulos/chat/infraestructura/prisma.js';
 import { ParticipacionSegunViajes } from './modulos/chat/infraestructura/participacion.js';
+import {
+  NotificadorViajeSocketIO,
+  type EspacioChat,
+} from './modulos/chat/infraestructura/socketIO.js';
 import {
   AnotarGasto,
   ConsultarDeudas,
@@ -133,7 +137,6 @@ const DIVISIONES: Record<ModoDivision, (datos: DatosGastoNuevo) => EstrategiaDiv
 export interface Contenedor {
   config: Config;
   prisma: PrismaClient;
-  eventos: BusDeEventos;
   auth: {
     registrarse: Registrarse;
     iniciarSesion: IniciarSesion;
@@ -174,7 +177,8 @@ export interface Contenedor {
     unirse: UnirseAlChat;
     enviar: EnviarMensaje;
     consultar: ConsultarMensajes;
-    reenviarEventos: ReenviarEventosDelViaje;
+    /** Suscribe el notificador de Socket.IO a los eventos del viaje; se llama al abrir `/chat`. */
+    conectarNotificador(espacio: EspacioChat): void;
   };
   alojamientos: {
     proponer: ProponerAlojamiento;
@@ -221,7 +225,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   // Actividades: las políticas de superposición (P10) y de opciones (P9) se eligen acá.
   const superposicion = new SinSuperposicionConConfirmadas();
   const unidadActividades = new UnidadDeTrabajoPrisma<ReposActividades>(prisma, (tx) => ({
-    actividades: new RepositorioActividadesPrisma(tx),
+    actividades: new RepositorioActividadesPrisma(tx, new RepositorioPropuestasPrisma(tx)),
   }));
   const depsActividades: DependenciasProponerActividad = {
     unidad: unidadActividades,
@@ -233,12 +237,10 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   const unidadResolucion = new UnidadDeTrabajoPrisma<ReposResolucionConActividades>(
     prisma,
     (tx) => {
-      const actividades = new RepositorioActividadesPrisma(tx);
+      const propuestas = new RepositorioPropuestasPrisma(tx);
+      const actividades = new RepositorioActividadesPrisma(tx, propuestas);
       return {
-        propuestas: new PropuestasConAgendaBloqueadaPrimero(
-          new RepositorioPropuestasPrisma(tx),
-          actividades,
-        ),
+        propuestas: new PropuestasConAgendaBloqueadaPrimero(propuestas, actividades),
         actividades,
       };
     },
@@ -267,7 +269,6 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   return {
     config,
     prisma,
-    eventos,
     auth: {
       registrarse: new Registrarse(emailContrasena, sesiones),
       iniciarSesion: new IniciarSesion(emailContrasena, cuentas, sesiones),
@@ -330,7 +331,11 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
         reloj,
       ),
       consultar: new ConsultarMensajes(consultaMensajes),
-      reenviarEventos: new ReenviarEventosDelViaje(saldosPendientes),
+      conectarNotificador: (espacio) =>
+        new ReenviarEventosDelViaje(saldosPendientes).suscribir(
+          eventos,
+          new NotificadorViajeSocketIO(espacio),
+        ),
     },
     itinerario: {
       cronograma: new ConsultarCronograma(viajesSinBloqueo, consultaItinerario),

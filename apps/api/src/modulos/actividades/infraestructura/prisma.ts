@@ -11,9 +11,8 @@ import type { RepositorioPropuestas } from '../../propuestas/dominio/puertos.js'
 import {
   aVistaPropuesta,
   INCLUIR_VISTA,
-  RepositorioPropuestasPrisma,
   type FilaPropuesta,
-} from '../../propuestas/infraestructura/prisma.js';
+} from '../../propuestas/infraestructura/vistaPropuesta.js';
 import { Actividad } from '../dominio/actividad.js';
 import type { ActividadAgendada } from '../dominio/politicas.js';
 import type { ConsultaActividades, RepositorioActividades } from '../dominio/puertos.js';
@@ -36,11 +35,10 @@ const detalleDe = (a: FilaActividad) => ({
 });
 
 export class RepositorioActividadesPrisma implements RepositorioActividades {
-  private readonly propuestas: RepositorioPropuestas;
-
-  constructor(private readonly db: ClientePrisma) {
-    this.propuestas = new RepositorioPropuestasPrisma(db);
-  }
+  constructor(
+    private readonly db: ClientePrisma,
+    private readonly propuestas: RepositorioPropuestas,
+  ) {}
 
   async crear(actividad: Actividad): Promise<void> {
     const { votos, ...p } = actividad.propuesta.aDatos();

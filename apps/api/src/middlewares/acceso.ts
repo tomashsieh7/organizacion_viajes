@@ -20,7 +20,9 @@ export function autenticado(obtenerUsuario: ObtenerUsuarioDeSesion): RequestHand
 }
 
 /** RN-X1: exige membresía activa en el viaje de la ruta y deja el rol en `req.acceso`. */
-export function participanteActivo(consultas: ConsultaViajes): RequestHandler {
+export function participanteActivo(
+  consultas: Pick<ConsultaViajes, 'obtenerAcceso'>,
+): RequestHandler {
   return async (req, _res, next) => {
     try {
       const viajeId = String(req.params['viajeId']);
