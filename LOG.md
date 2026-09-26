@@ -915,3 +915,13 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Verificación:**
   - `npm run lint` pasa, y `npm test` pasa las 419 pruebas: 345 del backend y 74 del frontend;
   - `npm run e2e` pasa los seis flujos; el de administración y el de chat ejercitan el notificador conectado desde el contenedor.
+
+## 2026-09-26 14:11 — CLAUDE.md reemplazado por la versión recortada
+
+- **Acción:** a pedido del usuario, `CLAUDE.md` se reemplazó sin cambios por la versión recortada que adjuntó, y desde entonces se trabaja con ella.
+- **Diferencias con la versión anterior:**
+  - clasifica cada pedido como cambio menor, que se implementa directamente y se resume al terminar, o estructural, que exige diagramas, plan y aprobación; ante la duda, se trata como estructural;
+  - busca diagramas `.drawio` y, si un cambio aprobado deja uno desactualizado, propone la actualización sin aplicarla hasta la confirmación del usuario;
+  - remite el detalle de los principios al skill `principios-de-diseno` y, cuando dos principios chocan, prefiere la opción más simple que resuelva el requerimiento actual.
+- **Punto abierto:** con estas reglas queda en tensión la decisión de mantener `ProveedorAutenticacion`, `PoliticaSuperposicion`, `PoliticaResolucionOpciones` y `ProveedorRecorrido`, que anticipan variantes del story mapping. Se le señaló al usuario; revisarla sería un cambio estructural con plan previo.
+- **Archivos:** `CLAUDE.md` y esta entrada en `LOG.md`.
