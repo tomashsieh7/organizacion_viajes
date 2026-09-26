@@ -3,12 +3,25 @@ import { Coordenadas } from '../../src/compartido/valores/coordenadas.js';
 import { Intervalo } from '../../src/compartido/valores/intervalo.js';
 import { Actividad } from '../../src/modulos/actividades/dominio/actividad.js';
 import {
-  DenegarOpcionesRestantes,
-  SinSuperposicionConConfirmadas,
+  conflictosDeHorario,
+  opcionesADenegar,
+  type ActividadAgendada,
 } from '../../src/modulos/actividades/dominio/politicas.js';
-import { agendada } from '../contratos/politicas.contrato.js';
 
 const AHORA = new Date('2026-09-24T12:00:00Z');
+const agendada = (
+  id: string,
+  fecha: string,
+  horaInicio: string,
+  duracionMin: number,
+): ActividadAgendada => ({
+  id,
+  titulo: id,
+  fecha,
+  horaInicio,
+  duracionMin,
+  intervalo: Intervalo.deActividad(fecha, horaInicio, duracionMin),
+});
 const datos = (titulo: string, horaInicio = '10:00', duracionMin = 120) => ({
   id: crypto.randomUUID(),
   viajeId: 'v1',
@@ -77,15 +90,18 @@ describe('Actividad', () => {
   });
 });
 
-describe('SinSuperposicionConConfirmadas (RN-A2)', () => {
-  const politica = new SinSuperposicionConConfirmadas();
+describe('conflictosDeHorario (RN-A2)', () => {
   const candidata = (hora: string, duracion: number, fecha = '2026-12-11') => ({
     id: 'nueva',
     intervalo: Intervalo.deActividad(fecha, hora, duracion),
   });
   const kayak = agendada('kayak', '2026-12-11', '10:00', 120);
   const ids = (hora: string, duracion: number, fecha?: string) =>
-    politica.conflictos(candidata(hora, duracion, fecha), [kayak]).map((c) => c.id);
+    conflictosDeHorario(candidata(hora, duracion, fecha), [kayak]).map((c) => c.id);
+
+  it('sin actividades confirmadas no hay conflictos', () => {
+    expect(conflictosDeHorario(candidata('10:00', 60), [])).toEqual([]);
+  });
 
   it('las actividades que se tocan en el borde no chocan', () => {
     expect(ids('12:00', 60)).toEqual([]);
@@ -100,28 +116,28 @@ describe('SinSuperposicionConConfirmadas (RN-A2)', () => {
 
   it('una actividad que pasa la medianoche choca con la madrugada del día siguiente', () => {
     const salida = agendada('salida', '2026-12-11', '23:00', 180);
-    expect(politica.conflictos(candidata('01:00', 60, '2026-12-12'), [salida])).toEqual([salida]);
-    expect(politica.conflictos(candidata('02:00', 60, '2026-12-12'), [salida])).toEqual([]);
+    expect(conflictosDeHorario(candidata('01:00', 60, '2026-12-12'), [salida])).toEqual([salida]);
+    expect(conflictosDeHorario(candidata('02:00', 60, '2026-12-12'), [salida])).toEqual([]);
   });
 
   it('una actividad ya confirmada no choca consigo misma al reconfirmarse', () => {
-    expect(politica.conflictos({ id: 'kayak', intervalo: kayak.intervalo }, [kayak])).toEqual([]);
+    expect(conflictosDeHorario({ id: 'kayak', intervalo: kayak.intervalo }, [kayak])).toEqual([]);
   });
 });
 
-describe('DenegarOpcionesRestantes (RN-R4)', () => {
+describe('opcionesADenegar (RN-R4)', () => {
   it('deniega las demás opciones pendientes del grupo', () => {
     const original = Actividad.proponer(datos('Kayak'));
     const trekking = original.crearAlternativa(datos('Trekking'));
     const bici = original.crearAlternativa(datos('Bici'));
     const denegada = original.crearAlternativa(datos('Rafting'));
     denegada.propuesta.resolver('denegar', 'ana', AHORA);
-    const aDenegar = new DenegarOpcionesRestantes().opcionesADenegar(trekking, [
-      original,
-      trekking,
-      bici,
-      denegada,
-    ]);
+    const aDenegar = opcionesADenegar(trekking, [original, trekking, bici, denegada]);
     expect(aDenegar.map((a) => a.detalle.titulo)).toEqual(['Kayak', 'Bici']);
+  });
+
+  it('con una sola opción no deniega nada', () => {
+    const original = Actividad.proponer(datos('Kayak'));
+    expect(opcionesADenegar(original, [original])).toEqual([]);
   });
 });

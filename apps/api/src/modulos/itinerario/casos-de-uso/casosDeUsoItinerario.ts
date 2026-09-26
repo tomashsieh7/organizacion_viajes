@@ -4,7 +4,7 @@ import type { Fecha } from '../../../compartido/valores/fecha.js';
 import type { LectorDeViajes } from '../../viajes/dominio/puertos.js';
 import type { Viaje } from '../../viajes/dominio/viaje.js';
 import type { ConsultaItinerario } from '../dominio/puertos.js';
-import type { ProveedorRecorrido } from '../dominio/recorrido.js';
+import { recorridoEnLineaRecta } from '../dominio/recorrido.js';
 
 async function cargarViaje(viajes: LectorDeViajes, viajeId: string): Promise<Viaje> {
   const viaje = await viajes.obtener(viajeId);
@@ -43,7 +43,6 @@ export class ConsultarMapa {
   constructor(
     private readonly viajes: LectorDeViajes,
     private readonly consultas: ConsultaItinerario,
-    private readonly recorrido: ProveedorRecorrido,
   ) {}
 
   async ejecutar(viajeId: string, hoy: Fecha, diaElegido?: Fecha): Promise<MapaDelDia> {
@@ -67,7 +66,7 @@ export class ConsultarMapa {
       dia,
       diasConActividad,
       actividades,
-      recorrido: await this.recorrido.trazar(actividades),
+      recorrido: recorridoEnLineaRecta(actividades),
       // RN-M3.
       aviso: actividades.length === 0 ? 'SIN_ACTIVIDADES_CONFIRMADAS' : null,
     };

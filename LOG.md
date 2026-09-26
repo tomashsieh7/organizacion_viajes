@@ -925,3 +925,20 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - remite el detalle de los principios al skill `principios-de-diseno` y, cuando dos principios chocan, prefiere la opción más simple que resuelva el requerimiento actual.
 - **Punto abierto:** con estas reglas queda en tensión la decisión de mantener `ProveedorAutenticacion`, `PoliticaSuperposicion`, `PoliticaResolucionOpciones` y `ProveedorRecorrido`, que anticipan variantes del story mapping. Se le señaló al usuario; revisarla sería un cambio estructural con plan previo.
 - **Archivos:** `CLAUDE.md` y esta entrada en `LOG.md`.
+
+## 2026-09-26 14:34 — Quitar las abstracciones anticipadas y ajustar ConsultarViajes
+
+- **Acción:** se corrigen los dos puntos que no cumplían la versión recortada de `CLAUDE.md`. Es un cambio estructural, así que antes de escribir código se revisaron los diagramas, se presentó un plan y el usuario lo aprobó. `docs/diagramas.drawio` no menciona ninguna de las interfaces afectadas, así que ningún diagrama cambia.
+- **Decisión del usuario:** las reglas nuevas prevalecen sobre la decisión del comienzo del proyecto, que ponía detrás de una interfaz toda regla cuya variación preveía el story mapping. Desde ahora, abierto/cerrado se aplica a las dependencias externas y a las variaciones que ya existen en los requerimientos actuales. Anticipar variaciones de releases futuros se considera sobreingeniería.
+- **Punto 1, interfaces con una sola implementación:**
+  - `ProveedorAutenticacion`: ningún caso de uso la usaba, porque dependían de `EmailContrasena`. Se borró, y su prueba de contrato pasó a ser una prueba unitaria de `EmailContrasena` con los mismos casos.
+  - `PoliticaSuperposicion` y `PoliticaResolucionOpciones`: se reemplazaron por las funciones de dominio `conflictosDeHorario` y `opcionesADenegar`, con la misma lógica. Los casos de uso y las dos `ReglaAlResolver` las llaman directamente, y `contenedor.ts` dejó de inyectarlas.
+  - `ProveedorRecorrido`: `RecorridoEnLineaRecta` solo devolvía las coordenadas en orden. Se reemplazó por la función sincrónica `recorridoEnLineaRecta`, que `ConsultarMapa` llama directamente.
+  - Las pruebas de contrato de las políticas y del recorrido pasaron a ser pruebas unitarias de las funciones. Se descartaron los casos que repetían otros existentes, y el backend pasó de 345 a 341 pruebas. Los nombres conservan RN-A2, RN-R4, RN-M6 y P20, y la prueba de trazabilidad sigue pasando.
+- **Punto 2:** `ConsultarViajes` recibe un `Pick<ConsultaViajes, …>` con los cinco métodos que usa. Se descartó partir `ConsultaViajes` en varias interfaces, porque es un cambio más grande sin beneficio concreto.
+- **Consecuencia aceptada:** cuando los subgrupos del Release 3, las rutas por calles del Release 4 o una segunda forma de ingreso sean requerimientos, habrá que modificar estas funciones o introducir la interfaz en ese momento.
+- **Archivos:**
+  - backend: `contenedor.ts`, `auth/dominio/puertos.ts`, `auth/dominio/emailContrasena.ts`, `actividades/dominio/politicas.ts`, `casosDeUsoActividades.ts`, `reglasDeResolucion.ts`, `itinerario/dominio/recorrido.ts`, `casosDeUsoItinerario.ts` y `casosDeUsoViajes.ts`;
+  - pruebas: se borraron los contratos de autenticación, políticas y recorrido; se agregaron `unitarias/emailContrasena.test.ts` y `unitarias/recorrido.test.ts`; se ajustaron `actividad.test.ts`, `casosDeUsoActividades.test.ts` y `casosDeUsoItinerario.test.ts`;
+  - documentación: `PLAN.md` y esta entrada en `LOG.md`. En `PLAN.md` cambiaron las secciones 2.2 (abierto/cerrado, variaciones protegidas, polimorfismo, la fila de Strategy y el criterio contra la sobreingeniería) y 2.3, D7, D10, RN-A2, RN-B2, RN-R3, RN-R4, RN-M6, las fases F2, F4 y F5, la sección 9 y P9, P10 y P20.
+- **Verificación:** `npm run lint` pasa; `npm test` pasa 415 pruebas, 341 del backend y 74 del frontend; `npm run e2e` pasa los seis flujos.

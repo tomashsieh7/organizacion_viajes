@@ -148,7 +148,14 @@ export class TransferirAdministracion {
 /** Lecturas de viajes, participantes y monedas. */
 export class ConsultarViajes {
   constructor(
-    private readonly consultas: ConsultaViajes,
+    private readonly consultas: Pick<
+      ConsultaViajes,
+      | 'listarDeUsuario'
+      | 'obtenerDetalle'
+      | 'listarParticipantes'
+      | 'obtenerParticipante'
+      | 'listarMonedas'
+    >,
     private readonly deudas: ConsultaDeudas,
   ) {}
 

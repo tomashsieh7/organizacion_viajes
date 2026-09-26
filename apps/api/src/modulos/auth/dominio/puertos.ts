@@ -49,13 +49,3 @@ export interface GeneradorDeTokens {
   generar(): string;
   hashear(token: string): string;
 }
-
-/**
- * Forma de ingresar (D7). Cada proveedor verifica sus credenciales y devuelve el usuario,
- * o lanza NO_AUTENTICADO `CREDENCIALES_INVALIDAS`. Sumar teléfono o Google es agregar otra
- * implementación, sin tocar sesiones ni el resto de la aplicación.
- */
-export interface ProveedorAutenticacion<D> {
-  readonly tipo: TipoCredencial;
-  autenticar(datos: D): Promise<string>;
-}
