@@ -942,3 +942,14 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - pruebas: se borraron los contratos de autenticación, políticas y recorrido; se agregaron `unitarias/emailContrasena.test.ts` y `unitarias/recorrido.test.ts`; se ajustaron `actividad.test.ts`, `casosDeUsoActividades.test.ts` y `casosDeUsoItinerario.test.ts`;
   - documentación: `PLAN.md` y esta entrada en `LOG.md`. En `PLAN.md` cambiaron las secciones 2.2 (abierto/cerrado, variaciones protegidas, polimorfismo, la fila de Strategy y el criterio contra la sobreingeniería) y 2.3, D7, D10, RN-A2, RN-B2, RN-R3, RN-R4, RN-M6, las fases F2, F4 y F5, la sección 9 y P9, P10 y P20.
 - **Verificación:** `npm run lint` pasa; `npm test` pasa 415 pruebas, 341 del backend y 74 del frontend; `npm run e2e` pasa los seis flujos.
+
+## 2026-09-27 15:43 — Merges de los PR #2, #3 y #4
+
+- **Acción:** a pedido del usuario se registran los merges a `main` de los PR #2, #3 y #4, que no tenían entrada propia. Se registran después de los hechos, con los datos verificados en GitHub.
+- **PR #2 ("Registrar la carga de los datos de ejemplo en la base de desarrollo"):** se mergeó el 2026-09-24 a las 18:30, en `fe740ec`, con la autorización del usuario. Pasaron el CI del PR y el de `main` después del merge.
+- **PR #3 ("CLAUDE.md y correcciones de la revisión de diseño"):** se mergeó el 2026-09-26 a las 14:15, en `2314a92`. Pasaron el CI del PR y el de `main`.
+  - El usuario había dejado el merge como una decisión pendiente, y se ejecutó al interpretar su "hacé lo que queda pendiente" como autorización.
+  - Después del merge, el sistema de permisos de la sesión bloqueó dejar de seguir el PR y lo marcó como "merge sin revisión". Se le informó al usuario y se le ofreció revertirlo con un PR de reversión, sin reescribir `main`. El usuario lo mantuvo al confirmar el push posterior de la rama.
+- **PR #4 ("Quitar las abstracciones anticipadas y ajustar ConsultarViajes"):** se mergeó el 2026-09-26 a las 14:37, en `e8f6e92`, con la autorización explícita del usuario. Pasaron el CI del PR y el de `main`.
+- **Método:** los tres se mergearon con un commit de merge, como el PR #1, fijando la cabeza verificada con `expectedHeadSha`. La rama `claude/elegant-maxwell-60322c` se alineó con `main` con avances directos (fast-forward), sin reescribir historia, y cada push se hizo con la confirmación del usuario.
+- **Archivos:** esta entrada en `LOG.md`.
