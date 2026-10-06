@@ -12,7 +12,6 @@ import { ErrorDeDominio } from '../../../compartido/errores.js';
 import type { PublicadorDeEventos } from '../../../compartido/eventos.js';
 import type { Reloj } from '../../../compartido/reloj.js';
 import type { UnidadDeTrabajo } from '../../../compartido/unidadDeTrabajo.js';
-import type { EventoDeViaje } from '../dominio/eventos.js';
 import type {
   BuscadorDeUsuarios,
   ConsultaDeudas,
@@ -49,7 +48,7 @@ async function modificarViaje<T>(
     await repos.viajes.guardar(viaje);
     return { resultado, eventos: viaje.extraerEventos() };
   });
-  for (const evento of eventos as EventoDeViaje[]) await deps.eventos.publicar(evento);
+  for (const evento of eventos) await deps.eventos.publicar(evento);
   return resultado;
 }
 

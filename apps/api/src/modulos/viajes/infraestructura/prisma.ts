@@ -12,6 +12,12 @@ import type {
 } from '../dominio/puertos.js';
 import { tipoDeAcceso, Viaje } from '../dominio/viaje.js';
 
+/** RN-E6: deudas con saldo pendiente en las que el usuario es deudor o acreedor. */
+const saldosPendientesDe = (usuarioId: string) => ({
+  monto: { gt: 0 },
+  OR: [{ deudorId: usuarioId }, { acreedorId: usuarioId }],
+});
+
 export class RepositorioViajesPrisma implements RepositorioViajes, LectorDeViajes {
   constructor(private readonly db: ClientePrisma) {}
 
@@ -83,6 +89,21 @@ export class RepositorioViajesPrisma implements RepositorioViajes, LectorDeViaje
   }
 }
 
+/**
+ * Lee el viaje con un bloqueo compartido hasta el fin de la transacción: otras lecturas iguales
+ * siguen en paralelo, pero un cambio de membresías, que toma el viaje con `FOR UPDATE`, espera.
+ */
+export class LectorDeViajesCompartidoPrisma implements LectorDeViajes {
+  constructor(private readonly db: ClientePrisma) {}
+
+  async obtener(viajeId: string): Promise<Viaje | null> {
+    const bloqueado = await this.db.$queryRaw<{ id: string }[]>`
+      SELECT id FROM viaje WHERE id = ${viajeId}::uuid FOR SHARE`;
+    if (bloqueado.length === 0) return null;
+    return new RepositorioViajesPrisma(this.db).obtener(viajeId);
+  }
+}
+
 export class ConsultaDeudasPrisma implements ConsultaDeudas {
   constructor(private readonly db: ClientePrisma) {}
 
@@ -119,11 +140,7 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
   private async conSaldosPendientes(usuarioId: string, viajeIds: string[]): Promise<Set<string>> {
     if (viajeIds.length === 0) return new Set();
     const filas = await this.db.deuda.findMany({
-      where: {
-        viajeId: { in: viajeIds },
-        monto: { gt: 0 },
-        OR: [{ deudorId: usuarioId }, { acreedorId: usuarioId }],
-      },
+      where: { viajeId: { in: viajeIds }, ...saldosPendientesDe(usuarioId) },
       select: { viajeId: true },
       distinct: ['viajeId'],
     });
@@ -228,11 +245,7 @@ export class ConsultaSaldosPendientesPrisma implements ConsultaSaldosPendientes 
 
   async tieneSaldosPendientes(viajeId: string, usuarioId: string): Promise<boolean> {
     const pendiente = await this.db.deuda.findFirst({
-      where: {
-        viajeId,
-        monto: { gt: 0 },
-        OR: [{ deudorId: usuarioId }, { acreedorId: usuarioId }],
-      },
+      where: { viajeId, ...saldosPendientesDe(usuarioId) },
       select: { id: true },
     });
     return pendiente !== null;

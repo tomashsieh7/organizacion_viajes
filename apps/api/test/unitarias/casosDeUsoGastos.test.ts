@@ -57,13 +57,13 @@ beforeEach(() => {
   unidad = new UnidadDeTrabajoEnMemoria(base, (e) => ({
     gastos: new RepositorioGastosEnMemoria(e),
     deudas: new RepositorioDeudasEnMemoria(e),
+    viajes: new RepositorioViajesEnMemoria(e),
   }));
 });
 
 const anotar = (registradoPor: string, datos: Partial<DatosGastoNuevo>) =>
   new AnotarGasto({
     unidad,
-    viajes: new RepositorioViajesEnMemoria(unidad.confirmado),
     categorias: new ConsultaCategoriasEnMemoria(base),
     division: (d) =>
       d.modoDivision === 'ARBITRARIA'
@@ -166,7 +166,6 @@ describe('CU23: registrar pago', () => {
   const pagar = (deudor: string, acreedorId: string, monto: number) =>
     new RegistrarPago({
       unidad,
-      viajes: new RepositorioViajesEnMemoria(unidad.confirmado),
       saldos: {
         deudas: async () => [],
         obtenerPago: (v, id) => new ConsultaSaldosEnMemoria(unidad.confirmado).obtenerPago(v, id),
