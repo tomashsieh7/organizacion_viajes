@@ -35,9 +35,9 @@ async function vista(
 }
 
 /** CU06, CU12 y CU25/CU26: votar y desvotar. */
-export class Votar<R extends ReposPropuestas> {
+export class Votar {
   constructor(
-    private readonly unidad: UnidadDeTrabajo<R>,
+    private readonly unidad: UnidadDeTrabajo<ReposPropuestas>,
     private readonly consultas: ConsultaPropuestas,
     private readonly reloj: Reloj,
   ) {}

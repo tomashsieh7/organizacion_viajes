@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BusDeEventosEnMemoria, type EventoDeDominio } from '../../src/compartido/eventos.js';
 
 interface Saludo extends EventoDeDominio {
@@ -22,5 +22,21 @@ describe('BusDeEventosEnMemoria', () => {
     bus.suscribir('otro', (e) => void recibidos.push(e));
     await bus.publicar({ tipo: 'saludo' });
     expect(recibidos).toEqual([]);
+  });
+
+  it('un suscriptor que falla no impide que reciban los siguientes ni hace fallar la publicación', async () => {
+    const bus = new BusDeEventosEnMemoria();
+    const registro = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const recibidos: string[] = [];
+    bus.suscribir<Saludo>('saludo', () => {
+      throw new Error('falla');
+    });
+    bus.suscribir<Saludo>('saludo', (e) => void recibidos.push(e.nombre));
+    await expect(
+      bus.publicar({ tipo: 'saludo', nombre: 'Ana' } as Saludo),
+    ).resolves.toBeUndefined();
+    expect(recibidos).toEqual(['Ana']);
+    expect(registro).toHaveBeenCalledOnce();
+    registro.mockRestore();
   });
 });

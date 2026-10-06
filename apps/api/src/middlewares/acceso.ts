@@ -1,11 +1,11 @@
 import type { RequestHandler } from 'express';
 import { ErrorDeDominio } from '../compartido/errores.js';
+import { esUuid } from '../compartido/uuid.js';
 import type { ObtenerUsuarioDeSesion } from '../modulos/auth/casos-de-uso/casosDeUsoAuth.js';
 import type { ConsultarAcceso } from '../modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
 import type { ConsultaViajes } from '../modulos/viajes/dominio/puertos.js';
 
 export const NOMBRE_COOKIE_SESION = 'sesion';
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Exige una sesión vigente y deja el usuario en `req.usuarioId`. */
 export function autenticado(obtenerUsuario: ObtenerUsuarioDeSesion): RequestHandler {
@@ -26,7 +26,7 @@ export function participanteActivo(
   return async (req, _res, next) => {
     try {
       const viajeId = String(req.params['viajeId']);
-      if (!UUID.test(viajeId))
+      if (!esUuid(viajeId))
         throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El viaje no existe');
       const acceso = await consultas.obtenerAcceso(viajeId, req.usuarioId ?? '');
       if (!acceso) {
@@ -48,7 +48,7 @@ export function accesoSaldos(consultarAcceso: ConsultarAcceso): RequestHandler {
   return async (req, _res, next) => {
     try {
       const viajeId = String(req.params['viajeId']);
-      if (!UUID.test(viajeId))
+      if (!esUuid(viajeId))
         throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El viaje no existe');
       req.acceso = { viajeId, ...(await consultarAcceso.ejecutar(viajeId, req.usuarioId ?? '')) };
       next();
@@ -70,7 +70,7 @@ export const soloAdmin: RequestHandler = (req, _res, next) => {
 /** Valida que un parámetro de ruta sea un identificador válido; si no, responde 404. */
 export function parametroUuid(nombre: string): RequestHandler {
   return (req, _res, next) => {
-    if (UUID.test(String(req.params[nombre]))) {
+    if (esUuid(String(req.params[nombre]))) {
       next();
       return;
     }

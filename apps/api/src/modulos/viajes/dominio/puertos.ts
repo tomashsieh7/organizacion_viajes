@@ -9,7 +9,7 @@ export interface RepositorioViajes {
   guardar(viaje: Viaje): Promise<void>;
 }
 
-/** Lectura del agregado sin bloquearlo, para consultas que usan sus reglas (por ejemplo, RN-M1). */
+/** Lectura del agregado para consultas que usan sus reglas (por ejemplo, RN-M1), sin modificarlo. */
 export interface LectorDeViajes {
   obtener(viajeId: string): Promise<Viaje | null>;
 }

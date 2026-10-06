@@ -265,11 +265,7 @@ describe('CU13 a CU15: resolver actividades (RN-R3 y RN-R4)', () => {
 
   it('CU25 y CU26: se vota y se desvota una actividad como cualquier propuesta', async () => {
     const kayak = await proponer(datos('Kayak'));
-    const votar = new Votar<ReposResolucionConActividades>(
-      { ejecutar: (t) => unidad.ejecutar(t) },
-      consultas,
-      reloj,
-    );
+    const votar = new Votar({ ejecutar: (t) => unidad.ejecutar(t) }, consultas, reloj);
     expect(await votar.votar(VIAJE, kayak, 'ana', 'A_FAVOR')).toMatchObject({
       votosAFavor: 1,
       miVoto: 'A_FAVOR',

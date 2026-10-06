@@ -6,6 +6,7 @@ import type {
   PagoRegistrado,
   RolEnDeuda,
 } from '@viajes/compartido';
+import type { LectorDeViajes } from '../../viajes/dominio/puertos.js';
 import type { Deuda } from './deuda.js';
 import type { EstrategiaDivision } from './division.js';
 import type { Gasto } from './gasto.js';
@@ -36,6 +37,11 @@ export interface RepositorioDeudas {
 export interface ReposGastos {
   gastos: RepositorioGastos;
   deudas: RepositorioDeudas;
+  /**
+   * Lee el viaje e impide que cambien sus membresías hasta el fin de la transacción (D18): una
+   * baja simultánea espera, así nadie queda dado de baja con una deuda que no se registró.
+   */
+  viajes: LectorDeViajes;
 }
 
 export interface ConsultaCategorias {

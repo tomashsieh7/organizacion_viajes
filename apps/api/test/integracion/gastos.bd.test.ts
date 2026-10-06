@@ -163,6 +163,24 @@ describe('CU20: anotar gasto', () => {
     expect(await deudas(ana.c, 'deudor')).toEqual([]);
     expect(await deudas(luis.c, 'deudor')).toEqual([['Tomás', 50]]);
   });
+
+  it('D18: una baja simultánea con un gasto nunca deja al dado de baja con una deuda no registrada', async () => {
+    const [anotado, baja] = await Promise.all([
+      gasto(tomas.c, { monto: 300, deudores: [luis.id] }),
+      ana.c.delete(url(`/participantes/${luis.id}`)),
+    ]);
+    expect(baja.status).toBe(200);
+    if (anotado.status === 201) {
+      expect(baja.body).toEqual({ bajaConDeuda: true });
+    } else {
+      expect([anotado.status, anotado.body.error.codigo]).toEqual([422, 'DEUDOR_NO_PARTICIPANTE']);
+      expect(baja.body).toEqual({ bajaConDeuda: false });
+    }
+    const membresia = await db.membresia.findUniqueOrThrow({
+      where: { viajeId_usuarioId: { viajeId, usuarioId: luis.id } },
+    });
+    expect(membresia.bajaConDeuda).toBe(anotado.status === 201);
+  });
 });
 
 describe('RN-E6: acceso solo a saldos', () => {

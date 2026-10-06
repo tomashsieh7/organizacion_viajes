@@ -953,3 +953,31 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **PR #4 ("Quitar las abstracciones anticipadas y ajustar ConsultarViajes"):** se mergeó el 2026-09-26 a las 14:37, en `e8f6e92`, con la autorización explícita del usuario. Pasaron el CI del PR y el de `main`.
 - **Método:** los tres se mergearon con un commit de merge, como el PR #1, fijando la cabeza verificada con `expectedHeadSha`. La rama `claude/elegant-maxwell-60322c` se alineó con `main` con avances directos (fast-forward), sin reescribir historia, y cada push se hizo con la confirmación del usuario.
 - **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-10-06 11:30 — Revisión de deuda técnica y de consistencia con la arquitectura
+
+- **Acción:** a pedido del usuario se revisaron el backend, el frontend y `docs/diagramas.drawio` contra `CLAUDE.md` y las secciones 2.2 a 2.4 y 7 de `PLAN.md`. Se presentó un plan con 14 hallazgos y cuatro grupos de correcciones, y el usuario lo aprobó completo. Es un cambio estructural; ningún cambio afecta el diagrama conceptual ni los de actividad, así que el `.drawio` no queda desactualizado.
+- **Sin problemas:** el dominio no importa infraestructura, Express, Prisma ni Socket.IO; los casos de uso no importan infraestructura; las únicas dependencias entre dominios son actividades y alojamientos sobre `Propuesta`; el frontend inyecta los clientes en `main.ts` (D13).
+- **A, notificaciones:** `BusDeEventosEnMemoria.publicar` registra el error de un suscriptor con `console.error` y sigue con los demás. Antes, una falla al notificar una baja o un traspaso, que se publican después de confirmar, hacía responder 500 a una operación que ya estaba guardada.
+- **B, bajas simultáneas con gastos o pagos:** `AnotarGasto` y `RegistrarPago` leían el viaje fuera de la transacción. Una baja simultánea con un gasto podía dejar al dado de baja con una deuda nueva y `bajaConDeuda = false`.
+  - Ahora leen el viaje dentro de la transacción con el puerto `viajes` de `ReposGastos`, implementado por `LectorDeViajesCompartidoPrisma` con `FOR SHARE`. Los gastos siguen en paralelo entre sí y una baja espera.
+  - Se implementó como una clase propia en lugar de un método de `RepositorioViajesPrisma`, como decía el plan, porque así implementa el puerto `LectorDeViajes` sin cambiarlo.
+  - La prueba nueva de `integracion/gastos.bd.test.ts` falló 6 de 6 veces con el bloqueo quitado a propósito y pasó 5 de 5 con el bloqueo.
+- **C, limpieza:**
+  - el filtro de saldos pendientes de RN-E6 queda en una sola función (`saldosPendientesDe`);
+  - `Votar` deja de ser genérico;
+  - la validación de UUID queda en `compartido/uuid.ts` (`esUuid`);
+  - se quitó un cast sobrante en `modificarViaje`.
+- **D, PLAN:** la tabla de la sección 7 ya no nombra `FormularioCredenciales`, `TarjetaViaje`, `CampoRangoFechas` ni `CampoMonto`, que no existen; describe lo que hace cada vista. También se actualizaron la fila del Observer en 2.2.3 y D18.
+- **Decidido no tocar:**
+  - el bloqueo de agenda repetido en `ReglaSuperposicionAlConfirmar`, que es barato y mantiene la regla correcta sola;
+  - `TipoCredencial` y el parámetro `tipo`, respaldados por D7 y el diagrama conceptual;
+  - las dependencias de rutas y middlewares sobre clases de casos de uso;
+  - las dos formas de verificar acceso (RN-X1 y RN-E6);
+  - los mensajes de error repetidos con textos distintos.
+- **Pendiente para el usuario:** decidir si se borran o renombran las páginas viejas del story mapping ("story mapping" y "Copia de story mapping"), y los dos puntos ya conocidos: Prisma 8 estable y la rama por defecto de GitHub.
+- **Archivos:**
+  - backend: `compartido/eventos.ts`, `compartido/uuid.ts` (nuevo), `contenedor.ts`, `middlewares/acceso.ts`, `chat/infraestructura/participacion.ts`, `gastos/dominio/puertos.ts`, `casosDeUsoGastos.ts`, `casosDeUsoPropuestas.ts`, `propuestas.rutas.ts`, `viajes/dominio/puertos.ts`, `viajes/infraestructura/prisma.ts` y `casosDeUsoViajes.ts`;
+  - pruebas: `eventos.test.ts`, `casosDeUsoGastos.test.ts`, `casosDeUsoActividades.test.ts` y `integracion/gastos.bd.test.ts`;
+  - documentación: `PLAN.md` y esta entrada en `LOG.md`.
+- **Verificación:** `npm run lint` pasa; `npm test` pasa 417 pruebas, 343 del backend y 74 del frontend; `npm run e2e` pasa los seis flujos.

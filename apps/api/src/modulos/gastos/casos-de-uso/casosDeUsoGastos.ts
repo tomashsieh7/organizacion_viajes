@@ -12,7 +12,6 @@ import { ErrorDeDominio } from '../../../compartido/errores.js';
 import type { Reloj } from '../../../compartido/reloj.js';
 import type { UnidadDeTrabajo } from '../../../compartido/unidadDeTrabajo.js';
 import { Dinero } from '../../../compartido/valores/dinero.js';
-import type { LectorDeViajes } from '../../viajes/dominio/puertos.js';
 import { Gasto } from '../dominio/gasto.js';
 import type {
   ConsultaCategorias,
@@ -24,7 +23,6 @@ import type {
 
 export interface DependenciasAnotarGasto {
   unidad: UnidadDeTrabajo<ReposGastos>;
-  viajes: LectorDeViajes;
   categorias: ConsultaCategorias;
   division: FabricaDeDivision;
   reloj: Reloj;
@@ -39,49 +37,49 @@ export class AnotarGasto {
     registradoPorId: string,
     datos: DatosGastoNuevo,
   ): Promise<string> {
-    const viaje = await this.deps.viajes.obtener(viajeId);
-    if (!viaje) throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El viaje no existe');
-    // RN-G2 (P12): por defecto paga quien anota.
-    const pagadoPorId = datos.pagadoPorId ?? registradoPorId;
-    if (!viaje.esParticipanteActivo(pagadoPorId)) {
-      throw new ErrorDeDominio(
-        'REGLA_DE_NEGOCIO',
-        'PAGADOR_NO_PARTICIPANTE',
-        'Quien pagó tiene que participar del viaje',
-      );
-    }
-    // RN-G3 (P13): el pagador puede quedar fuera, pero todos los elegidos tienen que participar.
-    const ajenos = datos.deudores.filter((d) => !viaje.esParticipanteActivo(d));
-    if (ajenos.length > 0) {
-      throw new ErrorDeDominio(
-        'REGLA_DE_NEGOCIO',
-        'DEUDOR_NO_PARTICIPANTE',
-        'Todas las personas elegidas tienen que participar del viaje',
-        { usuarios: ajenos },
-      );
-    }
-    if (!(await this.deps.categorias.existe(datos.categoriaId))) {
-      throw new ErrorDeDominio(
-        'REGLA_DE_NEGOCIO',
-        'CATEGORIA_INEXISTENTE',
-        'La categoría no existe',
-      );
-    }
-    const ahora = this.deps.reloj.ahora();
-    const gasto = Gasto.anotar({
-      id: randomUUID(),
-      viajeId,
-      titulo: datos.titulo.trim(),
-      categoriaId: datos.categoriaId,
-      monto: Dinero.de(datos.monto, viaje.monedaCodigo),
-      pagadoPorId,
-      registradoPorId,
-      deudores: datos.deudores,
-      division: this.deps.division(datos),
-      ahora,
-    });
-
-    await this.deps.unidad.ejecutar(async (repos) => {
+    return this.deps.unidad.ejecutar(async (repos) => {
+      // Dentro de la transacción, para que nadie se dé de baja mientras se le anota una deuda.
+      const viaje = await repos.viajes.obtener(viajeId);
+      if (!viaje) throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El viaje no existe');
+      // RN-G2 (P12): por defecto paga quien anota.
+      const pagadoPorId = datos.pagadoPorId ?? registradoPorId;
+      if (!viaje.esParticipanteActivo(pagadoPorId)) {
+        throw new ErrorDeDominio(
+          'REGLA_DE_NEGOCIO',
+          'PAGADOR_NO_PARTICIPANTE',
+          'Quien pagó tiene que participar del viaje',
+        );
+      }
+      // RN-G3 (P13): el pagador puede quedar fuera, pero todos los elegidos tienen que participar.
+      const ajenos = datos.deudores.filter((d) => !viaje.esParticipanteActivo(d));
+      if (ajenos.length > 0) {
+        throw new ErrorDeDominio(
+          'REGLA_DE_NEGOCIO',
+          'DEUDOR_NO_PARTICIPANTE',
+          'Todas las personas elegidas tienen que participar del viaje',
+          { usuarios: ajenos },
+        );
+      }
+      if (!(await this.deps.categorias.existe(datos.categoriaId))) {
+        throw new ErrorDeDominio(
+          'REGLA_DE_NEGOCIO',
+          'CATEGORIA_INEXISTENTE',
+          'La categoría no existe',
+        );
+      }
+      const ahora = this.deps.reloj.ahora();
+      const gasto = Gasto.anotar({
+        id: randomUUID(),
+        viajeId,
+        titulo: datos.titulo.trim(),
+        categoriaId: datos.categoriaId,
+        monto: Dinero.de(datos.monto, viaje.monedaCodigo),
+        pagadoPorId,
+        registradoPorId,
+        deudores: datos.deudores,
+        division: this.deps.division(datos),
+        ahora,
+      });
       const generadas = gasto.deudasGeneradas();
       const deudas = await repos.deudas.obtenerParaModificar(
         viajeId,
@@ -101,8 +99,8 @@ export class AnotarGasto {
       }
       await repos.gastos.crear(gasto);
       await repos.deudas.guardar(deudas);
+      return gasto.id;
     });
-    return gasto.id;
   }
 }
 
@@ -138,8 +136,7 @@ export class ConsultarDeudas {
 }
 
 export interface DependenciasRegistrarPago {
-  unidad: UnidadDeTrabajo<Pick<ReposGastos, 'deudas'>>;
-  viajes: LectorDeViajes;
+  unidad: UnidadDeTrabajo<Pick<ReposGastos, 'deudas' | 'viajes'>>;
   saldos: ConsultaSaldos;
   reloj: Reloj;
 }
@@ -152,9 +149,9 @@ export class RegistrarPago {
   constructor(private readonly deps: DependenciasRegistrarPago) {}
 
   async ejecutar(viajeId: string, deudorId: string, datos: DatosPagoNuevo): Promise<RespuestaPago> {
-    const viaje = await this.deps.viajes.obtener(viajeId);
-    if (!viaje) throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El viaje no existe');
     const { pagoId, saldo } = await this.deps.unidad.ejecutar(async (repos) => {
+      const viaje = await repos.viajes.obtener(viajeId);
+      if (!viaje) throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El viaje no existe');
       const deuda = await repos.deudas.obtenerParaPagar(
         viajeId,
         { deudorId, acreedorId: datos.acreedorId },

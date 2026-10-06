@@ -114,6 +114,7 @@ import {
   ConsultaDeudasPrisma,
   ConsultaSaldosPendientesPrisma,
   ConsultaViajesPrisma,
+  LectorDeViajesCompartidoPrisma,
   RepositorioViajesPrisma,
   RetiroDeVotosPrisma,
 } from './modulos/viajes/infraestructura/prisma.js';
@@ -156,7 +157,7 @@ export interface Contenedor {
     pagar: RegistrarPago;
   };
   propuestas: {
-    votar: Votar<ReposPropuestas>;
+    votar: Votar;
     resolver: ResolverPropuesta<ReposResolucionConActividades>;
   };
   actividades: {
@@ -295,8 +296,8 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
         unidad: new UnidadDeTrabajoPrisma<ReposGastos>(prisma, (tx) => ({
           gastos: new RepositorioGastosPrisma(tx),
           deudas: new RepositorioDeudasPrisma(tx),
+          viajes: new LectorDeViajesCompartidoPrisma(tx),
         })),
-        viajes: viajesSinBloqueo,
         categorias,
         division: (datos) => DIVISIONES[datos.modoDivision](datos),
         reloj,
@@ -304,10 +305,10 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       consultar: new ConsultarGastos(new ConsultaGastosPrisma(prisma), categorias),
       deudas: new ConsultarDeudas(consultaSaldos),
       pagar: new RegistrarPago({
-        unidad: new UnidadDeTrabajoPrisma<Pick<ReposGastos, 'deudas'>>(prisma, (tx) => ({
+        unidad: new UnidadDeTrabajoPrisma<Pick<ReposGastos, 'deudas' | 'viajes'>>(prisma, (tx) => ({
           deudas: new RepositorioDeudasPrisma(tx),
+          viajes: new LectorDeViajesCompartidoPrisma(tx),
         })),
-        viajes: viajesSinBloqueo,
         saldos: consultaSaldos,
         reloj,
       }),
