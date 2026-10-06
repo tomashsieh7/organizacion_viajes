@@ -981,3 +981,10 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - pruebas: `eventos.test.ts`, `casosDeUsoGastos.test.ts`, `casosDeUsoActividades.test.ts` y `integracion/gastos.bd.test.ts`;
   - documentación: `PLAN.md` y esta entrada en `LOG.md`.
 - **Verificación:** `npm run lint` pasa; `npm test` pasa 417 pruebas, 343 del backend y 74 del frontend; `npm run e2e` pasa los seis flujos.
+
+## 2026-10-06 15:59 — Merge del PR #6
+
+- **Acción:** con la autorización explícita del usuario ("Sí, mergealo") se mergeó a `main` el PR #6 ("Revisión de deuda técnica: notificaciones, bajas simultáneas con gastos y limpieza") con un commit de merge, en `eff5851`, fijando la cabeza verificada `ab38302` con `expectedHeadSha`.
+- **Estado previo:** el CI del PR pasó sus tres trabajos (lint y tipos, Vitest y punta a punta), sin conflictos ni comentarios de revisión. La revisión de respaldo programada confirmó el mismo estado antes del merge.
+- **Después:** la sesión dejó de seguir el PR y la rama `claude/elegant-maxwell-60322c` se alineó con `main` por avance directo, sin reescribir historia.
+- **Archivos:** esta entrada en `LOG.md`.
