@@ -94,7 +94,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # Los navegadores de Playwright se guardan entre corridas; sin cambios en el lockfile solo se
+      # instalan las dependencias del sistema.
+      - name: Recuperar los navegadores de Playwright
+        id: navegadores
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.navegadores.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.navegadores.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: npm run e2e
       - name: Guardar el reporte si falla
         if: failure()

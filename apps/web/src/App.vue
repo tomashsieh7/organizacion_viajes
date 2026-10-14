@@ -1,17 +1,49 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
+import { onErrorCaptured, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import AvisoMensaje from './componentes/base/AvisoMensaje.vue';
 import { useSesionStore } from './stores/sesion';
 
 const sesion = useSesionStore();
 const router = useRouter();
+const route = useRoute();
+const contenido = ref<HTMLElement | null>(null);
+/** Lo que anuncia el lector de pantalla al cambiar de página, sin mover el foco. */
+const anuncio = ref('');
+/** Un error que ningún componente manejó: se avisa en lugar de dejar la pantalla a medias. */
+const errorInesperado = ref(false);
 
 async function cerrarSesion() {
   await sesion.cerrarSesion();
   await router.push('/ingresar');
 }
+
+/**
+ * WCAG 2.4.1: con el teclado se puede saltar el encabezado y los menús. Dentro de un viaje el
+ * destino es la sección (`#seccion` de ViajeLayout), después de los grupos y las pestañas.
+ */
+function irAlContenido() {
+  (document.getElementById('seccion') ?? contenido.value)?.focus();
+}
+
+watch(
+  () => route.path,
+  (_ruta, anterior) => {
+    errorInesperado.value = false;
+    // La primera carga la anuncia el navegador con el título de la pestaña.
+    if (anterior !== undefined) anuncio.value = String(route.meta['titulo'] ?? '');
+  },
+);
+
+onErrorCaptured((error) => {
+  console.error(error);
+  errorInesperado.value = true;
+  return false;
+});
 </script>
 
 <template>
+  <a class="saltar" href="#contenido" @click.prevent="irAlContenido">Saltar al contenido</a>
   <header class="barra">
     <RouterLink to="/viajes" class="marca">
       <span class="marca__icono" aria-hidden="true">🧳</span>Organizador de viajes
@@ -21,7 +53,15 @@ async function cerrarSesion() {
       <button class="boton boton--chico" type="button" @click="cerrarSesion">Cerrar sesión</button>
     </div>
   </header>
-  <RouterView />
+  <div id="contenido" ref="contenido" tabindex="-1" class="contenido">
+    <div v-if="errorInesperado" class="pagina">
+      <AvisoMensaje tipo="error">
+        Algo salió mal. Recargá la página y, si vuelve a pasar, probá de nuevo más tarde.
+      </AvisoMensaje>
+    </div>
+    <RouterView />
+  </div>
+  <p class="solo-lectores" aria-live="polite">{{ anuncio }}</p>
 </template>
 
 <style>
@@ -375,6 +415,22 @@ label {
   white-space: nowrap;
 }
 /* Oculta un texto a la vista y lo deja para los lectores de pantalla. */
+.saltar {
+  position: absolute;
+  left: var(--esp-3);
+  top: -100%;
+  z-index: 50;
+  padding: var(--esp-2) var(--esp-4);
+  border-radius: var(--radio);
+  background: var(--color-acento);
+  color: var(--color-sobre-acento);
+}
+.saltar:focus {
+  top: var(--esp-2);
+}
+.contenido:focus {
+  outline: none;
+}
 .solo-lectores {
   position: absolute;
   width: 1px;

@@ -1345,3 +1345,46 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - el build pasa;
   - `npm audit` sigue con las 4 advertencias conocidas de Prisma.
 - **Pendiente:** Prisma 8 todavía es versión candidata y `vue-tsc` todavía no soporta TypeScript 7.
+
+## 2026-10-14 12:44 — Merge del PR #17
+
+- El usuario autorizó el merge ("Sí, mergealo"). El PR #17 ("Actualizar dependencias menores y registrar el merge del PR #16") se mergeó a `main` en `53f555d`, sobre la cabeza verificada `6e0eab2`.
+- El CI pasó los tres trabajos, sin conflictos ni comentarios.
+- Después del merge se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
+
+## 2026-10-14 12:44 — Mejoras no urgentes: teclado, errores, pruebas y CI
+
+**Pedido.** El usuario pidió "busca más cosas que se puedan hacer aún si no son urgentes" y eligió las cuatro mejoras propuestas. Son cambios menores: no agregan clases, interfaces ni relaciones.
+
+**Navegación con teclado** (WCAG 2.4.1):
+- `App.vue` agrega el enlace "Saltar al contenido", que aparece con el primer Tab. Fuera de un viaje lleva el foco a `#contenido`; dentro de un viaje lo lleva a `#seccion` de `ViajeLayout`, después de los grupos y las pestañas. Una prueba temporal de Playwright, ya borrada, confirmó que el Tab siguiente cae en "Anotar gasto".
+- Al cambiar de página, una región `aria-live` anuncia el título nuevo. El plan proponía mover el foco al título, pero se eligió anunciarlo sin moverlo: así, quien recorre las pestañas de una sección con el teclado no pierde su lugar.
+
+**Favicon y errores:**
+- `index.html` define un ícono 🧳 como SVG embebido. Antes el navegador pedía `/favicon.ico` y recibía 404.
+- `App.vue` captura con `onErrorCaptured` los errores que ningún componente manejó. Los registra en la consola y muestra el aviso "Algo salió mal. Recargá la página…", que se quita al cambiar de página.
+
+**Más pruebas:**
+- `App.test.ts` cubre el salto al contenido (también dentro de un viaje), el cierre de sesión, el anuncio de página y el aviso de error.
+- `AlojamientosVista.test.ts` cubre las noches, votar, el error al resolver y el filtro sin resultados.
+- La cobertura del frontend sube de 89,6 % a 91,8 % de líneas y de 77,7 % a 82,2 % de funciones.
+
+**CI y mantenimiento:**
+- `ci.yml` guarda en caché los navegadores de Playwright (`actions/cache@v6`, con clave según el lockfile). Si la caché existe, solo instala las dependencias del sistema.
+- `.github/dependabot.yml` pide PRs semanales con las actualizaciones de npm, agrupando versiones menores y parches, y de las acciones del CI.
+- README y `docs/auditoria.md` (sección 13) lo mencionan.
+
+**Documentación.** La sección 7.1.1 de `PLAN.md` suma las pautas de teclado, lectores de pantalla y errores inesperados.
+
+**Verificación:**
+- lint pasa;
+- la cobertura pasa 521 pruebas: 349 del backend y 172 del frontend;
+- la e2e pasa 8 de 8;
+- `knip` solo muestra sus falsos positivos conocidos.
+
+## 2026-10-14 12:50 — Ajuste de la configuración de Dependabot
+
+- **Falla:** en el PR #18 apareció el check "Dependabot" en rojo. Lo genera GitHub al ejecutar el `dependabot.yml` nuevo. El error fue `dependency_file_not_resolvable`: Dependabot intentó llevar TypeScript a la versión 7 y chocó con la dependencia de pares de `vue-tsc`.
+- **Arreglo:**
+  - se ignoran las versiones mayores de `typescript` hasta que `vue-tsc` las soporte;
+  - se agrega `target-branch: main`, porque la rama por defecto de GitHub todavía es `claude/elegant-maxwell-60322c` y, sin esa línea, los PRs de Dependabot se abrirían contra ella.

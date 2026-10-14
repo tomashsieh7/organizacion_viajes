@@ -164,13 +164,19 @@ onBeforeUnmount(() => {
         </nav>
       </header>
       <AvisoMensaje v-if="store.aviso" tipo="info">{{ store.aviso }}</AvisoMensaje>
-      <RouterView />
+      <!-- Destino de "Saltar al contenido" en las páginas del viaje: después de los menús. -->
+      <div id="seccion" tabindex="-1" class="seccion">
+        <RouterView />
+      </div>
     </template>
     <p v-else role="status">Cargando…</p>
   </main>
 </template>
 
 <style scoped>
+.seccion:focus {
+  outline: none;
+}
 .viaje {
   margin-bottom: var(--esp-4);
 }

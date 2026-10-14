@@ -180,6 +180,7 @@ done
 - La rama por defecto en GitHub es `main`, y no quedan ramas viejas sin motivo.
 - `.gitignore` cubre los artefactos locales: `playwright-report/`, `test-results/`, `.env`.
 - Las corridas fallidas suben su informe como artefacto.
+- Los PRs de Dependabot que quedaron abiertos se revisan y se mergean o se cierran con un motivo.
 
 ## 14. Plantilla de registro en `LOG.md`
 
