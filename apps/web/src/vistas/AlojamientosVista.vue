@@ -3,9 +3,11 @@ import { onMounted, ref } from 'vue';
 import type { AccionSobrePropuesta, ValorVoto } from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../componentes/base/EstadoVacio.vue';
+import IconoLinea from '../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import TarjetaPropuesta from '../componentes/propuestas/TarjetaPropuesta.vue';
 import { mensajeDeError } from '../clientes/http';
+import { useCelebracion } from '../composables/useCelebracion';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
 import { diasEntre } from '../utiles/fechas';
@@ -52,8 +54,13 @@ async function intentar(accion: () => Promise<void>) {
 
 const votar = (id: string, valor: ValorVoto) => intentar(() => propuestas.votar(id, valor));
 const desvotar = (id: string) => intentar(() => propuestas.desvotar(id));
+const { celebrar } = useCelebracion();
 const resolver = (id: string, accion: AccionSobrePropuesta) =>
-  intentar(() => propuestas.resolver(id, accion));
+  intentar(async () => {
+    await propuestas.resolver(id, accion);
+    const nombre = propuestas.alojamientos.find((a) => a.id === id)?.alojamiento.nombre;
+    if (accion === 'confirmar' && nombre) celebrar(`¡Confirmaron ${nombre}!`);
+  });
 
 onMounted(cargar);
 </script>
@@ -111,8 +118,8 @@ onMounted(cargar);
       @resolver="resolver(a.id, $event)"
     >
       <p class="fechas">
-        <span aria-hidden="true">📅 </span
-        >{{ formatearRango(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }} ·
+        <IconoLinea nombre="calendario" :tamano="16" />
+        {{ formatearRango(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }} ·
         {{ noches(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }}
       </p>
     </TarjetaPropuesta>

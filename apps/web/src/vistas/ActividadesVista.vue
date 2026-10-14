@@ -8,6 +8,7 @@ import AvisoSuperposicion from '../componentes/actividades/AvisoSuperposicion.vu
 import ListaAlternativas from '../componentes/actividades/ListaAlternativas.vue';
 import TarjetaActividad from '../componentes/actividades/TarjetaActividad.vue';
 import { ErrorDeApi, mensajeDeError } from '../clientes/http';
+import { useCelebracion } from '../composables/useCelebracion';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
 import { agruparOpciones } from '../utiles/actividades';
@@ -45,8 +46,13 @@ const cargar = () =>
   intentar(() => propuestas.cargarActividades()).finally(() => (cargado.value = true));
 const votar = (id: string, valor: ValorVoto) => intentar(() => propuestas.votar(id, valor));
 const desvotar = (id: string) => intentar(() => propuestas.desvotar(id));
+const { celebrar } = useCelebracion();
 const resolver = (id: string, accion: AccionSobrePropuesta) =>
-  intentar(() => propuestas.resolver(id, accion));
+  intentar(async () => {
+    await propuestas.resolver(id, accion);
+    const titulo = propuestas.actividades.find((a) => a.id === id)?.actividad.titulo;
+    if (accion === 'confirmar' && titulo) celebrar(`¡Confirmaron ${titulo}!`);
+  });
 
 onMounted(cargar);
 </script>

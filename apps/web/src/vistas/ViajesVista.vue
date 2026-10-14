@@ -3,11 +3,14 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../componentes/base/EstadoVacio.vue';
+import IconoLinea from '../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import DialogoNuevoViaje from '../componentes/viajes/DialogoNuevoViaje.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useViajeStore } from '../stores/viaje';
+import { hoyDelDispositivo } from '../utiles/fechas';
 import { formatearRango } from '../utiles/formato';
+import { cuentaRegresiva } from '../utiles/progreso';
 
 const store = useViajeStore();
 const router = useRouter();
@@ -15,6 +18,7 @@ const creando = ref(false);
 const error = ref('');
 /** Hasta la primera carga no se muestra la lista vacía. */
 const cargado = ref(false);
+const hoy = hoyDelDispositivo();
 
 onMounted(() =>
   store
@@ -59,10 +63,16 @@ function alCrear(viajeId: string) {
             <span v-if="v.miAcceso === 'SOLO_SALDOS'" class="etiqueta">Solo saldos</span>
             <span v-else-if="v.miRol === 'ADMIN'" class="etiqueta">Admin</span>
           </span>
-          <span class="texto-secundario"><span aria-hidden="true">📍 </span>{{ v.destino }}</span>
           <span class="texto-secundario"
-            ><span aria-hidden="true">📅 </span
-            >{{ formatearRango(v.fechaInicio, v.fechaFin) }}</span
+            ><IconoLinea nombre="pin" :tamano="16" /> {{ v.destino }}</span
+          >
+          <span class="texto-secundario"
+            ><IconoLinea nombre="calendario" :tamano="16" />
+            {{ formatearRango(v.fechaInicio, v.fechaFin) }}</span
+          >
+          <span class="tarjeta__cuenta"
+            ><IconoLinea nombre="reloj" :tamano="16" />
+            {{ cuentaRegresiva(v.fechaInicio, v.fechaFin, hoy).texto }}</span
           >
         </RouterLink>
       </li>
@@ -93,6 +103,14 @@ function alCrear(viajeId: string) {
 .tarjeta a:hover {
   border-color: var(--color-acento);
   box-shadow: var(--sombra-elevada);
+}
+.tarjeta a {
+  border-top: 4px solid var(--color-acento);
+}
+.tarjeta__cuenta {
+  margin-top: var(--esp-1);
+  font-weight: 700;
+  color: var(--color-acento);
 }
 .tarjeta__titulo {
   display: flex;

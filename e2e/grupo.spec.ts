@@ -21,8 +21,12 @@ test('CU01 y CU02: registrarse, crear un grupo de viaje y agregar a un viajero',
   await page.fill('#viaje-inicio', '2026-12-10');
   await page.fill('#viaje-fin', '2026-12-16');
   await page.getByRole('button', { name: 'Crear', exact: true }).click();
-  await expect(page).toHaveURL(/\/participantes$/);
+  // El viaje nuevo abre en el Resumen, que propone como primer paso sumar al grupo.
+  await expect(page).toHaveURL(/\/resumen$/);
   await expect(page.getByRole('heading', { name: 'Bariloche 2026' })).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: 'Progreso del viaje' })).toBeVisible();
+  await page.getByRole('link', { name: 'Agregar', exact: true }).click();
+  await expect(page).toHaveURL(/\/participantes$/);
 
   await page.fill('#agregar-email', tomas.email);
   await page.getByRole('button', { name: 'Agregar' }).click();

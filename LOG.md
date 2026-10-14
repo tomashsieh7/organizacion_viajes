@@ -1388,3 +1388,85 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Arreglo:**
   - se ignoran las versiones mayores de `typescript` hasta que `vue-tsc` las soporte;
   - se agrega `target-branch: main`, porque la rama por defecto de GitHub todavía es `claude/elegant-maxwell-60322c` y, sin esa línea, los PRs de Dependabot se abrirían contra ella.
+
+## 2026-10-14 12:53 — Merge del PR #18
+
+- Con autorización del usuario ("Mergealo si pasa el CI"), el PR #18 ("Teclado, errores inesperados, más pruebas y CI más rápido") se mergeó a `main` en `b49d0d5`. Se fijó la cabeza verificada `38fba79`.
+- Pasaron los tres trabajos del CI y la validación de `.github/dependabot.yml`. No hubo conflictos ni comentarios.
+- Después se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
+
+## 2026-10-14 13:23 — Rediseño visual con gamificación
+
+**Pedido:** el usuario quiere un diseño "más agradable a la vista", más intuitivo y con gamificación.
+
+**Elecciones del usuario.** Se tomaron con preguntas y maquetas en el scratchpad, fuera del repositorio:
+- **Gamificación:** progreso del viaje, celebraciones y cuenta regresiva.
+- **Alcance:** solo frontend, porque la gamificación no está en el MVP ni en el story map.
+- **Paleta:**
+  - la primera propuesta (turquesa y coral) se descartó porque el naranja sugiere calor;
+  - el azul y el violeta sugerían frío;
+  - quedaron neutros fríos con el turquesa como único color y una portada clara y neutra.
+- **Menos colores:** se midió la maqueta. Solo el 2 % de la pantalla tenía color, pero en 7 tonos; los emojis fijos aportaban 4 de ellos. Se pasó a íconos de línea, hitos en turquesa y una sola acción principal por pantalla.
+
+**Plan.** Cambio estructural. Se revisó `docs/diagramas.drawio`: el modelo y los casos de uso no cambian. El plan fue aprobado por el usuario ("Si").
+
+**Cambios:**
+- **`App.vue`:**
+  - **paleta nueva:** neutros `#f6f8f8` y `#1f2a2a`, y acento `#0f766e` (en oscuro, `#111615` y `#2dd4bf`), con el contraste AA de cada combinación calculado. El ámbar suave pasó a `#fef9c3` para llegar a 4,58:1;
+  - tarjetas más redondeadas, botones en forma de píldora y títulos con la fuente redondeada del sistema;
+  - `AvisoCelebracion` montado una sola vez.
+- **`IconoLinea`:** 16 íconos SVG de línea, escritos como trazos y sin `v-html`. Reemplazan los emojis del menú, la barra inferior, la marca, la portada, las tarjetas de viajes, propuestas y actividades, y el conteo de votos.
+- **`ViajeLayout`:**
+  - **portada neutra:** franja turquesa, puntos tipo mapa, nombre, destino, fechas, viajeros y un chip con la cuenta regresiva;
+  - **grupo Inicio:** reúne Resumen y Participantes. Entrar a un viaje abre `/resumen`.
+- **Resumen:**
+  - **`ResumenVista`:** `AnilloProgreso`, `ListaHitos`, próximos pasos (como máximo 3; el primero es la acción principal) y la cuenta regresiva;
+  - **`utiles/progreso.ts`:** `calcularProgreso` y `cuentaRegresiva`, funciones puras;
+  - **`usePropuestasStore.cargarTodo`:** trae las listas sin filtro.
+- **Celebraciones:** `useCelebracion` y `AvisoCelebracion`. Se disparan al confirmar un alojamiento o una actividad, al saldar una deuda (`PagoVista`, que además refresca el viaje para el hito de cuentas) y al llegar al 100 %, una vez por viaje con `localStorage`.
+- **Lista de viajes:** cada tarjeta tiene una franja turquesa y la cuenta regresiva.
+- **Fechas de actividades:** `formatearHorario` usa el mes abreviado ("11 dic 2026 · 10:00 a 12:00"), como pide la pauta de fechas.
+
+**Ajustes durante la implementación:**
+- **Viaje recién creado:** figuraba listo al 50 %, porque "votaste todas" y "propuestas resueltas" contaban como cumplidos sin propuestas. Ahora, sin propuestas, quedan pendientes ("Todavía no hay propuestas").
+- **Desborde en 360 px:** el Resumen se desbordaba; se corrigió con `min-width: 0` en las celdas de la grilla.
+- **Progreso en la portada:** queda solo en el Resumen. Mostrarlo en todas las páginas obligaba a pedir las propuestas sin filtro en cada sección.
+
+**Pruebas:**
+- nuevas: `progreso.test.ts`, `ResumenVista.test.ts` y `AvisoCelebracion.test.ts` (con `AnilloProgreso` e `IconoLinea`);
+- celebraciones en las pruebas de actividades y de pago;
+- ajustes en `ViajeLayout`, `TarjetaPropuesta` y las fechas de actividades;
+- e2e:
+  - `grupo.spec`: el viaje nuevo abre en el Resumen y el paso "Agregar" lleva a participantes;
+  - `diseno.spec`: suma `resumen`;
+  - `actividades.spec`: usa la fecha nueva.
+
+**Documentación:** `PLAN.md` 7.1 (Inicio, Resumen y portada), 7.1.1 (pocos colores, íconos y gamificación), 7.2 y 7.3.
+
+**Verificación:**
+- lint pasa;
+- la cobertura pasa 534 pruebas: 349 del backend y 185 del frontend, con 92,3 % de líneas en el frontend;
+- la e2e pasa 8 de 8;
+- `knip` muestra solo sus falsos positivos conocidos;
+- capturas antes y después en celular y escritorio, en claro y oscuro.
+
+**Pendiente para el usuario:** agregar al story map ("Página-13" de `docs/diagramas.drawio`) la tarjeta "Viajero ve el progreso del viaje, los próximos pasos y la cuenta regresiva". Se propone y no se aplica sin confirmación.
+
+## 2026-10-14 13:48 — Grises neutros en los dos modos y tarjeta en el story map
+
+- **Pedido del usuario:** el modo oscuro tenía un tinte verdoso, y lo quiere "con el contraste exacto de la versión clara". Eligió que las tarjetas queden apenas más claras que el fondo, como elevadas, y pasar también el modo claro a grises neutros. El plan fue aprobado.
+- **Paletas** (`App.vue`):
+  - **Claro:** fondo `#f8f8f8`, superficie `#ffffff`, alt `#f2f2f2`, borde `#e5e5e5`, borde fuerte `#858585`, texto `#282828`, secundario `#5e5e5e`.
+  - **Oscuro:** fondo `#1c1c1c`, superficie `#222222`, alt `#2b2b2b`, borde `#333333`, borde fuerte `#717171`, texto `#e8e8e8`, secundario `#9b9b9b`.
+  - **Sin cambios:** el turquesa y los colores de estado. Las sombras y el fondo del modal pasan a negro neutro.
+- **Contrastes medidos** (el claro y el oscuro, en ese orden):
+  - texto sobre fondo: 13,88 y 13,91;
+  - secundario sobre fondo: 6,11 y 6,13;
+  - acento sobre fondo: 5,15 y 9,16;
+  - texto sobre el acento: 5,47 y 9,19;
+  - borde fuerte sobre superficie: 3,69 y 3,26;
+  - el peor par de texto es el secundario sobre alt: 5,79 y 5,09.
+
+  Todos cumplen AA.
+- **Story map:** en "Página-13" de `docs/diagramas.drawio` se agregó la tarjeta "Viajero ve el progreso del viaje, los próximos pasos y la cuenta regresiva", en el Release 10 "Ideas exploratorias", columna "Gestionar el grupo". Lo eligió el usuario ("Mételo en ideas exploratorias"). La página pasó de 95 a 96 celdas y no cambió ninguna otra.
+- **`PLAN.md`:** en 7.1.1, los neutros sin tinte y la ubicación en el story map. En 9, la fila R10.

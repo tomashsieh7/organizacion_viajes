@@ -4,6 +4,7 @@ import type { DeudaVista } from '@viajes/compartido';
 import { CLIENTE_GASTOS, type ClienteGastos } from '../src/clientes/gastos';
 import { ErrorDeApi } from '../src/clientes/http';
 import { useGastosStore } from '../src/stores/gastos';
+import { useCelebracion } from '../src/composables/useCelebracion';
 import PagoVista from '../src/vistas/PagoVista.vue';
 import {
   abrirViaje,
@@ -111,6 +112,8 @@ describe('PagoVista (CU23)', () => {
     await flushPromises();
     expect(push).toHaveBeenCalledWith('/viajes/v1/saldos');
     expect(useGastosStore().mensaje).toBe('Saldaste tu deuda con Ana.');
+    expect(useCelebracion().celebracion.value?.mensaje).toBe('¡Cuentas saldadas con Ana!');
+    useCelebracion().cerrar();
     expect(useGastosStore().debo).toEqual([]);
   });
 

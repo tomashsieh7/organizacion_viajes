@@ -655,12 +655,19 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 
 ### 7.1 Navegación
 
-Las rutas de un viaje se anidan bajo `/viajes/:viajeId`, con un diseño común (`ViajeLayout`) que carga el viaje y el acceso de quien consulta y oculta las acciones del Admin a quien no lo es. Las ocho secciones se agrupan en cinco destinos, el máximo recomendado para una barra de navegación: Grupo (participantes), Planificar (alojamientos y actividades), Itinerario (cronograma y mapa), Chat y Cuentas (gastos y saldos). En escritorio los grupos son pestañas bajo el nombre del viaje; en celular, una barra fija abajo, al alcance del pulgar. Dentro de un grupo con más de una sección, unas pestañas eligen la sección. Las rutas no cambian. Quien conserva solo acceso a saldos (RN-E6) ve únicamente la sección de saldos, sin menú. Una guarda global manda a `/ingresar` a quien no tiene sesión, y una guarda de viaje manda a `/viajes` a quien no tiene acceso. Si la sesión vence o se cierra en otra pestaña mientras se usa la aplicación, la primera respuesta `NO_AUTENTICADO` de la API o del chat lleva a `/ingresar` con un aviso, y al volver a ingresar se regresa a la misma página. Ocultar botones es solo comodidad de interfaz, ya que el permiso real lo verifica la API. Los textos de la interfaz hablan de "grupo de viaje" (P1).
+Las rutas de un viaje se anidan bajo `/viajes/:viajeId`, con un diseño común (`ViajeLayout`) que carga el viaje y el acceso de quien consulta y oculta las acciones del Admin a quien no lo es. Las nueve secciones se agrupan en cinco destinos, el máximo recomendado para una barra de navegación: Inicio (resumen y participantes), Planificar (alojamientos y actividades), Itinerario (cronograma y mapa), Chat y Cuentas (gastos y saldos). Entrar a un viaje abre el Resumen. Arriba de todas las páginas del viaje va una portada con el nombre, el destino, las fechas, la cantidad de viajeros y la cuenta regresiva. En escritorio los grupos son pestañas bajo el nombre del viaje; en celular, una barra fija abajo, al alcance del pulgar. Dentro de un grupo con más de una sección, unas pestañas eligen la sección. Las rutas no cambian. Quien conserva solo acceso a saldos (RN-E6) ve únicamente la sección de saldos, sin menú. Una guarda global manda a `/ingresar` a quien no tiene sesión, y una guarda de viaje manda a `/viajes` a quien no tiene acceso. Si la sesión vence o se cierra en otra pestaña mientras se usa la aplicación, la primera respuesta `NO_AUTENTICADO` de la API o del chat lleva a `/ingresar` con un aviso, y al volver a ingresar se regresa a la misma página. Ocultar botones es solo comodidad de interfaz, ya que el permiso real lo verifica la API. Los textos de la interfaz hablan de "grupo de viaje" (P1).
 
 ### 7.1.1 Pautas de interfaz
 
 Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegación de Material 3:
-- **Variables de diseño:** `App.vue` define colores semánticos en modo claro y oscuro, con contraste AA verificado en ambos; el oscuro sigue la preferencia del sistema. También define el espaciado en múltiplos de 4 px y una tipografía de 16 px con interlineado de 1,5.
+- **Variables de diseño:** `App.vue` define colores semánticos en modo claro y oscuro, con contraste AA verificado en ambos; el oscuro sigue la preferencia del sistema. También define el espaciado en múltiplos de 4 px y una tipografía de 16 px con interlineado de 1,5; los títulos usan la fuente redondeada del sistema.
+- **Pocos colores y ninguno que sugiera clima:**
+  - los neutros son grises sin tinte, y el modo oscuro repite los contrastes del claro, con las tarjetas apenas más claras que el fondo;
+  - el turquesa es el único color de la aplicación: acción principal, enlaces, pestaña activa, progreso y cuenta regresiva;
+  - verde, ámbar y rojo se reservan para los estados (propuestas, saldos y errores);
+  - la portada del viaje es neutra, porque un color por destino sugeriría calor o frío;
+  - hay una sola acción principal por pantalla.
+- **Íconos:** de línea y de un solo color (`IconoLinea`, que toma el color del texto). Los emojis quedan para las celebraciones y los estados vacíos.
 - **Controles y foco:** los controles miden 44 px de alto y el foco del teclado siempre se ve.
 - **Movimiento:** se respeta la preferencia de reducir movimiento.
 - **El color nunca es la única señal:**
@@ -673,7 +680,14 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
 - **Teclado y lectores de pantalla:** el enlace "Saltar al contenido" lleva el foco más allá del encabezado y los menús (WCAG 2.4.1), y al cambiar de página una región `aria-live` anuncia el título nuevo sin mover el foco.
 - **Errores inesperados:** si un componente falla sin manejar el error, `App.vue` lo captura (`onErrorCaptured`), lo registra en la consola y muestra un aviso para recargar, que se quita al cambiar de página.
 - **Títulos de página:** cada ruta define su título (`meta.titulo`) y la pestaña muestra, por ejemplo, "Saldos · Organizador de viajes" (WCAG 2.4.2).
-- **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026"), con `formatearRango` y `formatearDia` de `utiles/formato.ts`.
+- **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026"), con `formatearRango`, `formatearDia` y `formatearHorario` de `utiles/formato.ts`.
+- **Gamificación:** acompaña la planificación sin presionar, y se calcula solo en el frontend con los datos que ya devuelve la API (`utiles/progreso.ts`):
+  - **progreso del viaje:** un anillo con el porcentaje y seis hitos, cada uno con un enlace a donde se resuelve: se sumó el grupo, alojamiento para todas las noches, actividades en cada día, propuestas resueltas, votaste todas y tus cuentas al día;
+  - **próximos pasos:** los hitos pendientes más importantes, cada uno con su acción;
+  - **cuenta regresiva:** según la fecha del dispositivo;
+  - **celebraciones:** al confirmar una propuesta, al saldar una deuda y al llegar al 100 %, este último una sola vez por viaje en cada dispositivo. Son un mensaje breve con una lluvia de emojis; con reducir movimiento se muestra solo el mensaje.
+  - No hay puntos, rankings ni comparaciones entre personas, para no generar presión con la plata ni con la participación. Guardar logros en el backend queda para cuando sea un requerimiento.
+  - En el story map figura en el Release 10, "Ideas exploratorias".
 
 ### 7.2 Stores de Pinia
 
@@ -683,11 +697,11 @@ Cada store recibe por inyección la interfaz de cliente de API que usa (D13), lo
 |---|---|---|
 | `useSesionStore` | usuario actual, estado de la sesión | Ingreso, registro, cierre de sesión y guardas de ruta. |
 | `useViajeStore` | lista de viajes, viaje actual, participantes, rol o tipo de acceso propio | Grupo, participantes y traspaso; escucha `viaje:admin-cambiado` y `viaje:membresia-finalizada`. |
-| `usePropuestasStore` | alojamientos y actividades del viaje actual con conteos y voto propio | Proponer, votar, desvotar, confirmar, denegar y cancelar. |
+| `usePropuestasStore` | alojamientos y actividades del viaje actual con conteos y voto propio | Proponer, votar, desvotar, confirmar, denegar y cancelar; `cargarTodo` trae las dos listas sin filtro para el Resumen. |
 | `useChatStore` | conexión Socket.IO, mensajes cargados, mensajes pendientes de confirmación | Chat; se conecta al entrar a un viaje y se desconecta al salir. |
 | `useGastosStore` | gastos, categorías, deudas como deudor y como acreedor | Gastos, saldos y pagos; después de anotar un gasto o registrar un pago vuelve a pedir las deudas. |
 
-El cronograma y el mapa no usan store propio porque son vistas de solo lectura; su estado vive en el composable `useMapaDelDia` y en la propia vista.
+El cronograma y el mapa no usan store propio porque son vistas de solo lectura; su estado vive en el composable `useMapaDelDia` y en la propia vista. Las celebraciones tampoco: su estado compartido vive en el composable `useCelebracion`, que cualquier vista usa para celebrar y que `App.vue` muestra con `AvisoCelebracion`.
 
 ### 7.3 Pantallas por caso de uso
 
@@ -695,6 +709,7 @@ El cronograma y el mapa no usan store propio porque son vistas de solo lectura; 
 |---|---|---|---|---|
 | `/ingresar`, `/registrarse` | `IngresoVista`, `RegistroVista` | Formulario dentro de cada vista con `CampoFormulario`; el registro muestra los requisitos de contraseña | `useSesionStore` | Soporte (P3) |
 | `/viajes` | `ViajesVista` | Tarjetas de viaje dentro de la vista (marcan los viajes con acceso solo a saldos y los llevan directo a saldos), `DialogoNuevoViaje` (con selector de moneda) | `useViajeStore` | CU01 |
+| `/viajes/:viajeId/resumen` | `ResumenVista` | `AnilloProgreso`, `ListaHitos`, próximos pasos y cuenta regresiva, calculados con `calcularProgreso` y `cuentaRegresiva` | `useViajeStore`, `usePropuestasStore` | Soporte (gamificación) |
 | `/viajes/:viajeId/participantes` | `ParticipantesVista` | `ListaParticipantes`; para el Admin, `FormularioAgregarViajero`, el diálogo de confirmación de eliminación (avisa que se conserva el historial) y `DialogoTraspaso`; botón "Salir del grupo", que abre `DialogoSalir`: muestra la deuda propia y, si quien sale es el Admin, pide el sucesor con `SelectorSucesor` | `useViajeStore` | CU02–CU04, CU24 |
 | `/viajes/:viajeId/alojamientos` | `AlojamientosVista` | `TarjetaPropuesta` (conteo, botones de voto y de desvoto, acciones del Admin según estado), filtro por estado | `usePropuestasStore` | CU06–CU09, CU25 |
 | `/viajes/:viajeId/alojamientos/nuevo` | `AlojamientoFormularioVista` | `CampoUbicacion` (buscador y clic en el mapa), campos de entrada y salida limitados a las fechas del viaje | `usePropuestasStore` | CU05 |
@@ -822,7 +837,7 @@ No se planifican en detalle. La columna de la derecha indica por qué el diseño
 | R7 — Comprobantes | Registrar reservas y adjuntar comprobantes; exportar gastos a Excel (agregada por P22) | Tabla de reservas ligada a `propuesta` confirmada con los adjuntos de R6; la exportación es un caso de uso de lectura sobre gastos, partes, deudas y pagos, con una interfaz `ExportadorGastos`. |
 | R8 — Tareas colaborativas | Crear, reclamar y completar tareas | Tabla independiente ligada a `viaje` y `usuario`. |
 | R9 — Logística de equipaje | Lista de objetos compartidos, asignación y marca de llevado | Tabla independiente ligada a `viaje` y `usuario`. |
-| R10 — Ideas exploratorias | Packs de viaje prearmados, chatbot, comunidad pública | Viajes plantilla que se copian; un módulo de chatbot que consulta la API; una vista pública de actividades confirmadas. |
+| R10 — Ideas exploratorias | Packs de viaje prearmados, chatbot, comunidad pública, progreso del viaje con próximos pasos y cuenta regresiva | Viajes plantilla que se copian; un módulo de chatbot que consulta la API; una vista pública de actividades confirmadas. El progreso ya está adelantado en el frontend del MVP con los datos existentes (sección 7.1.1); en este release solo quedaría guardar logros en el backend, si se pidiera. |
 
 La llamada grupal, que figuraba en la primera versión del story mapping, quedó descartada (P22).
 

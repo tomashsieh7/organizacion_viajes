@@ -105,7 +105,9 @@ describe('ActividadFormularioVista', () => {
     await completar(vista);
     await vista.find('form').trigger('submit');
     await flushPromises();
-    expect(vista.find('.aviso-superposicion').text()).toContain('Cena, 11/12/2026 · 10:00 a 12:00');
+    expect(vista.find('.aviso-superposicion').text()).toContain(
+      'Cena, 11 dic 2026 · 10:00 a 12:00',
+    );
     expect((vista.find('#actividad-titulo').element as HTMLInputElement).value).toBe('Kayak');
     expect(push).not.toHaveBeenCalled();
   });

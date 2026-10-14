@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../src/clientes/propuestas';
+import { useCelebracion } from '../src/composables/useCelebracion';
 import ActividadesVista from '../src/vistas/ActividadesVista.vue';
 import {
   abrirViaje,
@@ -35,7 +36,7 @@ describe('ActividadesVista', () => {
     const alternativas = vista.find('.alternativas');
     expect(alternativas.text()).toContain('Trekking');
     expect(alternativas.text()).not.toContain('Cena');
-    expect(vista.text()).toContain('11/12/2026 · 10:00 a 12:00 (2 h)');
+    expect(vista.text()).toContain('11 dic 2026 · 10:00 a 12:00 (2 h)');
     // Solo las pendientes admiten alternativas.
     expect(vista.findAll('.proponer-alternativa')).toHaveLength(2);
   });
@@ -57,6 +58,9 @@ describe('ActividadesVista', () => {
     expect(resolver).toHaveBeenCalledWith('v1', 't', 'confirmar');
     expect(listarActividades).toHaveBeenCalledTimes(2);
     expect(vista.find('[data-estado="DENEGADA"]').text()).toContain('Kayak');
+    // Confirmar celebra con el nombre de la actividad.
+    expect(useCelebracion().celebracion.value?.mensaje).toBe('¡Confirmaron Trekking!');
+    useCelebracion().cerrar();
   });
 
   it('RN-R3: si al confirmar choca con otra confirmada, muestra con cuál', async () => {
@@ -80,7 +84,9 @@ describe('ActividadesVista', () => {
       .find((b) => b.text() === 'Confirmar')!
       .trigger('click');
     await flushPromises();
-    expect(vista.find('.aviso-superposicion').text()).toContain('Cena, 11/12/2026 · 09:00 a 10:30');
+    expect(vista.find('.aviso-superposicion').text()).toContain(
+      'Cena, 11 dic 2026 · 09:00 a 10:30',
+    );
     expect(vista.find('.aviso-superposicion').text()).toContain('primero hay que cancelar');
   });
 

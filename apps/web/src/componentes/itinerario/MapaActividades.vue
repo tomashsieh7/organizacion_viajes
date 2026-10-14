@@ -45,7 +45,7 @@ function dibujar() {
   if (props.recorrido.length > 1) {
     L.polyline(
       props.recorrido.map((p) => [p.latitud, p.longitud] as L.LatLngTuple),
-      { color: '#0969da', weight: 3 },
+      { color: '#0f766e', weight: 3 },
     ).addTo(capas);
   }
   const puntos = props.actividades.map((a) => [a.latitud, a.longitud] as L.LatLngTuple);

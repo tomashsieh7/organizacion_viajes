@@ -10,13 +10,13 @@ export function formatearMonto(monto: number, moneda: Moneda): string {
   }).format(monto / 10 ** moneda.decimales);
 }
 
-/** "2026-12-10" → "10/12/2026". */
-function formatearFecha(fecha: string): string {
-  const [a, m, d] = fecha.split('-');
-  return `${d}/${m}/${a}`;
-}
-
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/** "2026-12-10" → "10 dic 2026", con el mismo estilo que los rangos. */
+function formatearFecha(fecha: string): string {
+  const [a, m, d] = fecha.split('-').map(Number) as [number, number, number];
+  return `${d} ${MESES[m - 1]} ${a}`;
+}
 
 /**
  * Rango de fechas fácil de leer, sin repetir el mes ni el año cuando coinciden:
@@ -76,7 +76,7 @@ export function formatearDuracion(minutos: number): string {
   return [h ? `${h} h` : '', m ? `${m} min` : ''].filter(Boolean).join(' ');
 }
 
-/** "11/12/2026 · 23:30 a 01:00 del día siguiente". */
+/** "11 dic 2026 · 23:30 a 01:00 del día siguiente". */
 export function formatearHorario(a: { fecha: string; horaInicio: string; duracionMin: number }) {
   const fin = sumarMinutos(a.horaInicio, a.duracionMin);
   const siguiente = pasaLaMedianoche(a.horaInicio, a.duracionMin) ? ' del día siguiente' : '';

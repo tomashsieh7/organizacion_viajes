@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AccionSobrePropuesta, ActividadVista, Moneda, ValorVoto } from '@viajes/compartido';
+import IconoLinea from '../base/IconoLinea.vue';
 import TarjetaPropuesta from '../propuestas/TarjetaPropuesta.vue';
 import { formatearDuracion, formatearHorario } from '../../utiles/formato';
 
@@ -32,7 +33,7 @@ const id = props.actividad.id;
     @resolver="emit('resolver', id, $event)"
   >
     <p class="horario">
-      <span aria-hidden="true">🕒 </span>{{ formatearHorario(actividad.actividad) }} ({{
+      <IconoLinea nombre="reloj" :tamano="16" /> {{ formatearHorario(actividad.actividad) }} ({{
         formatearDuracion(actividad.actividad.duracionMin)
       }})
     </p>

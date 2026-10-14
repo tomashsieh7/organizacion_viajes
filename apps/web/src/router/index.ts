@@ -24,7 +24,12 @@ const rutas: RouteRecordRaw[] = [
     path: '/viajes/:viajeId',
     component: () => import('../vistas/ViajeLayout.vue'),
     children: [
-      { path: '', redirect: (to) => `/viajes/${String(to.params['viajeId'])}/participantes` },
+      { path: '', redirect: (to) => `/viajes/${String(to.params['viajeId'])}/resumen` },
+      {
+        path: 'resumen',
+        component: () => import('../vistas/ResumenVista.vue'),
+        meta: { titulo: 'Resumen' },
+      },
       {
         path: 'participantes',
         component: () => import('../vistas/ParticipantesVista.vue'),

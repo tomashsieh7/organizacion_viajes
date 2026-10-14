@@ -37,7 +37,7 @@ test('CU10 y RN-A2: proponer una actividad que se superpone, ajustar el horario 
   await p.getByRole('button', { name: 'Proponer' }).click();
 
   const aviso = p.locator('.aviso-superposicion');
-  await expect(aviso).toContainText('Kayak, 11/12/2026 · 10:00 a 12:00');
+  await expect(aviso).toContainText('Kayak, 11 dic 2026 · 10:00 a 12:00');
   // El formulario conserva lo cargado; solo se ajusta la hora.
   await expect(p.locator('#actividad-titulo')).toHaveValue('Trekking al cerro');
   await p.fill('#actividad-hora', '12:00');
