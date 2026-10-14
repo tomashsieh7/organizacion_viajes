@@ -37,10 +37,15 @@ export const useSesionStore = defineStore('sesion', () => {
     cargada.value = true;
   }
 
+  /** El servidor avisó que la sesión ya no vale: se olvida el usuario sin volver a consultar. */
+  function perder() {
+    usuario.value = null;
+  }
+
   async function cerrarSesion() {
     await cliente!.cerrarSesion();
     usuario.value = null;
   }
 
-  return { usuario, cargada, autenticado, cargar, ingresar, registrarse, cerrarSesion };
+  return { usuario, cargada, autenticado, cargar, ingresar, registrarse, perder, cerrarSesion };
 });

@@ -19,9 +19,12 @@ export class ServicioDeSesiones {
     private readonly duracionMs: number,
   ) {}
 
+  /** Crea una sesión nueva y, de paso, borra las terminadas del usuario para que no se acumulen. */
   async crear(usuarioId: string): Promise<SesionNueva> {
+    const ahora = this.reloj.ahora();
+    await this.sesiones.borrarTerminadas(usuarioId, ahora);
     const token = this.tokens.generar();
-    const expiraEn = new Date(this.reloj.ahora().getTime() + this.duracionMs);
+    const expiraEn = new Date(ahora.getTime() + this.duracionMs);
     await this.sesiones.crear({ usuarioId, tokenHash: this.tokens.hashear(token), expiraEn });
     return { token, expiraEn };
   }

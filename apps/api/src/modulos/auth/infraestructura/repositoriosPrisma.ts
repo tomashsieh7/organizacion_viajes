@@ -84,4 +84,10 @@ export class RepositorioSesionesPrisma implements RepositorioSesiones {
       data: { revocadaEn: ahora },
     });
   }
+
+  async borrarTerminadas(usuarioId: string, ahora: Date): Promise<void> {
+    await this.db.sesion.deleteMany({
+      where: { usuarioId, OR: [{ expiraEn: { lte: ahora } }, { revocadaEn: { not: null } }] },
+    });
+  }
 }
