@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { GastoVista, Moneda } from '@viajes/compartido';
-import { formatearMonto, nombreVisible } from '../../utiles/formato';
+import { formatearDia, formatearMonto, nombreVisible } from '../../utiles/formato';
 
 const props = defineProps<{ gasto: GastoVista; moneda: Moneda; miId: string }>();
 const quien = (p: { id: string; nombre: string; apodo: string | null }) =>
   p.id === props.miId ? 'vos' : nombreVisible(p);
-const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
 </script>
 
 <template>
@@ -17,7 +16,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
     <p class="meta">
       {{ gasto.categoria.nombre }} · pagó {{ quien(gasto.pagadoPor) }} ·
       {{ gasto.modoDivision === 'IGUALES' ? 'en partes iguales' : 'división indicada' }} ·
-      {{ fecha(gasto.creadoEn) }}
+      {{ formatearDia(gasto.creadoEn) }}
     </p>
     <ul class="partes">
       <li v-for="p in gasto.partes" :key="p.usuario.id">

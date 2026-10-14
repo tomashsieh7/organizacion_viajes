@@ -1266,3 +1266,35 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - **TypeScript 7:** `vue-tsc` todavía no lo soporta;
   - **Prisma 8:** sigue en versión candidata.
 - **Pendiente para el usuario:** cambiar la rama por defecto en GitHub a `main` (Settings → General → Default branch).
+
+## 2026-10-14 01:41 — Merge del PR #14
+
+- Con la autorización del usuario ("mergealo si pasa el CI"), el PR #14 ("Volver al ingreso cuando se pierde la sesión y limpiar sesiones viejas") se mergeó a `main` en `363136e`, fijando la cabeza verificada `117733e`. Su CI pasó los tres trabajos (Lint y tipos, Pruebas de Vitest y Pruebas de punta a punta), sin conflictos ni comentarios.
+- Se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
+
+## 2026-10-14 01:52 — Segunda pasada: título de cada página y formato de fechas
+
+- **Pedido del usuario:** "fijate si hay más cosas para mejorar o arreglar". Después de la pasada, "hace las mejoras".
+- **Hallazgos de prioridad baja, corregidos:**
+  - **Título de la pestaña:** todas las páginas decían "Organizador de viajes", así que las pestañas no se distinguían y un lector de pantalla no anunciaba adónde se llegaba (WCAG 2.4.2). Ahora cada ruta de `router/index.ts` tiene `meta.titulo`, igual al encabezado de su vista, y un `afterEach` arma "Saldos · Organizador de viajes". Tiene prueba en `router.test.ts`.
+  - **Formato de fechas:** `TarjetaGasto` y `FilaSaldo` repetían la misma función y mostraban "14/10/2026", distinto del resto de la interfaz. Ahora usan `formatearDia` de `utiles/formato.ts` ("14 oct 2026"), que tiene su prueba.
+  - **`PLAN.md`:** la sección 7.1.1 suma las dos pautas.
+- **Revisado sin hallazgos:**
+  - **Cambio de usuario en la misma pestaña:** se cerró sesión, ingresó otra persona sin recargar y se usó el chat. Se probó con un spec temporal de Playwright, ya borrado, y el mensaje se envió bien.
+  - **Contenido escrito por usuarios:** no hay `v-html` ni ventanas emergentes del mapa que inserten HTML.
+  - **Consultas dentro de bucles:** recorren pocos elementos y corren dentro de la transacción.
+- **Sin cambio:**
+  - **Color fijo de los mapas:** el recorrido y el marcador usan `#0969da`, que es el acento del modo claro, y las teselas siguen claras en modo oscuro.
+  - **Listados sin paginación:** gastos y propuestas se traen enteros, lo que alcanza para el tamaño de un viaje en el MVP; el chat ya pagina.
+- **Verificación:**
+  - lint pasa;
+  - la cobertura pasa 509 pruebas: 349 del backend y 160 del frontend, con 88,7 % de líneas;
+  - la e2e pasa 8 de 8;
+  - `knip` muestra solo sus falsos positivos conocidos.
+
+## 2026-10-14 11:58 — Selectores de aviso más precisos en las e2e
+
+- **Falla:** en el CI del PR #15 falló `e2e/gastos.spec.ts`. `getByRole('status')` encontró dos elementos a la vez: el aviso "Registraste el pago…" y el "Cargando…" de `SiluetaCarga`, mientras los saldos todavía cargaban. Depende de los tiempos de ejecución, y el mismo flujo había pasado en `main` y en local.
+- **Causa:** el selector era ambiguo, porque la página puede tener más de una región `status` a la vez.
+- **Arreglo:** las tres e2e que buscaban `getByRole('status')` (gastos, sesión e itinerario) ahora la filtran por el texto que esperan.
+- **Verificación:** lint pasa y la e2e pasa 8 de 8 en dos corridas seguidas.

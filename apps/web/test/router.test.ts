@@ -51,4 +51,11 @@ describe('Guarda de sesión del router', () => {
   it('con sesión, las rutas privadas se abren', async () => {
     expect((await navegar('/viajes/v1/gastos', true)).path).toBe('/viajes/v1/gastos');
   });
+
+  it('cada página pone su título en la pestaña', async () => {
+    await navegar('/viajes/v1/saldos', true);
+    expect(document.title).toBe('Saldos · Organizador de viajes');
+    await navegar('/ingresar', false);
+    expect(document.title).toBe('Ingresar · Organizador de viajes');
+  });
 });

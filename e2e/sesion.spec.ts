@@ -17,7 +17,7 @@ test('RN-S5: si la sesión se pierde a mitad de uso, lleva al ingreso y después
     .click();
 
   await expect(p).toHaveURL(/\/ingresar\?/);
-  await expect(p.getByRole('status')).toContainText('Tu sesión terminó');
+  await expect(p.getByRole('status').filter({ hasText: 'Tu sesión terminó' })).toBeVisible();
   await p.getByLabel('Email').fill(ana.email);
   await p.getByLabel('Contraseña').fill('una-clave-segura');
   await p.getByRole('button', { name: 'Ingresar' }).click();

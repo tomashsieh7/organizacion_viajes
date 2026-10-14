@@ -36,7 +36,9 @@ test('CU20, CU21 y CU23: anotar un gasto con división arbitraria y pagar parte 
   await t.fill('#pago-monto', '250');
   await t.getByRole('button', { name: 'Pagar', exact: true }).click();
   await expect(t).toHaveURL(new RegExp(`/viajes/${viajeId}/saldos$`));
-  await expect(t.getByRole('status')).toContainText('Todavía le debés $ 350,00 a Ana');
+  await expect(
+    t.getByRole('status').filter({ hasText: 'Todavía le debés $ 350,00 a Ana' }),
+  ).toBeVisible();
 
   await p.goto(`/viajes/${viajeId}/saldos`);
   await p.getByRole('tab', { name: /Me deben/ }).click();

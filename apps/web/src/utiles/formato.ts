@@ -31,6 +31,12 @@ export function formatearRango(desde: string, hasta: string): string {
   return `${d1} al ${fin}`;
 }
 
+/** Día de un instante ISO en la zona del dispositivo, con el mismo estilo: "14 oct 2026". */
+export function formatearDia(instante: string): string {
+  const d = new Date(instante);
+  return `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 export function nombreVisible(p: { nombre: string; apodo: string | null }): string {
   return p.apodo ? `${p.nombre} (${p.apodo})` : p.nombre;
 }

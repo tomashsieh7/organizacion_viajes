@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aUnidadMinima, formatearMonto, formatearRango } from '../src/utiles/formato';
+import { aUnidadMinima, formatearDia, formatearMonto, formatearRango } from '../src/utiles/formato';
 
 describe('aUnidadMinima', () => {
   it('interpreta montos escritos en castellano', () => {
@@ -30,5 +30,13 @@ describe('formatearRango', () => {
     expect(formatearRango('2026-12-10', '2026-12-16')).toBe('10 al 16 dic 2026');
     expect(formatearRango('2026-11-28', '2026-12-03')).toBe('28 nov al 3 dic 2026');
     expect(formatearRango('2026-12-28', '2027-01-03')).toBe('28 dic 2026 al 3 ene 2027');
+  });
+});
+
+describe('formatearDia', () => {
+  it('muestra el día de un instante con el mes abreviado, como los rangos', () => {
+    // Mediodía UTC: es el mismo día en casi cualquier zona horaria del dispositivo.
+    expect(formatearDia('2026-10-14T12:00:00.000Z')).toBe('14 oct 2026');
+    expect(formatearDia('2027-01-03T12:00:00.000Z')).toBe('3 ene 2027');
   });
 });
