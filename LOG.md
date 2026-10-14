@@ -1266,3 +1266,8 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - **TypeScript 7:** `vue-tsc` todavía no lo soporta;
   - **Prisma 8:** sigue en versión candidata.
 - **Pendiente para el usuario:** cambiar la rama por defecto en GitHub a `main` (Settings → General → Default branch).
+
+## 2026-10-14 01:41 — Merge del PR #14
+
+- Con la autorización del usuario ("mergealo si pasa el CI"), el PR #14 ("Volver al ingreso cuando se pierde la sesión y limpiar sesiones viejas") se mergeó a `main` en `363136e`, fijando la cabeza verificada `117733e`. Su CI pasó los tres trabajos (Lint y tipos, Pruebas de Vitest y Pruebas de punta a punta), sin conflictos ni comentarios.
+- Se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
