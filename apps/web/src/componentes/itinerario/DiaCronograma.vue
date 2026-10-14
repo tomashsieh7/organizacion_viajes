@@ -11,7 +11,7 @@ defineProps<{ dia: DiaDelCronograma; viajeId: string; esHoy: boolean }>();
     <p v-if="!dia.actividades.length" class="vacio">Sin actividades confirmadas</p>
     <ol v-else>
       <li v-for="a in dia.actividades" :key="a.id">
-        <span class="horario">{{ a.horaInicio }} a {{ a.horaFin }}</span>
+        <span class="horario">{{ a.horaInicio }} a {{ a.horaFin }}</span> ·
         <strong>{{ a.titulo }}</strong> · {{ a.ubicacion }} ·
         <RouterLink :to="`/viajes/${viajeId}/mapa?actividad=${a.id}`">Ver en el mapa</RouterLink>
       </li>

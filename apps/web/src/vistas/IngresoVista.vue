@@ -7,6 +7,7 @@ import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useSesionStore } from '../stores/sesion';
 import { erroresDeValidacion } from '../utiles/formularios';
+import { destinoTrasIngresar } from '../utiles/navegacion';
 
 const sesion = useSesionStore();
 const router = useRouter();
@@ -24,9 +25,7 @@ async function enviar() {
   enviando.value = true;
   try {
     await sesion.ingresar(datos);
-    await router.push(
-      typeof route.query['volver'] === 'string' ? route.query['volver'] : '/viajes',
-    );
+    await router.push(destinoTrasIngresar(route.query['volver']));
   } catch (e) {
     error.value = mensajeDeError(e);
   } finally {

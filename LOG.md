@@ -1098,3 +1098,41 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Cobertura del frontend:** pasó de 62,8 % a 68,4 % de líneas. El backend sigue en 98,2 %.
 - **Archivos:** `apps/web/test/router.test.ts` (nuevo), `apps/web/test/listas.test.ts` (nuevo), `.github/workflows/ci.yml`, `README.md`, `PLAN.md` y esta entrada.
 - **Verificación:** `npm run lint` pasa; `npm run cobertura` pasa 433 pruebas, 345 del backend y 88 del frontend; `npm run e2e` pasa los seis flujos.
+
+## 2026-10-13 23:42 — Merge del PR #9
+
+- **Acción:** con la autorización del usuario ("mergealo si pasa el CI"), el PR #9 ("Cobertura de pruebas, pruebas del frontend y limpieza del drawio") se mergeó a `main` con un commit de merge, en `20b15e1`, fijando la cabeza verificada `9caecc6` con `expectedHeadSha`.
+- **Estado previo:** el CI pasó sus tres trabajos, sin conflictos ni comentarios, y la corrida guardó el artefacto `cobertura`.
+- **Después:**
+  - la sesión dejó de seguir el PR y se borró su revisión programada;
+  - la rama se alineó con `main` por avance directo;
+  - el push del merge viaja con el PR siguiente, con la confirmación del usuario.
+- **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-10-13 23:42 — Segunda revisión: destino tras ingresar, pruebas del frontend, revisión visual y mínimos de cobertura
+
+- **Acción:** el usuario aprobó los cuatro puntos propuestos después del PR #9.
+- **1. Destino tras ingresar:**
+  - `utiles/navegacion.ts` (`destinoTrasIngresar`) solo acepta en `?volver=` rutas internas: deben empezar con `/` y no seguir con `/` ni con `\`; si no, lleva a `/viajes`;
+  - antes, `//otro-sitio/…` llegaba tal cual a `pushState`, que el navegador rechaza por ser de otro origen, así que la navegación fallaba con un error, aunque no redirigía afuera;
+  - se agregó una prueba nueva.
+- **2. Pruebas del frontend:** se agregaron pruebas para:
+  - `RegistroVista`, `AlojamientoFormularioVista`, `DialogoNuevoViaje` y `DialogoTraspaso`;
+  - `FormularioAgregarViajero`, `TarjetaGasto`, `CampoUbicacion` (con temporizadores falsos) y `MapaSelector` (con un doble de Leaflet);
+  - los clientes HTTP: `pedir`, y método, ruta y cuerpo de cada uno de los 29 métodos, contra `docs/api.md`.
+
+  La cobertura del frontend subió de 68,4 % a 86,9 % de líneas.
+- **3. Revisión visual:**
+  - se sacaron capturas en celular (390 px) y escritorio (1280 px) de 12 pantallas, con un spec temporal de Playwright que se borró al terminar;
+  - **desborde en celular:** la barra de secciones del viaje no pasaba a otra línea y ensanchaba la página unos 330 px. Se corrigió en `ViajeLayout.vue` con `flex-wrap`, y `e2e/diseno.spec.ts` lo verifica a 360 px; falló sin el arreglo y pasa con él;
+  - **cronograma:** faltaba un separador entre el horario y el título ("12:00Kayak"). Se corrigió en `DiaCronograma.vue`, y la prueba del cronograma lo verifica;
+  - **contraste:** todos los colores de `App.vue` cumplen AA contra sus fondos; el par más bajo es acento sobre `#ddf4ff`, con 4,56:1.
+- **4. Mínimos de cobertura:**
+  - `vitest.config.ts` del backend y `vite.config.ts` del frontend fijan mínimos unos puntos por debajo de la medición actual (backend: líneas 96 y ramas 84; frontend: líneas 84 y ramas 80);
+  - `npm run cobertura` y el CI fallan si se baja de esos valores, y se comprobó que la corrida falla con un mínimo mayor al medido;
+  - se actualizaron el README, D25 y `docs/auditoria.md` (secciones 1 y 11).
+- **Archivos:**
+  - frontend: `utiles/navegacion.ts` (nuevo), `IngresoVista.vue`, `ViajeLayout.vue` y `DiaCronograma.vue`;
+  - pruebas: diez archivos nuevos en `apps/web/test/`, `CronogramaVista.test.ts` y `e2e/diseno.spec.ts` (nuevo);
+  - configuración y documentación: `apps/api/vitest.config.ts`, `apps/web/vite.config.ts`, `README.md`, `PLAN.md`, `docs/auditoria.md` y estas entradas.
+- **Verificación:** `npm run lint` pasa; `npm run cobertura` pasa 492 pruebas, 345 del backend y 147 del frontend, por encima de los mínimos; `npm run e2e` pasa los siete flujos.
