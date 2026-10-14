@@ -10,7 +10,7 @@ import type {
   MensajeVista,
   PaginaDeMensajes,
 } from '@viajes/compartido';
-import { ErrorDeApi, pedir } from './http';
+import { avisarSiSePerdioLaSesion, ErrorDeApi, pedir } from './http';
 
 /** Lo que el chat avisa en tiempo real. */
 export interface OyentesChat {
@@ -48,7 +48,10 @@ async function confirmacion<T extends object>(pedido: Promise<ConfirmacionSocket
   } catch {
     throw new ErrorDeApi(0, 'SIN_CONEXION', 'No se pudo conectar con el chat');
   }
-  if (!r.ok) throw new ErrorDeApi(0, r.error.codigo, r.error.mensaje);
+  if (!r.ok) {
+    avisarSiSePerdioLaSesion(r.error.codigo);
+    throw new ErrorDeApi(0, r.error.codigo, r.error.mensaje);
+  }
   return r;
 }
 

@@ -72,6 +72,25 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       expect((await r.sesiones.buscarPorTokenHash('abc'))?.revocadaEn).toEqual(ahora);
       expect(await r.sesiones.buscarPorTokenHash('otro')).toBeNull();
     });
+
+    it('borra solo las sesiones vencidas o revocadas del usuario indicado', async () => {
+      const ana = await e.usuario('Ana');
+      const luis = await e.usuario('Luis');
+      const ahora = new Date('2029-01-01T00:00:00Z');
+      const antes = new Date('2028-12-31T00:00:00Z');
+      const despues = new Date('2029-01-02T00:00:00Z');
+      await r.sesiones.crear({ usuarioId: ana, tokenHash: 'vencida', expiraEn: ahora });
+      await r.sesiones.crear({ usuarioId: ana, tokenHash: 'revocada', expiraEn: despues });
+      await r.sesiones.revocar('revocada', antes);
+      await r.sesiones.crear({ usuarioId: ana, tokenHash: 'vigente', expiraEn: despues });
+      await r.sesiones.crear({ usuarioId: luis, tokenHash: 'de-luis', expiraEn: antes });
+
+      await r.sesiones.borrarTerminadas(ana, ahora);
+      expect(await r.sesiones.buscarPorTokenHash('vencida')).toBeNull();
+      expect(await r.sesiones.buscarPorTokenHash('revocada')).toBeNull();
+      expect(await r.sesiones.buscarPorTokenHash('vigente')).not.toBeNull();
+      expect(await r.sesiones.buscarPorTokenHash('de-luis')).not.toBeNull();
+    });
   });
 
   describe(`BuscadorDeUsuarios — ${impl.nombre}`, () => {

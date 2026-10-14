@@ -1222,3 +1222,47 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - `npm run lint` pasa;
   - `npm run cobertura` pasa 499 pruebas, 346 del backend y 153 del frontend, por encima de los mínimos;
   - `npm run e2e` pasa los siete flujos.
+
+## 2026-10-14 00:48 — Merge del PR #13
+
+- Con la autorización del usuario ("mergealo si pasa el CI"), el PR #13 ("Mejoras de la nueva revisión: limpieza de estilos, ayuda accesible y dependencias") se mergeó a `main` en `9a6b8ce`, fijando la cabeza verificada `463be90`. Su CI pasó los tres trabajos (Lint y tipos, Pruebas de Vitest y Pruebas de punta a punta), sin conflictos ni comentarios.
+- Se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
+
+## 2026-10-14 01:20 — Auditoría de código
+
+- **Revisado:** sha `9a6b8ce`, secciones 1 a 13 de `docs/auditoria.md`, a pedido del usuario ("fijate si hay más cosas que se puedan mejorar, arreglar o verificar").
+- **Base automática:**
+  - `npm run lint`, `npm run cobertura` (499 pruebas) y `npm run e2e` (7 flujos) pasan;
+  - `npm audit` sigue con las 4 advertencias conocidas de Prisma;
+  - `npm outdated` muestra tres versiones mayores: happy-dom 21, TypeScript 7 y Prisma 8 (candidata);
+  - `knip` muestra solo sus falsos positivos conocidos;
+  - `jscpd` encuentra 32 clones (antes 35);
+  - `prisma migrate diff` no detecta diferencias.
+- **Hallazgos:**
+  - media, `apps/web/src/clientes/http.ts` y `stores/sesion.ts`: si la sesión vence o se cierra en otra pestaña, la aplicación sigue mostrando el viaje con el aviso "Tenés que iniciar sesión" en cada pantalla y no lleva al ingreso, porque el store consulta `/yo` una sola vez. Se reprodujo con un spec temporal de Playwright;
+  - baja, `auth/dominio/servicioDeSesiones.ts`: las sesiones vencidas o revocadas nunca se borran de la tabla `sesion`;
+  - baja, `apps/web/package.json`: happy-dom 21 disponible;
+  - baja, `apps/web/vite.config.ts`: el log de las pruebas de punta a punta muestra un `ECONNRESET` del proxy del websocket cada vez que Playwright cierra una página, sin que sea una falla.
+- **Corregido** (cambio estructural con plan aprobado por el usuario):
+  - **sesión perdida:**
+    - `pedir` y la confirmación del chat avisan cuando el servidor responde `NO_AUTENTICADO` (`alPerderSesion` y `avisarSiSePerdioLaSesion` en `http.ts`);
+    - `main.ts` registra la acción, que olvida el usuario (`perder()` del store) y lleva a `/ingresar` con `volver` y `motivo=sesion`;
+    - `IngresoVista` muestra "Tu sesión terminó. Volvé a ingresar para seguir.";
+    - pruebas nuevas de `pedir`, del chat (`chatSesion.test.ts`), del store y de la vista, más la e2e `e2e/sesion.spec.ts`, que falla si se quita el aviso de `pedir`;
+  - **limpieza de sesiones:**
+    - `RepositorioSesiones` suma `borrarTerminadas(usuarioId, ahora)`, con implementación en Prisma y en memoria;
+    - `ServicioDeSesiones.crear` la llama antes de crear la sesión nueva;
+    - prueba de contrato y prueba unitaria;
+  - **happy-dom 21:** pasan las mismas pruebas del frontend, con la misma cobertura;
+  - **`vite.config.ts`:** un registro propio descarta solo el `ECONNRESET` del proxy del websocket, y los demás errores se siguen mostrando;
+  - **`PLAN.md`:** RN-S5 suma la limpieza y la sección 7.1 suma la vuelta al ingreso cuando se pierde la sesión.
+- **Verificación después de corregir:**
+  - lint pasa;
+  - la cobertura pasa 507 pruebas: 349 del backend (98,2 % de líneas) y 158 del frontend (88,6 % de líneas);
+  - la e2e pasa 8 de 8 flujos, sin líneas de `[WebServer]`;
+  - `prisma migrate diff` no detecta diferencias.
+- **Sin cambio:**
+  - **`trust proxy`:** no hay despliegue definido. Si la API corre detrás de un proxy, hay que configurarlo; si no, el límite de ingresos por IP (RN-S4) sería uno solo para todos los usuarios;
+  - **TypeScript 7:** `vue-tsc` todavía no lo soporta;
+  - **Prisma 8:** sigue en versión candidata.
+- **Pendiente para el usuario:** cambiar la rama por defecto en GitHub a `main` (Settings → General → Default branch).

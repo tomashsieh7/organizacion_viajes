@@ -135,6 +135,22 @@ describe('ServicioDeSesiones (RN-S5)', () => {
     await expect(sesiones.validar('inventado')).rejects.toMatchObject({ codigo: 'NO_AUTENTICADO' });
     await expect(sesiones.validar(undefined)).rejects.toMatchObject({ codigo: 'NO_AUTENTICADO' });
   });
+
+  it('al crear una sesión borra las terminadas del mismo usuario y conserva las vigentes', async () => {
+    const vencida = await sesiones.crear('u1');
+    const revocada = await sesiones.crear('u1');
+    await sesiones.revocar(revocada.token);
+    const deOtro = await sesiones.crear('u2');
+    reloj.t += 7 * DIA;
+    const vigente = await sesiones.crear('u1');
+    const nueva = await sesiones.crear('u1');
+    expect(base.sesiones.map((s) => s.tokenHash)).toEqual([
+      `h(${deOtro.token})`,
+      `h(${vigente.token})`,
+      `h(${nueva.token})`,
+    ]);
+    expect(vencida.token).not.toBe(vigente.token);
+  });
 });
 
 describe('Registrarse e IniciarSesion', () => {

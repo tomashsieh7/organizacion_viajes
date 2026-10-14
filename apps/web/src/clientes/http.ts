@@ -21,6 +21,21 @@ export class ErrorDeApi extends Error {
   }
 }
 
+let accionAlPerderSesion: (() => void) | null = null;
+
+/**
+ * Registra qué hacer cuando el servidor dice que la sesión ya no vale (vencida o cerrada en otra
+ * pestaña). La registra `main.ts`, que conoce el store de sesión y el router.
+ */
+export function alPerderSesion(accion: () => void): void {
+  accionAlPerderSesion = accion;
+}
+
+/** Ejecuta la acción registrada si el código de error indica que se perdió la sesión. */
+export function avisarSiSePerdioLaSesion(codigo: string): void {
+  if (codigo === 'NO_AUTENTICADO') accionAlPerderSesion?.();
+}
+
 /** Hace una petición a la API y devuelve el cuerpo JSON, o lanza `ErrorDeApi`. */
 export async function pedir<T>(metodo: string, url: string, cuerpo?: unknown): Promise<T> {
   let respuesta: Response;
@@ -38,6 +53,7 @@ export async function pedir<T>(metodo: string, url: string, cuerpo?: unknown): P
   const datos: unknown = await respuesta.json().catch(() => undefined);
   if (!respuesta.ok) {
     const error = (datos as RespuestaError | undefined)?.error;
+    if (respuesta.status === 401) avisarSiSePerdioLaSesion(error?.codigo ?? '');
     throw new ErrorDeApi(
       respuesta.status,
       error?.codigo ?? 'ERROR_INTERNO',

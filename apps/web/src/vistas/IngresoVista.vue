@@ -18,6 +18,7 @@ const { errores, alSalir, validarTodo, aria } = useValidacion(
   () => problemasSegun(esquemaInicioSesion, datos),
   datos,
 );
+const sesionTerminada = route.query['motivo'] === 'sesion';
 const error = ref('');
 const enviando = ref(false);
 
@@ -42,6 +43,9 @@ async function enviar() {
     <p class="texto-secundario">
       Organizá tus viajes en grupo: alojamientos, actividades y gastos.
     </p>
+    <AvisoMensaje v-if="sesionTerminada"
+      >Tu sesión terminó. Volvé a ingresar para seguir.</AvisoMensaje
+    >
     <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
       <CampoFormulario id="email" etiqueta="Email" :error="errores['email']">
         <input

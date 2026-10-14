@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ClienteAuthHttp } from '../src/clientes/auth';
 import { ClienteChatSocketIO } from '../src/clientes/chat';
 import { ClienteGastosHttp } from '../src/clientes/gastos';
-import { ErrorDeApi, pedir } from '../src/clientes/http';
+import { alPerderSesion, ErrorDeApi, pedir } from '../src/clientes/http';
 import { ClienteItinerarioHttp } from '../src/clientes/itinerario';
 import { ClientePropuestasHttp } from '../src/clientes/propuestas';
 import { ClienteViajesHttp } from '../src/clientes/viajes';
@@ -72,6 +72,24 @@ describe('pedir', () => {
       estado: 0,
       codigo: 'SIN_CONEXION',
     });
+  });
+});
+
+describe('alPerderSesion', () => {
+  afterEach(() => alPerderSesion(() => {}));
+
+  it('avisa cuando una respuesta 401 dice NO_AUTENTICADO, y no con otros errores', async () => {
+    const accion = vi.fn();
+    alPerderSesion(accion);
+    responder(401, { error: { codigo: 'CREDENCIALES_INVALIDAS', mensaje: 'Datos incorrectos' } });
+    await pedir('POST', '/api/auth/sesion', {}).catch(() => {});
+    responder(403, { error: { codigo: 'NO_PARTICIPANTE', mensaje: 'No participás' } });
+    await pedir('GET', '/api/x').catch(() => {});
+    expect(accion).not.toHaveBeenCalled();
+
+    responder(401, { error: { codigo: 'NO_AUTENTICADO', mensaje: 'Tenés que iniciar sesión' } });
+    await expect(pedir('GET', '/api/x')).rejects.toMatchObject({ codigo: 'NO_AUTENTICADO' });
+    expect(accion).toHaveBeenCalledTimes(1);
   });
 });
 

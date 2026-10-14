@@ -37,6 +37,8 @@ export interface RepositorioSesiones {
   crear(datos: { usuarioId: string; tokenHash: string; expiraEn: Date }): Promise<void>;
   buscarPorTokenHash(tokenHash: string): Promise<SesionGuardada | null>;
   revocar(tokenHash: string, ahora: Date): Promise<void>;
+  /** Borra las sesiones vencidas o revocadas del usuario, que ya no sirven para ingresar. */
+  borrarTerminadas(usuarioId: string, ahora: Date): Promise<void>;
 }
 
 export interface HasheadorDeContrasenas {

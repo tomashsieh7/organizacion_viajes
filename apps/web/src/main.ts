@@ -3,6 +3,8 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import { crearRouter } from './router';
 import { CLIENTE_AUTH, ClienteAuthHttp } from './clientes/auth';
+import { alPerderSesion } from './clientes/http';
+import { useSesionStore } from './stores/sesion';
 import { CLIENTE_VIAJES, ClienteViajesHttp } from './clientes/viajes';
 import { CLIENTE_PROPUESTAS, ClientePropuestasHttp } from './clientes/propuestas';
 import { BUSCADOR_UBICACIONES, BuscadorNominatim } from './clientes/ubicaciones';
@@ -19,6 +21,19 @@ app.provide(BUSCADOR_UBICACIONES, new BuscadorNominatim());
 app.provide(CLIENTE_ITINERARIO, new ClienteItinerarioHttp());
 app.provide(CLIENTE_CHAT, new ClienteChatSocketIO());
 app.provide(CLIENTE_GASTOS, new ClienteGastosHttp());
-app.use(createPinia());
-app.use(crearRouter());
+const pinia = createPinia();
+const router = crearRouter();
+app.use(pinia);
+app.use(router);
+
+// Si la sesión vence o se cierra en otra pestaña, se vuelve al ingreso recordando dónde se estaba.
+alPerderSesion(() => {
+  const sesion = useSesionStore(pinia);
+  if (!sesion.autenticado) return;
+  sesion.perder();
+  void router.push({
+    path: '/ingresar',
+    query: { volver: router.currentRoute.value.fullPath, motivo: 'sesion' },
+  });
+});
 app.mount('#app');

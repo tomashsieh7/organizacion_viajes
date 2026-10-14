@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import IngresoVista from '../src/vistas/IngresoVista.vue';
 import {
   clienteAuthFalso,
@@ -9,7 +9,9 @@ import {
 } from './soporte/clientesFalsos';
 
 const push = vi.fn();
-vi.mock('vue-router', () => ({ useRouter: () => ({ push }), useRoute: () => ({ query: {} }) }));
+let query: Record<string, string> = {};
+vi.mock('vue-router', () => ({ useRouter: () => ({ push }), useRoute: () => ({ query }) }));
+beforeEach(() => (query = {}));
 
 describe('IngresoVista', () => {
   it('valida el formulario antes de llamar a la API', async () => {
@@ -54,5 +56,12 @@ describe('IngresoVista', () => {
     await vista.find('form').trigger('submit');
     await flushPromises();
     expect(push).toHaveBeenCalledWith('/viajes');
+  });
+
+  it('avisa que la sesión terminó solo cuando se llega por eso', async () => {
+    const montar = () => mount(IngresoVista, montaje(clienteAuthFalso(), clienteViajesFalso()));
+    expect(montar().text()).not.toContain('Tu sesión terminó');
+    query = { motivo: 'sesion', volver: '/viajes/v1/gastos' };
+    expect(montar().find('[role="status"]').text()).toContain('Tu sesión terminó');
   });
 });

@@ -199,6 +199,13 @@ export class RepositorioSesionesEnMemoria implements RepositorioSesiones {
     for (const s of this.base.sesiones)
       if (s.tokenHash === tokenHash && !s.revocadaEn) s.revocadaEn = ahora;
   }
+
+  async borrarTerminadas(usuarioId: string, ahora: Date): Promise<void> {
+    const vigentes = this.base.sesiones.filter(
+      (s) => s.usuarioId !== usuarioId || (s.expiraEn > ahora && !s.revocadaEn),
+    );
+    this.base.sesiones.splice(0, this.base.sesiones.length, ...vigentes);
+  }
 }
 
 export class RepositorioViajesEnMemoria implements RepositorioViajes, LectorDeViajes {

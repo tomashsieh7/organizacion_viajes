@@ -41,4 +41,14 @@ describe('useSesionStore', () => {
     await store.cargar();
     expect(store.autenticado).toBe(true);
   });
+
+  it('perder deja la sesión sin usuario y no vuelve a consultar al servidor', async () => {
+    const yo = vi.fn().mockResolvedValue(ANA);
+    const store = storeCon(yo);
+    await store.cargar();
+    store.perder();
+    await store.cargar();
+    expect(store.autenticado).toBe(false);
+    expect(yo).toHaveBeenCalledTimes(1);
+  });
 });
