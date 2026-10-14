@@ -70,8 +70,8 @@ describe('MapaVista', () => {
     // RN-M7: el selector ofrece todos los días y resalta los que tienen actividades.
     const botones = vista.findAll('.selector-dia button');
     expect(botones).toHaveLength(7);
-    expect(vista.find('.selector-dia .con-actividad').text()).toContain('12/12');
-    expect(vista.find('.selector-dia [aria-pressed="true"]').text()).toContain('11/12');
+    expect(vista.find('.selector-dia .con-actividad').text()).toContain('12 dic');
+    expect(vista.find('.selector-dia [aria-pressed="true"]').text()).toContain('11 dic');
   });
 
   it('RN-M7: al elegir otro día lo guarda en la dirección y lo carga', async () => {

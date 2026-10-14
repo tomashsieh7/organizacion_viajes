@@ -1476,3 +1476,26 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - Con la autorización del usuario ("sí, hacé el commit y mergealo si pasa el CI"), el PR #19 ("Rediseño visual con gamificación: Resumen, progreso y celebraciones") se mergeó a `main` en `06bf4d1`, fijando la cabeza verificada `c0b5249`.
 - El CI pasó los tres trabajos (Lint y tipos, Pruebas de Vitest y Pruebas de punta a punta), sin conflictos ni comentarios.
 - Después del merge se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
+
+## 2026-10-14 14:24 — Revisión del rediseño: fechas con nombre de día y más pruebas
+
+- **Pedido del usuario:** "Fijate si hay más cosas para mejorar o arreglar". Después de la revisión, aprobó las dos mejoras propuestas ("Hacelos").
+- **Revisado sin hallazgos:**
+  - **Consola:** en las 12 pantallas del viaje no aparecen errores ni advertencias. Lo verificó un spec temporal de Playwright, que después se borró.
+  - **Celebración:** aparece al confirmar desde la interfaz.
+  - **Falsa alarma:** la región `status` de la celebración mide cero de alto porque el mensaje es fijo. Para Playwright no es "visible", pero los lectores de pantalla la leen igual.
+- **Corregido** (prioridad baja):
+  - **`nombreDelDia`:** usa el mes abreviado ("jueves 10 dic") en lugar de "jueves 10/12". Se ve en el Resumen, el cronograma y los días del mapa, como pide la pauta de fechas. `MESES` se exporta desde `utiles/formato.ts` para no repetirlo.
+  - **Pruebas:**
+    - `ViajesVista.test.ts`: tarjetas con la cuenta regresiva, el aviso que se muestra una sola vez y la creación del primer grupo. La cobertura de líneas sube de 74 % a 93 %.
+    - `ResumenVista`: la cuenta regresiva antes, durante y después del viaje, con la fecha del sistema fija.
+    - La e2e del itinerario verifica la celebración al confirmar.
+- **Sin cambio:**
+  - **Celebración del 100 %:** solo se ve al entrar al Resumen; mostrarla en cualquier pantalla obligaría a calcular el progreso en todas.
+  - **Región de la celebración:** queda como está.
+- **`PLAN.md` 7.1.1:** la pauta de fechas suma "jueves 10 dic" y `nombreDelDia`.
+- **Verificación:**
+  - lint pasa;
+  - la cobertura pasa 539 pruebas: 349 del backend y 190 del frontend, con 92,7 % de líneas en el frontend;
+  - la e2e pasa 8 de 8;
+  - `knip` muestra solo sus falsos positivos conocidos.
