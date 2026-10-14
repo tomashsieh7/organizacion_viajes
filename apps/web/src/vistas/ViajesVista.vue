@@ -2,10 +2,12 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../componentes/base/EstadoVacio.vue';
+import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import DialogoNuevoViaje from '../componentes/viajes/DialogoNuevoViaje.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useViajeStore } from '../stores/viaje';
-import { formatearFecha } from '../utiles/formato';
+import { formatearRango } from '../utiles/formato';
 
 const store = useViajeStore();
 const router = useRouter();
@@ -36,19 +38,31 @@ function alCrear(viajeId: string) {
       <button class="boton boton--principal" @click="creando = true">Nuevo grupo</button>
     </div>
     <AvisoMensaje v-if="store.aviso" tipo="info">{{ store.aviso }}</AvisoMensaje>
-    <p v-if="!cargado">Cargando…</p>
+    <SiluetaCarga v-if="!cargado" :cantidad="2" />
     <AvisoMensaje v-else-if="error" tipo="error">{{ error }}</AvisoMensaje>
-    <p v-else-if="store.viajes.length === 0">Todavía no participás de ningún viaje.</p>
+    <EstadoVacio
+      v-else-if="store.viajes.length === 0"
+      icono="🧳"
+      titulo="Todavía no participás de ningún viaje."
+      descripcion="Creá un grupo para organizar un viaje, o pedile a quien administra uno que te agregue con tu email."
+    >
+      <button class="boton" type="button" @click="creando = true">Crear mi primer grupo</button>
+    </EstadoVacio>
     <ul class="tarjetas">
       <li v-for="v in store.viajes" :key="v.id" class="tarjeta">
         <RouterLink
           :to="v.miAcceso === 'SOLO_SALDOS' ? `/viajes/${v.id}/saldos` : `/viajes/${v.id}`"
         >
-          <strong>{{ v.nombre }}</strong>
-          <span>{{ v.destino }}</span>
-          <span>{{ formatearFecha(v.fechaInicio) }} al {{ formatearFecha(v.fechaFin) }}</span>
-          <span v-if="v.miAcceso === 'SOLO_SALDOS'" class="etiqueta">Solo saldos</span>
-          <span v-else-if="v.miRol === 'ADMIN'" class="etiqueta">Admin</span>
+          <span class="tarjeta__titulo">
+            <strong>{{ v.nombre }}</strong>
+            <span v-if="v.miAcceso === 'SOLO_SALDOS'" class="etiqueta">Solo saldos</span>
+            <span v-else-if="v.miRol === 'ADMIN'" class="etiqueta">Admin</span>
+          </span>
+          <span class="texto-secundario"><span aria-hidden="true">📍 </span>{{ v.destino }}</span>
+          <span class="texto-secundario"
+            ><span aria-hidden="true">📅 </span
+            >{{ formatearRango(v.fechaInicio, v.fechaFin) }}</span
+          >
         </RouterLink>
       </li>
     </ul>
@@ -60,21 +74,35 @@ function alCrear(viajeId: string) {
 .tarjetas {
   list-style: none;
   padding: 0;
+  margin: 0;
   display: grid;
-  gap: 0.75rem;
+  gap: var(--esp-3);
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
 }
 .tarjeta a {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 1rem;
+  gap: var(--esp-1);
+  padding: var(--esp-4);
+  background: var(--color-superficie);
   border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra);
   color: inherit;
   text-decoration: none;
+  transition:
+    border-color var(--duracion),
+    box-shadow var(--duracion);
 }
 .tarjeta a:hover {
   border-color: var(--color-acento);
+  box-shadow: var(--sombra-elevada);
+}
+.tarjeta__titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  font-size: 1.0625rem;
 }
 </style>

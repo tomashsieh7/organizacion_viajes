@@ -37,7 +37,9 @@ describe('IngresoVista', () => {
     await vista.find('#password').setValue('mala-clave');
     await vista.find('form').trigger('submit');
     await flushPromises();
-    expect(vista.find('[role="alert"]').text()).toBe('El email o la contraseña no son correctos');
+    expect(vista.find('[role="alert"]').text()).toContain(
+      'El email o la contraseña no son correctos',
+    );
     expect(push).not.toHaveBeenCalled();
   });
 

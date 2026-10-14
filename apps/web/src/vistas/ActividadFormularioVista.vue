@@ -16,7 +16,8 @@ import { ErrorDeApi, mensajeDeError } from '../clientes/http';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
 import { aUnidadMinima, formatearDuracion, formatearHorario } from '../utiles/formato';
-import { erroresDeValidacion } from '../utiles/formularios';
+import { useValidacion } from '../composables/useValidacion';
+import { problemasSegun } from '../utiles/formularios';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
@@ -39,7 +40,6 @@ const datos = reactive({
   precio: '',
 });
 const ubicacion = ref<ValorUbicacion>({ ubicacion: '', latitud: null, longitud: null });
-const errores = ref<Record<string, string>>({});
 const error = ref('');
 const conflictos = ref<ConflictoHorario[]>([]);
 const enviando = ref(false);
@@ -64,16 +64,12 @@ onMounted(async () => {
   }
 });
 
-async function enviar() {
-  error.value = '';
-  errores.value = {};
-  conflictos.value = [];
+const PRECIO_INVALIDO = 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50';
+
+/** Arma el cuerpo para la API y devuelve sus problemas, con el mismo esquema que valida la API. */
+function armarCuerpo() {
   const precio =
     datos.precio.trim() === '' ? undefined : aUnidadMinima(datos.precio, actual.moneda.decimales);
-  if (precio === null) {
-    errores.value = { precio: 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50' };
-    return;
-  }
   const cuerpo: DatosActividadNueva = {
     titulo: datos.titulo,
     descripcion: datos.descripcion,
@@ -83,13 +79,23 @@ async function enviar() {
     fecha: datos.fecha,
     horaInicio: datos.horaInicio,
     duracionMin: datos.duracionMin === '' ? Number.NaN : Number(datos.duracionMin),
-    ...(precio === undefined ? {} : { precio }),
+    ...(precio === undefined || precio === null ? {} : { precio }),
   };
-  const resultado = esquemaActividadNueva.safeParse(cuerpo);
-  if (!resultado.success) {
-    errores.value = erroresDeValidacion(resultado.error);
-    return;
-  }
+  const problemas = problemasSegun(esquemaActividadNueva, cuerpo);
+  if (precio === null) problemas['precio'] = PRECIO_INVALIDO;
+  return { cuerpo, problemas };
+}
+
+const { errores, alSalir, validarTodo, aria } = useValidacion(
+  () => armarCuerpo().problemas,
+  [datos, ubicacion],
+);
+
+async function enviar() {
+  error.value = '';
+  conflictos.value = [];
+  if (!validarTodo()) return;
+  const { cuerpo } = armarCuerpo();
   enviando.value = true;
   try {
     if (originalId) await propuestas.proponerAlternativa(originalId, cuerpo);
@@ -119,16 +125,28 @@ async function enviar() {
       </p>
       <p>Si se confirma una de las opciones, las demás pendientes quedan denegadas.</p>
     </div>
-    <form novalidate @submit.prevent="enviar">
+    <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
       <CampoFormulario id="actividad-titulo" etiqueta="Título" :error="errores['titulo']">
-        <input id="actividad-titulo" v-model="datos.titulo" placeholder="Kayak en el lago" />
+        <input
+          id="actividad-titulo"
+          v-model="datos.titulo"
+          name="titulo"
+          placeholder="Kayak en el lago"
+          v-bind="aria('titulo', 'actividad-titulo')"
+        />
       </CampoFormulario>
       <CampoFormulario
         id="actividad-descripcion"
         etiqueta="Descripción"
         :error="errores['descripcion']"
       >
-        <textarea id="actividad-descripcion" v-model="datos.descripcion" rows="3"></textarea>
+        <textarea
+          id="actividad-descripcion"
+          v-model="datos.descripcion"
+          name="descripcion"
+          rows="3"
+          v-bind="aria('descripcion', 'actividad-descripcion')"
+        ></textarea>
       </CampoFormulario>
       <CampoFechaHora
         v-model:fecha="datos.fecha"
@@ -144,7 +162,9 @@ async function enviar() {
       >
         <input
           id="actividad-duracion"
+          v-bind="aria('duracionMin', 'actividad-duracion')"
           v-model="datos.duracionMin"
+          name="duracionMin"
           type="number"
           min="1"
           max="1440"
@@ -163,7 +183,9 @@ async function enviar() {
       >
         <input
           id="actividad-precio"
+          v-bind="aria('precio', 'actividad-precio')"
           v-model="datos.precio"
+          name="precio"
           inputmode="decimal"
           placeholder="30000"
         />
@@ -179,12 +201,6 @@ async function enviar() {
 </template>
 
 <style scoped>
-textarea {
-  font: inherit;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
-}
 .original {
   background: var(--color-superficie);
   border-radius: var(--radio);

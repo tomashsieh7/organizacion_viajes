@@ -42,23 +42,12 @@ function alTeclear(e: KeyboardEvent) {
 <style scoped>
 .campo-mensaje {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: var(--esp-2);
+  margin-top: var(--esp-3);
   align-items: flex-end;
 }
 textarea {
   flex: 1;
-  font: inherit;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
-  resize: vertical;
-}
-.solo-lectores {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
+  min-height: var(--alto-control);
 }
 </style>

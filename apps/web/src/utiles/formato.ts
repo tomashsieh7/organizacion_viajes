@@ -16,6 +16,21 @@ export function formatearFecha(fecha: string): string {
   return `${d}/${m}/${a}`;
 }
 
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/**
+ * Rango de fechas fácil de leer, sin repetir el mes ni el año cuando coinciden:
+ * "10 al 16 dic 2026", "28 nov al 3 dic 2026" o "28 dic 2026 al 3 ene 2027".
+ */
+export function formatearRango(desde: string, hasta: string): string {
+  const [a1, m1, d1] = desde.split('-').map(Number) as [number, number, number];
+  const [a2, m2, d2] = hasta.split('-').map(Number) as [number, number, number];
+  const fin = `${d2} ${MESES[m2 - 1]} ${a2}`;
+  if (a1 !== a2) return `${d1} ${MESES[m1 - 1]} ${a1} al ${fin}`;
+  if (m1 !== m2) return `${d1} ${MESES[m1 - 1]} al ${fin}`;
+  return `${d1} al ${fin}`;
+}
+
 export function nombreVisible(p: { nombre: string; apodo: string | null }): string {
   return p.apodo ? `${p.nombre} (${p.apodo})` : p.nombre;
 }

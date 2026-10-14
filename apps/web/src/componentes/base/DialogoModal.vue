@@ -35,16 +35,19 @@ onBeforeUnmount(() => focoAnterior?.focus());
 .fondo {
   position: fixed;
   inset: 0;
-  background: rgb(0 0 0 / 0.4);
+  z-index: 40;
+  background: var(--fondo-modal);
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: var(--esp-4);
 }
 .dialogo {
-  background: var(--color-fondo);
-  border-radius: var(--radio);
-  padding: 1.25rem;
-  width: min(28rem, 100%);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-elevada);
+  padding: var(--esp-5);
+  width: min(30rem, 100%);
   max-height: 90vh;
   overflow: auto;
 }

@@ -13,8 +13,9 @@ import {
 
 const push = vi.fn();
 const replace = vi.fn();
+let ruta = '/viajes/v1/chat';
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: { viajeId: 'v1' }, path: '/viajes/v1/chat' }),
+  useRoute: () => ({ params: { viajeId: 'v1' }, path: ruta }),
   useRouter: () => ({ push, replace }),
 }));
 
@@ -28,6 +29,7 @@ function montar(obtener = async () => detalle('VIAJERO')) {
 }
 
 beforeEach(() => {
+  ruta = '/viajes/v1/chat';
   push.mockReset();
   replace.mockReset();
 });
@@ -37,7 +39,16 @@ describe('ViajeLayout', () => {
     const { falso, vista } = montar();
     await flushPromises();
     expect(falso.conexion.unirse).toHaveBeenCalledWith('v1');
-    expect(vista.findAll('nav a').map((a) => a.text())).toContain('Gastos');
+    // Los cinco grupos, con el del chat activo y sin pestañas porque tiene una sola sección.
+    expect(vista.findAll('nav.grupos .grupo__nombre').map((a) => a.text())).toEqual([
+      'Grupo',
+      'Planificar',
+      'Itinerario',
+      'Chat',
+      'Cuentas',
+    ]);
+    expect(vista.find('nav.grupos [aria-current="page"] .grupo__nombre').text()).toBe('Chat');
+    expect(vista.find('nav.subsecciones').exists()).toBe(false);
 
     falso
       .servidor()
@@ -66,8 +77,19 @@ describe('ViajeLayout', () => {
   it('RN-E6: con acceso solo a saldos muestra solo esa sección y no entra al chat', async () => {
     const { falso, vista } = montar(async () => detalle('VIAJERO', 0, 'SOLO_SALDOS'));
     await flushPromises();
-    expect(vista.findAll('nav a').map((a) => a.text())).toEqual(['Saldos']);
+    expect(vista.find('nav').exists()).toBe(false);
     expect(replace).toHaveBeenCalledWith('/viajes/v1/saldos');
     expect(falso.conexion.unirse).not.toHaveBeenCalled();
+  });
+
+  it('en una subruta marca su grupo y muestra las pestañas de las secciones del grupo', async () => {
+    ruta = '/viajes/v1/gastos/nuevo';
+    const { vista } = montar();
+    await flushPromises();
+    expect(vista.find('nav.grupos [aria-current="page"] .grupo__nombre').text()).toBe('Cuentas');
+    const pestanas = vista.findAll('nav.subsecciones a');
+    expect(pestanas.map((a) => a.text())).toEqual(['Gastos', 'Saldos']);
+    expect(pestanas[0]!.attributes('aria-current')).toBe('page');
+    expect(pestanas[1]!.attributes('aria-current')).toBeUndefined();
   });
 });

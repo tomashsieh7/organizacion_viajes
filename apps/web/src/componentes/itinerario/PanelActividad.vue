@@ -50,7 +50,7 @@ p {
   height: 1.6rem;
   border-radius: 50%;
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-sobre-acento);
   font-size: 0.9rem;
 }
 .nota {

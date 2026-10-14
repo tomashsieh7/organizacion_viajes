@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../componentes/base/EstadoVacio.vue';
+import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import TarjetaGasto from '../componentes/gastos/TarjetaGasto.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useGastosStore } from '../stores/gastos';
@@ -30,9 +32,18 @@ onMounted(() =>
         Anotar gasto
       </RouterLink>
     </div>
-    <p v-if="!cargado">Cargando…</p>
+    <SiluetaCarga v-if="!cargado" />
     <AvisoMensaje v-else-if="error" tipo="error">{{ error }}</AvisoMensaje>
-    <p v-else-if="!gastos.gastos.length">Todavía no hay gastos anotados.</p>
+    <EstadoVacio
+      v-else-if="!gastos.gastos.length"
+      icono="🧾"
+      titulo="Todavía no hay gastos anotados."
+      descripcion="Anotá lo que pagaste para el grupo y la app calcula quién le debe a quién."
+    >
+      <RouterLink class="boton" :to="`/viajes/${viaje.actual!.id}/gastos/nuevo`">
+        Anotar el primero
+      </RouterLink>
+    </EstadoVacio>
     <TarjetaGasto
       v-for="g in gastos.gastos"
       :key="g.id"

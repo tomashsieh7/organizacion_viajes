@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import type { AccionSobrePropuesta, ConflictoHorario, ValorVoto } from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../componentes/base/EstadoVacio.vue';
+import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import AvisoSuperposicion from '../componentes/actividades/AvisoSuperposicion.vue';
 import ListaAlternativas from '../componentes/actividades/ListaAlternativas.vue';
 import TarjetaActividad from '../componentes/actividades/TarjetaActividad.vue';
@@ -53,19 +55,42 @@ onMounted(cargar);
         Proponer actividad
       </RouterLink>
     </div>
-    <label for="filtro-estado-actividades">Mostrar</label>
-    <select id="filtro-estado-actividades" v-model="propuestas.filtroActividades" @change="cargar">
-      <option value="">Todas</option>
-      <option v-for="(nombre, estado) in NOMBRES_ESTADO" :key="estado" :value="estado">
-        {{ nombre }}
-      </option>
-    </select>
+    <div class="filtro">
+      <label for="filtro-estado-actividades">Mostrar</label>
+      <select
+        id="filtro-estado-actividades"
+        v-model="propuestas.filtroActividades"
+        @change="cargar"
+      >
+        <option value="">Todas</option>
+        <option v-for="(nombre, estado) in NOMBRES_ESTADO" :key="estado" :value="estado">
+          {{ nombre }}
+        </option>
+      </select>
+    </div>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <AvisoSuperposicion v-if="conflictos.length" :conflictos="conflictos">
       Para confirmarla, primero hay que cancelar la actividad que ocupa ese horario.
     </AvisoSuperposicion>
-    <p v-if="!cargado">Cargando…</p>
-    <p v-else-if="!error && !grupos.length">Todavía no hay actividades propuestas.</p>
+    <SiluetaCarga v-if="!cargado" />
+    <template v-else-if="!error && !grupos.length">
+      <EstadoVacio
+        v-if="propuestas.filtroActividades"
+        icono="🔎"
+        titulo="No hay actividades con ese estado."
+        descripcion="Probá mostrando todas."
+      />
+      <EstadoVacio
+        v-else
+        icono="🧭"
+        titulo="Todavía no hay actividades propuestas."
+        descripcion="Proponé qué hacer y cuándo; si a alguien se le ocurre otra cosa para ese momento, puede sumar una alternativa."
+      >
+        <RouterLink class="boton" :to="`/viajes/${viaje.actual!.id}/actividades/nueva`">
+          Proponer la primera
+        </RouterLink>
+      </EstadoVacio>
+    </template>
     <template v-for="g in grupos" :key="g.actividad.id">
       <TarjetaActividad
         :actividad="g.actividad"
@@ -92,7 +117,10 @@ onMounted(cargar);
 </template>
 
 <style scoped>
-#filtro-estado-actividades {
-  margin: 0 0 1rem 0.5rem;
+.filtro {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-4);
 }
 </style>

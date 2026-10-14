@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
@@ -79,13 +80,13 @@ async function pagar() {
 <template>
   <section>
     <h2>Registrar pago</h2>
-    <p v-if="!cargado">Cargando…</p>
+    <SiluetaCarga v-if="!cargado" :cantidad="1" />
     <template v-else-if="deuda">
       <p class="saldo">
         Le debés <strong>{{ formatearMonto(deuda.monto, actual.moneda) }}</strong> a
         {{ nombreVisible(deuda.contraparte) }}.
       </p>
-      <form novalidate @submit.prevent="pagar">
+      <form class="formulario" novalidate @submit.prevent="pagar">
         <CampoFormulario
           id="pago-monto"
           :etiqueta="`Monto en ${actual.moneda.codigo}`"
@@ -124,7 +125,7 @@ async function pagar() {
   flex: 1;
 }
 .nota {
-  color: #57606a;
+  color: var(--color-texto-secundario);
   font-size: 0.9rem;
 }
 </style>

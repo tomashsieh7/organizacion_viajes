@@ -58,3 +58,20 @@ describe('DialogoNuevoViaje (CU01)', () => {
     expect(dialogo.emitted('creado')).toBeUndefined();
   });
 });
+
+describe('DialogoNuevoViaje: validación al salir de cada campo', () => {
+  it('avisa al dejar un campo obligatorio vacío y deja de avisar al completarlo', async () => {
+    const { dialogo } = montar();
+    await flushPromises();
+    const nombre = dialogo.find('#viaje-nombre');
+    await nombre.trigger('focusout');
+    expect(dialogo.text()).toContain('Ingresá un nombre');
+    expect(nombre.attributes('aria-invalid')).toBe('true');
+    // Los campos que todavía no se tocaron no muestran error.
+    expect(dialogo.text()).not.toContain('Ingresá un destino');
+
+    await nombre.setValue('Bariloche 2026');
+    expect(dialogo.text()).not.toContain('Ingresá un nombre');
+    expect(nombre.attributes('aria-invalid')).toBeUndefined();
+  });
+});

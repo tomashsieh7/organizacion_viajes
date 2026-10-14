@@ -1136,3 +1136,58 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - pruebas: diez archivos nuevos en `apps/web/test/`, `CronogramaVista.test.ts` y `e2e/diseno.spec.ts` (nuevo);
   - configuración y documentación: `apps/api/vitest.config.ts`, `apps/web/vite.config.ts`, `README.md`, `PLAN.md`, `docs/auditoria.md` y estas entradas.
 - **Verificación:** `npm run lint` pasa; `npm run cobertura` pasa 492 pruebas, 345 del backend y 147 del frontend, por encima de los mínimos; `npm run e2e` pasa los siete flujos.
+
+## 2026-10-14 00:09 — Merge del PR #10
+
+- **Acción:** con la autorización del usuario ("PR aparte primero", mergeado si pasa el CI), el PR #10 se mergeó a `main` con un commit de merge, en `5150091`, fijando la cabeza verificada `27ea605` con `expectedHeadSha`. El PR era "Segunda revisión: destino tras ingresar, pruebas del frontend, diseño en celular y mínimos de cobertura".
+- **Estado previo:** el CI pasó sus tres trabajos, sin conflictos ni comentarios.
+- **Después:**
+  - la sesión dejó de seguir el PR y se borró su revisión programada;
+  - la rama se alineó con `main` por avance directo, con la mejora visual en curso todavía sin commit.
+- **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-10-14 00:25 — Mejora visual y de experiencia de uso
+
+- **Pedido y decisiones:** el usuario pidió una interfaz más amigable para la vista y más intuitiva. Antes de escribir código se buscaron recomendaciones y se presentó un plan, porque es un cambio estructural. El usuario eligió:
+  - agrupar la navegación en 5 destinos, con barra inferior en celular;
+  - modo oscuro que sigue al sistema;
+  - validación de cada campo al salir de él;
+  - un PR aparte para la revisión anterior.
+- **Fuentes consultadas:** heurísticas de Nielsen, WCAG 2.2 (tamaño de las zonas para tocar y foco visible), Material 3 (de 2 a 5 destinos en la barra de navegación), guías de formularios, listas vacías, siluetas de carga y tipografía, y apps de gastos compartidos.
+- **Base visual (`App.vue`):**
+  - variables de color semánticas en modo claro y oscuro, con contraste AA verificado por cálculo en los dos;
+  - espaciado en múltiplos de 4 px y tipografía de 16 px con interlineado de 1,5;
+  - controles de 44 px, foco visible, encabezado fijo y respeto de "reducir movimiento";
+  - se reemplazaron los colores escritos a mano en 13 componentes.
+- **Navegación (`ViajeLayout.vue`):**
+  - Grupo, Planificar, Itinerario, Chat y Cuentas, con pestañas de sección dentro de cada grupo;
+  - en celular, barra fija abajo;
+  - sin menú para quien solo ve saldos;
+  - las rutas no cambian.
+- **Componentes:**
+  - `EstadoVacio` y `SiluetaCarga` en las listas, y un estado vacío distinto cuando el filtro no encuentra nada;
+  - propuestas con insignia de estado e ícono, voto propio marcado y conteo legible para lectores de pantalla;
+  - saldos con los totales destacados y "Le debés / Te debe";
+  - fechas con `formatearRango` ("10 al 16 dic 2026") y noches de cada alojamiento;
+  - avisos con ícono, participantes con su inicial;
+  - chat con burbujas y un alto que deja a la vista el campo para escribir;
+  - cronograma con tarjetas por día;
+  - formularios dentro de un panel.
+- **Validación:**
+  - `useValidacion` valida cada campo al salir de él con el mismo esquema Zod que se usa al enviar, y el error desaparece al corregirlo;
+  - se aplicó en los 6 formularios, con `name`, `aria-invalid` y `aria-describedby` en cada campo.
+- **Pruebas:**
+  - nuevas: `useValidacion`, validación al salir en el diálogo de nuevo viaje, `formatearRango` y la navegación agrupada;
+  - se ajustaron la prueba de ingreso, la e2e del itinerario (ahora se entra por el grupo Itinerario) y la de grupo, para que "Crear" no coincida también con "Crear mi primer grupo".
+- **Revisión visual:** capturas de 9 pantallas en celular y escritorio, en claro y oscuro. Ninguna página se desborda a lo ancho, y en celular se corrigió el alto del chat.
+- **Hallazgo aparte, sin corregir en este cambio:**
+  - una corrida de `npm run cobertura` falló en "D18: gastos simultáneos sobre el mismo par";
+  - el log de PostgreSQL muestra un deadlock real en `RepositorioDeudasPrisma.obtenerParaModificar`: dos gastos opuestos entre las mismas dos personas crean las filas de deuda que faltan en orden inverso;
+  - no se reprodujo en 23 corridas más;
+  - queda para decidir con el usuario, porque es backend y no forma parte de la mejora visual.
+- **Documentación:** `PLAN.md` (7.1 y la nueva 7.1.1) y esta entrada.
+- **Verificación:**
+  - `npm run lint` pasa;
+  - pruebas del frontend: 152, con 87,6 % de líneas;
+  - pruebas del backend: 345, que pasaron en las corridas siguientes;
+  - `npm run e2e` pasa los siete flujos.

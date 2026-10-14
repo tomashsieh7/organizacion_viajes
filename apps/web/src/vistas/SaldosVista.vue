@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../componentes/base/EstadoVacio.vue';
+import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import FilaSaldo from '../componentes/gastos/FilaSaldo.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useGastosStore } from '../stores/gastos';
@@ -33,31 +35,37 @@ onBeforeUnmount(() => (gastos.mensaje = ''));
   <section>
     <h2>Saldos</h2>
     <AvisoMensaje v-if="gastos.mensaje" tipo="exito">{{ gastos.mensaje }}</AvisoMensaje>
-    <p v-if="!cargado">Cargando…</p>
+    <SiluetaCarga v-if="!cargado" :cantidad="2" />
     <div v-else class="pestanas" role="tablist">
       <button
         type="button"
         role="tab"
-        class="boton"
+        class="pestana pestana--debo"
         :aria-selected="pestana === 'debo'"
         @click="pestana = 'debo'"
       >
-        Debo · {{ formatearMonto(gastos.totalDebo, viaje.actual!.moneda) }}
+        <span class="pestana__rotulo">Debo · </span>
+        <span class="pestana__total monto">{{
+          formatearMonto(gastos.totalDebo, viaje.actual!.moneda)
+        }}</span>
       </button>
       <button
         type="button"
         role="tab"
-        class="boton"
+        class="pestana pestana--meDeben"
         :aria-selected="pestana === 'meDeben'"
         @click="pestana = 'meDeben'"
       >
-        Me deben · {{ formatearMonto(gastos.totalMeDeben, viaje.actual!.moneda) }}
+        <span class="pestana__rotulo">Me deben · </span>
+        <span class="pestana__total monto">{{
+          formatearMonto(gastos.totalMeDeben, viaje.actual!.moneda)
+        }}</span>
       </button>
     </div>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <div v-if="cargado" role="tabpanel">
       <template v-if="pestana === 'debo'">
-        <p v-if="!gastos.debo.length">No le debés nada a nadie.</p>
+        <EstadoVacio v-if="!gastos.debo.length" icono="🎉" titulo="No le debés nada a nadie." />
         <ul class="saldos">
           <FilaSaldo
             v-for="d in gastos.debo"
@@ -65,6 +73,7 @@ onBeforeUnmount(() => (gastos.mensaje = ''));
             :deuda="d"
             :moneda="viaje.actual!.moneda"
             :mi-id="miId"
+            sentido="debo"
           >
             <RouterLink
               class="boton boton--principal"
@@ -76,7 +85,7 @@ onBeforeUnmount(() => (gastos.mensaje = ''));
         </ul>
       </template>
       <template v-else>
-        <p v-if="!gastos.meDeben.length">Nadie te debe nada.</p>
+        <EstadoVacio v-if="!gastos.meDeben.length" icono="🤝" titulo="Nadie te debe nada." />
         <ul class="saldos">
           <FilaSaldo
             v-for="d in gastos.meDeben"
@@ -84,6 +93,7 @@ onBeforeUnmount(() => (gastos.mensaje = ''));
             :deuda="d"
             :moneda="viaje.actual!.moneda"
             :mi-id="miId"
+            sentido="meDeben"
           />
         </ul>
       </template>
@@ -92,14 +102,47 @@ onBeforeUnmount(() => (gastos.mensaje = ''));
 </template>
 
 <style scoped>
+/* Los dos totales como pestañas grandes: cuánto debés y cuánto te deben, a simple vista. */
 .pestanas {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-4);
 }
-.boton[aria-selected='true'] {
-  background: var(--color-acento);
-  color: #fff;
+.pestana {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-1);
+  padding: var(--esp-3) var(--esp-4);
+  min-height: var(--alto-control);
+  text-align: left;
+  color: var(--color-texto);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-top: 4px solid var(--color-borde-fuerte);
+  border-radius: var(--radio-grande);
+  cursor: pointer;
+}
+.pestana__rotulo {
+  color: var(--color-texto-secundario);
+  font-weight: 500;
+}
+.pestana__total {
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+.pestana--debo .pestana__total {
+  color: var(--color-error);
+}
+.pestana--meDeben .pestana__total {
+  color: var(--color-exito);
+}
+.pestana[aria-selected='true'] {
+  border-color: var(--color-acento);
+  border-top-color: var(--color-acento);
+  box-shadow: var(--sombra);
 }
 .saldos {
   list-style: none;

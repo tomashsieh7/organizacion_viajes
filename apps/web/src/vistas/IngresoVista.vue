@@ -6,22 +6,24 @@ import CampoFormulario from '../componentes/base/CampoFormulario.vue';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useSesionStore } from '../stores/sesion';
-import { erroresDeValidacion } from '../utiles/formularios';
+import { useValidacion } from '../composables/useValidacion';
+import { problemasSegun } from '../utiles/formularios';
 import { destinoTrasIngresar } from '../utiles/navegacion';
 
 const sesion = useSesionStore();
 const router = useRouter();
 const route = useRoute();
 const datos = reactive({ email: '', password: '' });
-const errores = ref<Record<string, string>>({});
+const { errores, alSalir, validarTodo, aria } = useValidacion(
+  () => problemasSegun(esquemaInicioSesion, datos),
+  datos,
+);
 const error = ref('');
 const enviando = ref(false);
 
 async function enviar() {
   error.value = '';
-  const resultado = esquemaInicioSesion.safeParse(datos);
-  errores.value = resultado.success ? {} : erroresDeValidacion(resultado.error);
-  if (!resultado.success) return;
+  if (!validarTodo()) return;
   enviando.value = true;
   try {
     await sesion.ingresar(datos);
@@ -37,16 +39,29 @@ async function enviar() {
 <template>
   <main class="pagina pagina--angosta">
     <h1>Ingresar</h1>
-    <form novalidate @submit.prevent="enviar">
+    <p class="texto-secundario">
+      Organizá tus viajes en grupo: alojamientos, actividades y gastos.
+    </p>
+    <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
       <CampoFormulario id="email" etiqueta="Email" :error="errores['email']">
-        <input id="email" v-model="datos.email" type="email" autocomplete="email" required />
+        <input
+          id="email"
+          v-model="datos.email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          required
+          v-bind="aria('email', 'email')"
+        />
       </CampoFormulario>
       <CampoFormulario id="password" etiqueta="Contraseña" :error="errores['password']">
         <input
           id="password"
           v-model="datos.password"
+          name="password"
           type="password"
           autocomplete="current-password"
+          v-bind="aria('password', 'password')"
           required
         />
       </CampoFormulario>

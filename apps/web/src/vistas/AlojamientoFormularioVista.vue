@@ -9,7 +9,8 @@ import { ErrorDeApi, mensajeDeError } from '../clientes/http';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
 import { aUnidadMinima } from '../utiles/formato';
-import { erroresDeValidacion } from '../utiles/formularios';
+import { useValidacion } from '../composables/useValidacion';
+import { problemasSegun } from '../utiles/formularios';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
@@ -24,19 +25,15 @@ const datos = reactive({
   precio: '',
 });
 const ubicacion = ref<ValorUbicacion>({ ubicacion: '', latitud: null, longitud: null });
-const errores = ref<Record<string, string>>({});
 const error = ref('');
 const enviando = ref(false);
 
-async function enviar() {
-  error.value = '';
-  errores.value = {};
+const PRECIO_INVALIDO = 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50';
+
+/** Arma el cuerpo para la API y devuelve sus problemas, con el mismo esquema que valida la API. */
+function armarCuerpo() {
   const precio =
     datos.precio.trim() === '' ? undefined : aUnidadMinima(datos.precio, actual.moneda.decimales);
-  if (precio === null) {
-    errores.value = { precio: 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50' };
-    return;
-  }
   const cuerpo = {
     nombre: datos.nombre,
     descripcion: datos.descripcion,
@@ -46,13 +43,22 @@ async function enviar() {
     ...(ubicacion.value.latitud !== null && ubicacion.value.longitud !== null
       ? { latitud: ubicacion.value.latitud, longitud: ubicacion.value.longitud }
       : {}),
-    ...(precio === undefined ? {} : { precio }),
+    ...(precio === undefined || precio === null ? {} : { precio }),
   };
-  const resultado = esquemaAlojamientoNuevo.safeParse(cuerpo);
-  if (!resultado.success) {
-    errores.value = erroresDeValidacion(resultado.error);
-    return;
-  }
+  const problemas = problemasSegun(esquemaAlojamientoNuevo, cuerpo);
+  if (precio === null) problemas['precio'] = PRECIO_INVALIDO;
+  return { cuerpo, problemas };
+}
+
+const { errores, alSalir, validarTodo, aria } = useValidacion(
+  () => armarCuerpo().problemas,
+  [datos, ubicacion],
+);
+
+async function enviar() {
+  error.value = '';
+  if (!validarTodo()) return;
+  const { cuerpo } = armarCuerpo();
   enviando.value = true;
   try {
     await propuestas.proponerAlojamiento(cuerpo);
@@ -70,23 +76,37 @@ async function enviar() {
 <template>
   <section>
     <h2>Proponer alojamiento</h2>
-    <form novalidate @submit.prevent="enviar">
+    <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
       <CampoFormulario id="alojamiento-nombre" etiqueta="Nombre" :error="errores['nombre']">
-        <input id="alojamiento-nombre" v-model="datos.nombre" placeholder="Hostel Patagonia" />
+        <input
+          id="alojamiento-nombre"
+          v-model="datos.nombre"
+          name="nombre"
+          placeholder="Hostel Patagonia"
+          v-bind="aria('nombre', 'alojamiento-nombre')"
+        />
       </CampoFormulario>
       <CampoFormulario
         id="alojamiento-descripcion"
         etiqueta="Descripción"
         :error="errores['descripcion']"
       >
-        <textarea id="alojamiento-descripcion" v-model="datos.descripcion" rows="3"></textarea>
+        <textarea
+          id="alojamiento-descripcion"
+          v-model="datos.descripcion"
+          name="descripcion"
+          rows="3"
+          v-bind="aria('descripcion', 'alojamiento-descripcion')"
+        ></textarea>
       </CampoFormulario>
       <!-- P11: el selector solo ofrece días del viaje. -->
       <div class="fila">
         <CampoFormulario id="alojamiento-desde" etiqueta="Entrada" :error="errores['fechaDesde']">
           <input
             id="alojamiento-desde"
+            v-bind="aria('fechaDesde', 'alojamiento-desde')"
             v-model="datos.fechaDesde"
+            name="fechaDesde"
             type="date"
             :min="actual.fechaInicio"
             :max="actual.fechaFin"
@@ -95,7 +115,9 @@ async function enviar() {
         <CampoFormulario id="alojamiento-hasta" etiqueta="Salida" :error="errores['fechaHasta']">
           <input
             id="alojamiento-hasta"
+            v-bind="aria('fechaHasta', 'alojamiento-hasta')"
             v-model="datos.fechaHasta"
+            name="fechaHasta"
             type="date"
             :min="datos.fechaDesde"
             :max="actual.fechaFin"
@@ -110,7 +132,9 @@ async function enviar() {
       >
         <input
           id="alojamiento-precio"
+          v-bind="aria('precio', 'alojamiento-precio')"
           v-model="datos.precio"
+          name="precio"
           inputmode="decimal"
           placeholder="48000"
         />
@@ -123,12 +147,3 @@ async function enviar() {
     </form>
   </section>
 </template>
-
-<style scoped>
-textarea {
-  font: inherit;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
-}
-</style>

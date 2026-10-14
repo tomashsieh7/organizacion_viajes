@@ -26,6 +26,7 @@ defineProps<{ conflictos: ConflictoHorario[] }>();
 
 <style scoped>
 .aviso-superposicion {
+  background: var(--color-error-suave);
   border: 1px solid var(--color-error);
   border-radius: var(--radio);
   padding: 0.75rem 1rem;

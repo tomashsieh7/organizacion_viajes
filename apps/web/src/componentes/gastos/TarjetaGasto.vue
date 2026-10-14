@@ -12,7 +12,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
   <article class="gasto">
     <header>
       <h3>{{ gasto.titulo }}</h3>
-      <strong>{{ formatearMonto(gasto.monto, moneda) }}</strong>
+      <strong class="monto">{{ formatearMonto(gasto.monto, moneda) }}</strong>
     </header>
     <p class="meta">
       {{ gasto.categoria.nombre }} · pagó {{ quien(gasto.pagadoPor) }} ·
@@ -29,10 +29,12 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
 
 <style scoped>
 .gasto {
+  background: var(--color-superficie);
   border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.75rem;
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra);
+  padding: var(--esp-4);
+  margin-bottom: var(--esp-3);
 }
 header {
   display: flex;
@@ -43,9 +45,9 @@ h3 {
   margin: 0;
 }
 .meta {
-  color: #57606a;
-  font-size: 0.9rem;
-  margin: 0.3rem 0;
+  color: var(--color-texto-secundario);
+  font-size: 0.9375rem;
+  margin: var(--esp-1) 0 var(--esp-2);
 }
 .partes {
   margin: 0;

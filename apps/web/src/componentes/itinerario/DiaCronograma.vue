@@ -24,13 +24,18 @@ defineProps<{ dia: DiaDelCronograma; viajeId: string; esHoy: boolean }>();
 
 <style scoped>
 .dia {
-  border-left: 3px solid var(--color-borde);
-  padding: 0.25rem 0 0.5rem 1rem;
-  margin-bottom: 1rem;
-  scroll-margin-top: 1rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-left: 4px solid var(--color-borde-fuerte);
+  border-radius: var(--radio-grande);
+  padding: var(--esp-3) var(--esp-4);
+  margin-bottom: var(--esp-3);
+  /* Al desplazarse hasta hoy, el día no queda tapado por el encabezado fijo. */
+  scroll-margin-top: 5rem;
 }
 .dia.hoy {
   border-left-color: var(--color-acento);
+  background: var(--color-acento-suave);
 }
 h3 {
   margin: 0 0 0.4rem;
@@ -48,8 +53,11 @@ li {
   min-width: 7rem;
 }
 .vacio {
-  color: #57606a;
+  color: var(--color-texto-secundario);
   margin: 0;
+}
+.etiqueta-hoy {
+  color: var(--color-acento);
 }
 .noche {
   margin: 0.4rem 0 0;
