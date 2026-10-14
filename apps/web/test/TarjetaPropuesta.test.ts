@@ -34,7 +34,7 @@ const textos = (v: ReturnType<typeof montar>) => v.findAll('button').map((b) => 
 describe('TarjetaPropuesta', () => {
   it('muestra conteo, precio formateado y autor', () => {
     const v = montar(propuesta('PENDIENTE'), false);
-    expect(v.text()).toContain('👍 2 · 👎 1');
+    expect(v.find('.solo-lectores').text()).toBe('Votos: 2 a favor y 1 en contra');
     expect(v.text()).toMatch(/\$\s?48\.000,00/);
     expect(v.text()).toContain('propuesta por Tomás');
   });

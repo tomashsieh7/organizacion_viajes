@@ -16,7 +16,7 @@ const CENTRO_INICIAL: L.LatLngTuple = [-38.4, -63.6];
 function ubicarMarcador() {
   if (!mapa || props.latitud === null || props.longitud === null) return;
   const punto: L.LatLngTuple = [props.latitud, props.longitud];
-  marcador ??= L.circleMarker(punto, { radius: 8, color: '#0969da', fillOpacity: 0.8 }).addTo(mapa);
+  marcador ??= L.circleMarker(punto, { radius: 8, color: '#0f766e', fillOpacity: 0.8 }).addTo(mapa);
   marcador.setLatLng(punto);
   mapa.setView(punto, Math.max(mapa.getZoom(), 13));
 }

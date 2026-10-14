@@ -6,6 +6,7 @@ test('En tamaño celular ninguna página del viaje se desborda a lo ancho', asyn
   const p = ana.page;
   await p.setViewportSize({ width: 360, height: 740 });
   const secciones = [
+    'resumen',
     'participantes',
     'alojamientos',
     'actividades',

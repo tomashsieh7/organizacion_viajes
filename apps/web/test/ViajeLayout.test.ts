@@ -41,7 +41,7 @@ describe('ViajeLayout', () => {
     expect(falso.conexion.unirse).toHaveBeenCalledWith('v1');
     // Los cinco grupos, con el del chat activo y sin pestañas porque tiene una sola sección.
     expect(vista.findAll('nav.grupos .grupo__nombre').map((a) => a.text())).toEqual([
-      'Grupo',
+      'Inicio',
       'Planificar',
       'Itinerario',
       'Chat',

@@ -6,6 +6,7 @@ import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import CampoFormulario from '../componentes/base/CampoFormulario.vue';
 import AvisoExcedeDeuda from '../componentes/gastos/AvisoExcedeDeuda.vue';
 import { ErrorDeApi, mensajeDeError } from '../clientes/http';
+import { useCelebracion } from '../composables/useCelebracion';
 import { useGastosStore } from '../stores/gastos';
 import { useViajeStore } from '../stores/viaje';
 import { aUnidadMinima, formatearMonto, nombreVisible } from '../utiles/formato';
@@ -15,6 +16,7 @@ const gastos = useGastosStore();
 const route = useRoute();
 const router = useRouter();
 const actual = viaje.actual!;
+const { celebrar } = useCelebracion();
 const acreedorId = String(route.params['acreedorId']);
 
 const texto = ref('');
@@ -66,6 +68,9 @@ async function pagar() {
       saldo === 0
         ? `Saldaste tu deuda con ${nombre}.`
         : `Registraste el pago. Todavía le debés ${formatearMonto(saldo, actual.moneda)} a ${nombre}.`;
+    if (saldo === 0) celebrar(`¡Cuentas saldadas con ${nombre}!`);
+    // La deuda pendiente del viaje cambió: el Resumen la usa para el hito de cuentas.
+    void viaje.refrescar().catch(() => {});
     await router.push(volver);
   } catch (e) {
     // RN-P4: si otro pago cambió el saldo mientras tanto, se vuelve a leer y se avisa.

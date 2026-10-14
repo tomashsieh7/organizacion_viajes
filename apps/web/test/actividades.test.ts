@@ -30,10 +30,10 @@ describe('formato de actividades', () => {
 
   it('avisa cuando la actividad termina al día siguiente', () => {
     expect(formatearHorario({ fecha: '2026-12-11', horaInicio: '10:00', duracionMin: 120 })).toBe(
-      '11/12/2026 · 10:00 a 12:00',
+      '11 dic 2026 · 10:00 a 12:00',
     );
     expect(formatearHorario({ fecha: '2026-12-11', horaInicio: '23:30', duracionMin: 90 })).toBe(
-      '11/12/2026 · 23:30 a 01:00 del día siguiente',
+      '11 dic 2026 · 23:30 a 01:00 del día siguiente',
     );
   });
 });

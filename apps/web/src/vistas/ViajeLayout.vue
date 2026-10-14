@@ -2,10 +2,13 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
+import IconoLinea, { type NombreIcono } from '../componentes/base/IconoLinea.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useChatStore } from '../stores/chat';
 import { useViajeStore } from '../stores/viaje';
+import { hoyDelDispositivo } from '../utiles/fechas';
 import { formatearRango } from '../utiles/formato';
+import { cuentaRegresiva } from '../utiles/progreso';
 
 const store = useViajeStore();
 const chat = useChatStore();
@@ -19,7 +22,7 @@ interface Seccion {
 }
 interface Grupo {
   nombre: string;
-  icono: string;
+  icono: NombreIcono;
   secciones: Seccion[];
 }
 
@@ -28,10 +31,17 @@ interface Grupo {
  * navegación fija; dentro de cada grupo, las secciones se eligen con pestañas.
  */
 const GRUPOS: Grupo[] = [
-  { nombre: 'Grupo', icono: '👥', secciones: [{ nombre: 'Participantes', ruta: 'participantes' }] },
+  {
+    nombre: 'Inicio',
+    icono: 'casa',
+    secciones: [
+      { nombre: 'Resumen', ruta: 'resumen' },
+      { nombre: 'Participantes', ruta: 'participantes' },
+    ],
+  },
   {
     nombre: 'Planificar',
-    icono: '🗳️',
+    icono: 'votar',
     secciones: [
       { nombre: 'Alojamientos', ruta: 'alojamientos' },
       { nombre: 'Actividades', ruta: 'actividades' },
@@ -39,16 +49,16 @@ const GRUPOS: Grupo[] = [
   },
   {
     nombre: 'Itinerario',
-    icono: '🗓️',
+    icono: 'calendario',
     secciones: [
       { nombre: 'Cronograma', ruta: 'cronograma' },
       { nombre: 'Mapa', ruta: 'mapa' },
     ],
   },
-  { nombre: 'Chat', icono: '💬', secciones: [{ nombre: 'Chat', ruta: 'chat' }] },
+  { nombre: 'Chat', icono: 'chat', secciones: [{ nombre: 'Chat', ruta: 'chat' }] },
   {
     nombre: 'Cuentas',
-    icono: '💰',
+    icono: 'cuentas',
     secciones: [
       { nombre: 'Gastos', ruta: 'gastos' },
       { nombre: 'Saldos', ruta: 'saldos' },
@@ -60,6 +70,12 @@ const soloSaldos = computed(() => store.actual?.miAcceso === 'SOLO_SALDOS');
 const grupos = computed(() => (soloSaldos.value ? [] : GRUPOS));
 
 const enlace = (ruta: string) => `/viajes/${store.actual?.id}/${ruta}`;
+/** Cuenta regresiva de la portada, con la fecha del dispositivo. */
+const cuenta = computed(() =>
+  store.actual
+    ? cuentaRegresiva(store.actual.fechaInicio, store.actual.fechaFin, hoyDelDispositivo())
+    : null,
+);
 /** La sección activa, incluidas sus subrutas (por ejemplo, `gastos/nuevo`). */
 const seccionActiva = computed(() => route.path.split('/')[3] ?? '');
 const grupoActivo = computed(() =>
@@ -128,12 +144,26 @@ onBeforeUnmount(() => {
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <template v-else-if="store.actual">
       <header class="viaje">
-        <RouterLink to="/viajes" class="volver">← Mis grupos</RouterLink>
-        <h1>{{ store.actual.nombre }}</h1>
-        <p class="texto-secundario">
-          📍 {{ store.actual.destino }} · 📅
-          {{ formatearRango(store.actual.fechaInicio, store.actual.fechaFin) }}
-        </p>
+        <!-- Portada neutra: el color es de la aplicación y no sugiere nada sobre el destino. -->
+        <div class="portada">
+          <RouterLink to="/viajes" class="volver">← Mis grupos</RouterLink>
+          <h1>{{ store.actual.nombre }}</h1>
+          <p class="portada__datos texto-secundario">
+            <span><IconoLinea nombre="pin" :tamano="16" /> {{ store.actual.destino }}</span>
+            <span
+              ><IconoLinea nombre="calendario" :tamano="16" />
+              {{ formatearRango(store.actual.fechaInicio, store.actual.fechaFin) }}</span
+            >
+            <span
+              ><IconoLinea nombre="personas" :tamano="16" />
+              {{ store.actual.cantidadParticipantes }}
+              {{ store.actual.cantidadParticipantes === 1 ? 'viajero' : 'viajeros' }}</span
+            >
+          </p>
+          <p v-if="cuenta" class="chip" :class="`chip--${cuenta.etapa}`">
+            <IconoLinea nombre="reloj" :tamano="16" /> {{ cuenta.texto }}
+          </p>
+        </div>
         <nav v-if="grupos.length" class="grupos" aria-label="Secciones del viaje">
           <RouterLink
             v-for="g in grupos"
@@ -143,7 +173,7 @@ onBeforeUnmount(() => {
             :class="{ activo: g === grupoActivo }"
             :aria-current="g === grupoActivo ? 'page' : undefined"
           >
-            <span class="grupo__icono" aria-hidden="true">{{ g.icono }}</span>
+            <IconoLinea :nombre="g.icono" class="grupo__icono" :tamano="20" />
             <span class="grupo__nombre">{{ g.nombre }}</span>
           </RouterLink>
         </nav>
@@ -180,6 +210,18 @@ onBeforeUnmount(() => {
 .viaje {
   margin-bottom: var(--esp-4);
 }
+.portada {
+  position: relative;
+  overflow: hidden;
+  padding: var(--esp-2) var(--esp-5) var(--esp-5);
+  border: 1px solid var(--color-borde);
+  border-top: 6px solid var(--color-acento);
+  border-radius: var(--radio-grande);
+  background:
+    radial-gradient(circle at 1px 1px, var(--color-borde) 1.2px, transparent 0) 0 0 / 18px 18px,
+    var(--color-superficie);
+  box-shadow: var(--sombra);
+}
 .volver {
   display: inline-flex;
   align-items: center;
@@ -187,6 +229,28 @@ onBeforeUnmount(() => {
 }
 .viaje h1 {
   margin: 0 0 var(--esp-1);
+  font-size: 2rem;
+}
+.portada__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1) var(--esp-4);
+  margin-bottom: var(--esp-3);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: var(--esp-1) var(--esp-3);
+  border-radius: 999px;
+  font-weight: 700;
+  background: var(--color-acento);
+  color: var(--color-sobre-acento);
+}
+.chip--despues {
+  background: var(--color-neutro-suave);
+  color: var(--color-neutro);
 }
 
 /* Escritorio: los cinco grupos como pestañas bajo el título. */
@@ -204,7 +268,7 @@ onBeforeUnmount(() => {
   padding: 0 var(--esp-3);
   color: var(--color-texto-secundario);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   border-bottom: 3px solid transparent;
   margin-bottom: -1px;
 }
@@ -275,9 +339,11 @@ onBeforeUnmount(() => {
     border-top-color: var(--color-acento);
     background: var(--color-acento-suave);
   }
-  .grupo__icono {
-    font-size: 1.35rem;
-    line-height: 1;
+  .portada {
+    padding: var(--esp-1) var(--esp-4) var(--esp-4);
+  }
+  .viaje h1 {
+    font-size: 1.6rem;
   }
   .subsecciones {
     display: flex;

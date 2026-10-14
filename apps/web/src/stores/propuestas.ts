@@ -46,6 +46,13 @@ export const usePropuestasStore = defineStore('propuestas', () => {
     );
   }
 
+  /** Para el Resumen: todos los alojamientos y actividades, sin el filtro de estado de cada lista. */
+  async function cargarTodo() {
+    filtro.value = '';
+    filtroActividades.value = '';
+    await Promise.all([cargarAlojamientos(), cargarActividades()]);
+  }
+
   function obtenerActividad(actividadId: string) {
     return cliente!.obtenerActividad(viajeId(), actividadId);
   }
@@ -101,6 +108,7 @@ export const usePropuestasStore = defineStore('propuestas', () => {
     cargarAlojamientos,
     proponerAlojamiento,
     cargarActividades,
+    cargarTodo,
     obtenerActividad,
     proponerActividad,
     proponerAlternativa,

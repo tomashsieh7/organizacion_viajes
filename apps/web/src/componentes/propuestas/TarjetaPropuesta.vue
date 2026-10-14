@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { AccionSobrePropuesta, Moneda, PropuestaVista, ValorVoto } from '@viajes/compartido';
+import IconoLinea, { type NombreIcono } from '../base/IconoLinea.vue';
 import { formatearMonto, NOMBRES_ESTADO } from '../../utiles/formato';
 
 const props = defineProps<{
@@ -19,11 +20,11 @@ const emit = defineEmits<{
 
 const pendiente = computed(() => props.propuesta.estado === 'PENDIENTE');
 /** Ícono de cada estado; acompaña al texto y al color de la insignia. */
-const ICONO_ESTADO: Record<string, string> = {
-  PENDIENTE: '⏳',
-  CONFIRMADA: '✓',
-  DENEGADA: '✕',
-  CANCELADA: '⊘',
+const ICONO_ESTADO: Record<PropuestaVista['estado'], NombreIcono> = {
+  PENDIENTE: 'reloj',
+  CONFIRMADA: 'check',
+  DENEGADA: 'cruz',
+  CANCELADA: 'prohibido',
 };
 /** Acciones del Admin según el estado (RN-R1). */
 const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]>(() => {
@@ -43,14 +44,14 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
     <header>
       <h3>{{ titulo }}</h3>
       <span class="insignia estado" :class="`insignia--${propuesta.estado}`">
-        <span aria-hidden="true">{{ ICONO_ESTADO[propuesta.estado] }}</span>
+        <IconoLinea :nombre="ICONO_ESTADO[propuesta.estado]" :tamano="14" />
         {{ NOMBRES_ESTADO[propuesta.estado] }}
       </span>
     </header>
     <slot />
     <p>{{ propuesta.descripcion }}</p>
     <p class="meta">
-      <span aria-hidden="true">📍 </span>{{ propuesta.ubicacion }}
+      <IconoLinea nombre="pin" :tamano="16" /> {{ propuesta.ubicacion }}
       <template v-if="propuesta.precio !== null">
         · <span class="monto">{{ formatearMonto(propuesta.precio, moneda) }}</span></template
       >
@@ -58,8 +59,9 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
     </p>
     <footer>
       <span class="conteo">
-        <span aria-hidden="true"
-          >👍 {{ propuesta.votosAFavor }} · 👎 {{ propuesta.votosEnContra }}</span
+        <span class="conteo__votos" aria-hidden="true"
+          ><IconoLinea nombre="a-favor" :tamano="16" /> {{ propuesta.votosAFavor }}
+          <IconoLinea nombre="en-contra" :tamano="16" /> {{ propuesta.votosEnContra }}</span
         >
         <span class="solo-lectores"
           >Votos: {{ propuesta.votosAFavor }} a favor y {{ propuesta.votosEnContra }} en

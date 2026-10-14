@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onErrorCaptured, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import AvisoCelebracion from './componentes/base/AvisoCelebracion.vue';
 import AvisoMensaje from './componentes/base/AvisoMensaje.vue';
+import IconoLinea from './componentes/base/IconoLinea.vue';
 import { useSesionStore } from './stores/sesion';
 
 const sesion = useSesionStore();
@@ -46,7 +48,7 @@ onErrorCaptured((error) => {
   <a class="saltar" href="#contenido" @click.prevent="irAlContenido">Saltar al contenido</a>
   <header class="barra">
     <RouterLink to="/viajes" class="marca">
-      <span class="marca__icono" aria-hidden="true">🧳</span>Organizador de viajes
+      <IconoLinea nombre="mapa" class="marca__icono" :tamano="22" />Organizador de viajes
     </RouterLink>
     <div v-if="sesion.usuario" class="usuario">
       <span class="usuario__nombre">{{ sesion.usuario.nombre }}</span>
@@ -62,36 +64,40 @@ onErrorCaptured((error) => {
     <RouterView />
   </div>
   <p class="solo-lectores" aria-live="polite">{{ anuncio }}</p>
+  <AvisoCelebracion />
 </template>
 
 <style>
 /*
- * Base visual: variables de diseño (colores, espaciado, tipografía) y estilos comunes. Los colores
- * cumplen contraste AA en los dos modos; el oscuro sigue la preferencia del sistema.
+ * Base visual: variables de diseño (colores, espaciado, tipografía) y estilos comunes. Los neutros
+ * son grises sin tinte, para no sugerir clima, y el turquesa es el único color de la aplicación;
+ * verde, ámbar y rojo quedan para los estados. El modo oscuro sigue al sistema y repite los
+ * contrastes del claro, con las tarjetas apenas más claras que el fondo. Todo cumple AA.
  */
 :root {
   color-scheme: light dark;
-  --color-texto: #1f2328;
-  --color-texto-secundario: #59636e;
-  --color-fondo: #f6f8fa;
+  --color-texto: #282828;
+  --color-texto-secundario: #5e5e5e;
+  --color-fondo: #f8f8f8;
   --color-superficie: #ffffff;
-  --color-superficie-alt: #f6f8fa;
-  --color-borde: #d1d9e0;
-  --color-borde-fuerte: #818b98;
-  --color-acento: #0969da;
+  --color-superficie-alt: #f2f2f2;
+  --color-borde: #e5e5e5;
+  --color-borde-fuerte: #858585;
+  --color-acento: #0f766e;
   --color-sobre-acento: #ffffff;
-  --color-acento-suave: #ddf4ff;
-  --color-exito: #1a7f37;
-  --color-exito-suave: #dafbe1;
-  --color-error: #cf222e;
-  --color-error-suave: #ffebe9;
-  --color-aviso: #9a6700;
-  --color-aviso-suave: #fff8c5;
-  --color-neutro: #59636e;
-  --color-neutro-suave: #eff2f5;
-  --sombra: 0 1px 2px rgb(31 35 40 / 0.06), 0 1px 3px rgb(31 35 40 / 0.08);
-  --sombra-elevada: 0 8px 24px rgb(31 35 40 / 0.16);
-  --fondo-modal: rgb(31 35 40 / 0.5);
+  --color-acento-suave: #e0f2ef;
+  --color-exito: #15803d;
+  --color-exito-suave: #dcfce7;
+  --color-error: #b91c1c;
+  --color-error-suave: #fee2e2;
+  --color-aviso: #a16207;
+  --color-aviso-suave: #fef9c3;
+  --color-neutro: #5e5e5e;
+  --color-neutro-suave: #f2f2f2;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 14px rgb(0 0 0 / 0.06);
+  --sombra-elevada: 0 10px 30px rgb(0 0 0 / 0.18);
+  --fondo-modal: rgb(0 0 0 / 0.5);
+  --fuente-titulos: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif;
 
   --esp-1: 0.25rem;
   --esp-2: 0.5rem;
@@ -99,8 +105,8 @@ onErrorCaptured((error) => {
   --esp-4: 1rem;
   --esp-5: 1.5rem;
   --esp-6: 2rem;
-  --radio: 8px;
-  --radio-grande: 12px;
+  --radio: 10px;
+  --radio-grande: 18px;
   --alto-control: 2.75rem;
   --alto-barra-inferior: 4rem;
   --duracion: 150ms;
@@ -119,26 +125,26 @@ onErrorCaptured((error) => {
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-texto: #e6edf3;
-    --color-texto-secundario: #9198a1;
-    --color-fondo: #0d1117;
-    --color-superficie: #151b23;
-    --color-superficie-alt: #212830;
-    --color-borde: #3d444d;
-    --color-borde-fuerte: #656c76;
-    --color-acento: #4493f8;
-    --color-sobre-acento: #0d1117;
-    --color-acento-suave: #15243a;
-    --color-exito: #3fb950;
-    --color-exito-suave: #12261e;
-    --color-error: #f85149;
-    --color-error-suave: #2d1214;
-    --color-aviso: #d29922;
-    --color-aviso-suave: #272115;
-    --color-neutro: #9198a1;
-    --color-neutro-suave: #212830;
-    --sombra: 0 1px 2px rgb(0 0 0 / 0.4);
-    --sombra-elevada: 0 8px 24px rgb(0 0 0 / 0.5);
+    --color-texto: #e8e8e8;
+    --color-texto-secundario: #9b9b9b;
+    --color-fondo: #1c1c1c;
+    --color-superficie: #222222;
+    --color-superficie-alt: #2b2b2b;
+    --color-borde: #333333;
+    --color-borde-fuerte: #717171;
+    --color-acento: #2dd4bf;
+    --color-sobre-acento: #0b1f1d;
+    --color-acento-suave: #12322f;
+    --color-exito: #4ade80;
+    --color-exito-suave: #12301f;
+    --color-error: #f87171;
+    --color-error-suave: #351717;
+    --color-aviso: #facc15;
+    --color-aviso-suave: #332b0c;
+    --color-neutro: #9b9b9b;
+    --color-neutro-suave: #2b2b2b;
+    --sombra: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 14px rgb(0 0 0 / 0.25);
+    --sombra-elevada: 0 10px 30px rgb(0 0 0 / 0.5);
     --fondo-modal: rgb(0 0 0 / 0.6);
   }
 }
@@ -169,6 +175,7 @@ h1,
 h2,
 h3,
 h4 {
+  font-family: var(--fuente-titulos);
   line-height: 1.25;
   margin: 0 0 var(--esp-3);
 }
@@ -215,12 +222,13 @@ a:hover {
   align-items: center;
   gap: var(--esp-2);
   min-height: var(--alto-control);
-  font-weight: 700;
+  font-family: var(--fuente-titulos);
+  font-weight: 800;
   color: inherit;
   text-decoration: none;
 }
 .marca__icono {
-  font-size: 1.4rem;
+  color: var(--color-acento);
 }
 .usuario {
   display: flex;
@@ -320,17 +328,17 @@ label {
 
 .boton {
   font: inherit;
-  font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--esp-2);
   min-height: var(--alto-control);
   padding: var(--esp-2) var(--esp-4);
-  border-radius: var(--radio);
+  border-radius: 999px;
   border: 1px solid var(--color-borde-fuerte);
   background: var(--color-superficie);
   color: var(--color-texto);
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   transition:
@@ -414,7 +422,6 @@ label {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-/* Oculta un texto a la vista y lo deja para los lectores de pantalla. */
 .saltar {
   position: absolute;
   left: var(--esp-3);
@@ -431,6 +438,7 @@ label {
 .contenido:focus {
   outline: none;
 }
+/* Oculta un texto a la vista y lo deja para los lectores de pantalla. */
 .solo-lectores {
   position: absolute;
   width: 1px;
