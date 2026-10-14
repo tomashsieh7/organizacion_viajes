@@ -49,6 +49,7 @@ onBeforeUnmount(() => clearTimeout(espera));
     <label for="ubicacion">Ubicación</label>
     <input
       id="ubicacion"
+      name="ubicacion"
       :value="modelo.ubicacion"
       autocomplete="off"
       placeholder="Buscá una dirección o un lugar"
@@ -97,7 +98,7 @@ onBeforeUnmount(() => clearTimeout(espera));
   background: var(--color-superficie);
 }
 .aviso {
-  color: #57606a;
+  color: var(--color-texto-secundario);
   margin: 0;
 }
 .error {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
@@ -76,7 +77,7 @@ onMounted(async () => {
         @cerrar="cerrarDetalle"
       />
     </template>
-    <p v-else-if="!error">Cargando…</p>
+    <SiluetaCarga v-else-if="!error" :cantidad="2" />
   </section>
 </template>
 

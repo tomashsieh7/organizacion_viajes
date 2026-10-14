@@ -10,3 +10,14 @@ export function erroresDeValidacion(error: {
 }): Record<string, string> {
   return Object.fromEntries(error.issues.map((i) => [String(i.path[0]), i.message]));
 }
+
+/** Errores por campo de un valor según un esquema de Zod; vacío si el valor es válido. */
+export function problemasSegun(
+  esquema: {
+    safeParse(v: unknown): { success: boolean; error?: { issues: ProblemaDeValidacion[] } };
+  },
+  valor: unknown,
+): Record<string, string> {
+  const r = esquema.safeParse(valor);
+  return r.success || !r.error ? {} : erroresDeValidacion(r.error);
+}

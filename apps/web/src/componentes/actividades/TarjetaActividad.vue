@@ -30,7 +30,7 @@ const id = props.actividad.id;
     @resolver="emit('resolver', id, $event)"
   >
     <p class="horario">
-      {{ formatearHorario(actividad.actividad) }} ({{
+      <span aria-hidden="true">🕒 </span>{{ formatearHorario(actividad.actividad) }} ({{
         formatearDuracion(actividad.actividad.duracionMin)
       }})
     </p>
@@ -39,10 +39,10 @@ const id = props.actividad.id;
     </p>
     <RouterLink
       v-if="actividad.estado === 'PENDIENTE'"
-      class="proponer-alternativa"
+      class="proponer-alternativa boton boton--chico"
       :to="`/viajes/${viajeId}/actividades/${id}/alternativa`"
     >
-      Proponer alternativa
+      <span aria-hidden="true">＋</span> Proponer alternativa
     </RouterLink>
   </TarjetaPropuesta>
 </template>
@@ -50,13 +50,13 @@ const id = props.actividad.id;
 <style scoped>
 .horario,
 .original {
-  margin: 0.25rem 0 0;
+  margin: 0 0 var(--esp-2);
 }
 .original {
   font-style: italic;
+  color: var(--color-texto-secundario);
 }
 .proponer-alternativa {
-  display: inline-block;
-  margin-top: 0.25rem;
+  margin-bottom: var(--esp-2);
 }
 </style>

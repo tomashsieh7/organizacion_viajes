@@ -57,7 +57,10 @@ onMounted(async () => {
     <button v-if="hayMas" type="button" class="boton anteriores" @click="emit('anteriores')">
       Ver mensajes anteriores
     </button>
-    <p v-if="!mensajes.length" class="vacio">Todavía no hay mensajes. ¡Escribí el primero!</p>
+    <p v-if="!mensajes.length" class="vacio">
+      <span class="vacio__icono" aria-hidden="true">💬</span>
+      Todavía no hay mensajes. ¡Escribí el primero!
+    </p>
     <article
       v-for="m in mensajes"
       :key="m.idTemporal ?? m.id"
@@ -78,32 +81,45 @@ onMounted(async () => {
 
 <style scoped>
 .lista-mensajes {
-  height: 26rem;
+  /* Deja a la vista el campo para escribir, también con la barra inferior del celular. */
+  height: clamp(14rem, calc(100dvh - 24rem), 32rem);
   overflow-y: auto;
+  background: var(--color-superficie);
   border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
-  padding: 0.75rem;
+  border-radius: var(--radio-grande);
+  padding: var(--esp-3);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--esp-2);
 }
 .anteriores {
   align-self: center;
 }
 .vacio {
-  color: #57606a;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-2);
+  color: var(--color-texto-secundario);
   text-align: center;
 }
+.vacio__icono {
+  font-size: 2.5rem;
+}
 .mensaje {
-  max-width: 75%;
-  background: var(--color-superficie);
-  border-radius: var(--radio);
-  padding: 0.4rem 0.7rem;
+  max-width: min(80%, 32rem);
+  background: var(--color-superficie-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande) var(--radio-grande) var(--radio-grande) var(--esp-1);
+  padding: var(--esp-2) var(--esp-3);
   align-self: flex-start;
 }
 .mensaje.propio {
   align-self: flex-end;
-  background: #ddf4ff;
+  background: var(--color-acento-suave);
+  border-color: transparent;
+  border-radius: var(--radio-grande) var(--radio-grande) var(--esp-1) var(--radio-grande);
 }
 .mensaje[data-estado='pendiente'] {
   opacity: 0.7;
@@ -115,7 +131,7 @@ header {
   font-size: 0.85rem;
 }
 time {
-  color: #57606a;
+  color: var(--color-texto-secundario);
 }
 .mensaje p {
   margin: 0.2rem 0 0;

@@ -34,6 +34,6 @@ const emit = defineEmits<{ elegir: [dia: string] }>();
 }
 .boton[aria-pressed='true'] {
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-sobre-acento);
 }
 </style>

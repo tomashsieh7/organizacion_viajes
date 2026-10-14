@@ -16,6 +16,13 @@ const emit = defineEmits<{
 }>();
 
 const pendiente = computed(() => props.propuesta.estado === 'PENDIENTE');
+/** Ícono de cada estado; acompaña al texto y al color de la insignia. */
+const ICONO_ESTADO: Record<string, string> = {
+  PENDIENTE: '⏳',
+  CONFIRMADA: '✓',
+  DENEGADA: '✕',
+  CANCELADA: '⊘',
+};
 /** Acciones del Admin según el estado (RN-R1). */
 const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]>(() => {
   if (!props.soyAdmin) return [];
@@ -33,21 +40,30 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
   <article class="propuesta" :data-estado="propuesta.estado">
     <header>
       <h3>{{ titulo }}</h3>
-      <span class="estado">{{ NOMBRES_ESTADO[propuesta.estado] }}</span>
+      <span class="insignia estado" :class="`insignia--${propuesta.estado}`">
+        <span aria-hidden="true">{{ ICONO_ESTADO[propuesta.estado] }}</span>
+        {{ NOMBRES_ESTADO[propuesta.estado] }}
+      </span>
     </header>
     <slot />
     <p>{{ propuesta.descripcion }}</p>
     <p class="meta">
-      {{ propuesta.ubicacion }}
+      <span aria-hidden="true">📍 </span>{{ propuesta.ubicacion }}
       <template v-if="propuesta.precio !== null">
-        · {{ formatearMonto(propuesta.precio, moneda) }}</template
+        · <span class="monto">{{ formatearMonto(propuesta.precio, moneda) }}</span></template
       >
       · propuesta por {{ propuesta.autor.nombre }}
     </p>
     <footer>
-      <span class="conteo" aria-label="Votos"
-        >👍 {{ propuesta.votosAFavor }} · 👎 {{ propuesta.votosEnContra }}</span
-      >
+      <span class="conteo">
+        <span aria-hidden="true"
+          >👍 {{ propuesta.votosAFavor }} · 👎 {{ propuesta.votosEnContra }}</span
+        >
+        <span class="solo-lectores"
+          >Votos: {{ propuesta.votosAFavor }} a favor y {{ propuesta.votosEnContra }} en
+          contra</span
+        >
+      </span>
       <div v-if="pendiente" class="votos">
         <button
           type="button"
@@ -87,49 +103,62 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
 
 <style scoped>
 .propuesta {
+  background: var(--color-superficie);
   border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
-  padding: 1rem;
-  margin-bottom: 0.75rem;
+  border-left: 4px solid var(--color-aviso);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra);
+  padding: var(--esp-4);
+  margin-bottom: var(--esp-3);
 }
 .propuesta[data-estado='CONFIRMADA'] {
-  border-color: var(--color-exito);
+  border-left-color: var(--color-exito);
 }
 .propuesta[data-estado='DENEGADA'],
 .propuesta[data-estado='CANCELADA'] {
-  opacity: 0.7;
+  border-left-color: var(--color-borde-fuerte);
+  background: var(--color-superficie-alt);
 }
 header {
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-1);
 }
 h3 {
   margin: 0;
 }
-.estado {
-  font-size: 0.85rem;
-}
 .meta {
-  color: #57606a;
-  font-size: 0.9rem;
+  color: var(--color-texto-secundario);
+  font-size: 0.9375rem;
 }
 footer {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--esp-3);
   align-items: center;
   justify-content: space-between;
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--color-borde);
+}
+.conteo {
+  font-variant-numeric: tabular-nums;
 }
 .votos,
 .admin {
   display: flex;
-  gap: 0.4rem;
+  gap: var(--esp-2);
   flex-wrap: wrap;
 }
+/* El voto propio se distingue por el color, el borde y la marca, no solo por el color. */
 .boton[aria-pressed='true'] {
-  background: var(--color-superficie);
+  background: var(--color-acento-suave);
   border-color: var(--color-acento);
-  font-weight: bold;
+  color: var(--color-acento);
+  font-weight: 600;
+}
+.boton[aria-pressed='true']::before {
+  content: '✓';
 }
 </style>

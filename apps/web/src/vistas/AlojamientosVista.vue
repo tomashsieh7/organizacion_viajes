@@ -2,17 +2,26 @@
 import { onMounted, ref } from 'vue';
 import type { AccionSobrePropuesta, ValorVoto } from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../componentes/base/EstadoVacio.vue';
+import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import TarjetaPropuesta from '../componentes/propuestas/TarjetaPropuesta.vue';
 import { mensajeDeError } from '../clientes/http';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
-import { formatearFecha, NOMBRES_ESTADO } from '../utiles/formato';
+import { diasEntre } from '../utiles/fechas';
+import { formatearRango, NOMBRES_ESTADO } from '../utiles/formato';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
 const error = ref('');
 /** Hasta la primera carga no se muestra la lista vacía. */
 const cargado = ref(false);
+
+/** Noches de la estadía: el día de salida no cuenta (RN-C3). */
+function noches(desde: string, hasta: string): string {
+  const n = diasEntre(desde, hasta).length - 1;
+  return n === 1 ? '1 noche' : `${n} noches`;
+}
 
 async function cargar() {
   error.value = '';
@@ -53,18 +62,35 @@ onMounted(cargar);
         Proponer alojamiento
       </RouterLink>
     </div>
-    <label for="filtro-estado">Mostrar</label>
-    <select id="filtro-estado" v-model="propuestas.filtro" @change="cargar">
-      <option value="">Todos</option>
-      <option v-for="(nombre, estado) in NOMBRES_ESTADO" :key="estado" :value="estado">
-        {{ nombre }}
-      </option>
-    </select>
+    <div class="filtro">
+      <label for="filtro-estado">Mostrar</label>
+      <select id="filtro-estado" v-model="propuestas.filtro" @change="cargar">
+        <option value="">Todos</option>
+        <option v-for="(nombre, estado) in NOMBRES_ESTADO" :key="estado" :value="estado">
+          {{ nombre }}
+        </option>
+      </select>
+    </div>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
-    <p v-if="!cargado">Cargando…</p>
-    <p v-else-if="!error && !propuestas.alojamientos.length">
-      Todavía no hay alojamientos propuestos.
-    </p>
+    <SiluetaCarga v-if="!cargado" />
+    <template v-else-if="!error && !propuestas.alojamientos.length">
+      <EstadoVacio
+        v-if="propuestas.filtro"
+        icono="🔎"
+        titulo="No hay alojamientos con ese estado."
+        descripcion="Probá mostrando todos."
+      />
+      <EstadoVacio
+        v-else
+        icono="🏨"
+        titulo="Todavía no hay alojamientos propuestos."
+        descripcion="Proponé dónde dormir y el grupo vota; el Admin confirma el elegido."
+      >
+        <RouterLink class="boton" :to="`/viajes/${viaje.actual!.id}/alojamientos/nuevo`">
+          Proponer el primero
+        </RouterLink>
+      </EstadoVacio>
+    </template>
     <TarjetaPropuesta
       v-for="a in propuestas.alojamientos"
       :key="a.id"
@@ -77,8 +103,9 @@ onMounted(cargar);
       @resolver="resolver(a.id, $event)"
     >
       <p class="fechas">
-        Entrada {{ formatearFecha(a.alojamiento.fechaDesde) }} · salida
-        {{ formatearFecha(a.alojamiento.fechaHasta) }}
+        <span aria-hidden="true">📅 </span
+        >{{ formatearRango(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }} ·
+        {{ noches(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }}
       </p>
     </TarjetaPropuesta>
   </section>
@@ -86,9 +113,12 @@ onMounted(cargar);
 
 <style scoped>
 .fechas {
-  margin: 0.25rem 0 0;
+  margin: 0 0 var(--esp-2);
 }
-#filtro-estado {
-  margin: 0 0 1rem 0.5rem;
+.filtro {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-4);
 }
 </style>

@@ -23,7 +23,9 @@ test('CU13 y CU16 a CU18: confirmar una actividad y verla en el cronograma y en 
   await tarjeta.getByRole('button', { name: 'Confirmar' }).click();
   await expect(tarjeta).toContainText('Confirmada');
 
-  await p.getByRole('link', { name: 'Cronograma' }).click();
+  // El grupo Itinerario abre su primera sección, el cronograma.
+  await p.getByRole('link', { name: 'Itinerario' }).click();
+  await expect(p.getByRole('link', { name: 'Cronograma' })).toHaveAttribute('aria-current', 'page');
   const dia = p.locator('#dia-2026-12-12');
   await expect(dia).toContainText('09:30 a 13:30');
   await expect(dia).toContainText('Cerro Catedral');

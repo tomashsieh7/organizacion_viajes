@@ -97,7 +97,7 @@ onBeforeUnmount(() => mapa?.remove());
   place-items: center;
   border-radius: 50%;
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-sobre-acento);
   font-weight: bold;
   border: 2px solid #fff;
   box-shadow: 0 0 0 1px var(--color-acento);

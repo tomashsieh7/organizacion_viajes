@@ -655,7 +655,20 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 
 ### 7.1 Navegación
 
-Las rutas de un viaje se anidan bajo `/viajes/:viajeId`, con un diseño común (`ViajeLayout`) que carga el viaje y el acceso de quien consulta, muestra el menú de secciones (participantes, alojamientos, actividades, cronograma, mapa, chat, gastos, saldos) y oculta las acciones del Admin a quien no lo es. Quien conserva solo acceso a saldos (RN-E6) ve únicamente la sección de saldos. Una guarda global manda a `/ingresar` a quien no tiene sesión, y una guarda de viaje manda a `/viajes` a quien no tiene acceso. Ocultar botones es solo comodidad de interfaz, ya que el permiso real lo verifica la API. Los textos de la interfaz hablan de "grupo de viaje" (P1).
+Las rutas de un viaje se anidan bajo `/viajes/:viajeId`, con un diseño común (`ViajeLayout`) que carga el viaje y el acceso de quien consulta y oculta las acciones del Admin a quien no lo es. Las ocho secciones se agrupan en cinco destinos, el máximo recomendado para una barra de navegación: Grupo (participantes), Planificar (alojamientos y actividades), Itinerario (cronograma y mapa), Chat y Cuentas (gastos y saldos). En escritorio los grupos son pestañas bajo el nombre del viaje; en celular, una barra fija abajo, al alcance del pulgar. Dentro de un grupo con más de una sección, unas pestañas eligen la sección. Las rutas no cambian. Quien conserva solo acceso a saldos (RN-E6) ve únicamente la sección de saldos, sin menú. Una guarda global manda a `/ingresar` a quien no tiene sesión, y una guarda de viaje manda a `/viajes` a quien no tiene acceso. Ocultar botones es solo comodidad de interfaz, ya que el permiso real lo verifica la API. Los textos de la interfaz hablan de "grupo de viaje" (P1).
+
+### 7.1.1 Pautas de interfaz
+
+Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegación de Material 3:
+- **Variables de diseño:** `App.vue` define colores semánticos en modo claro y oscuro, con contraste AA verificado en ambos; el oscuro sigue la preferencia del sistema. También define el espaciado en múltiplos de 4 px y una tipografía de 16 px con interlineado de 1,5.
+- **Controles y foco:** los controles miden 44 px de alto y el foco del teclado siempre se ve.
+- **Movimiento:** se respeta la preferencia de reducir movimiento.
+- **El color nunca es la única señal:**
+  - los estados de las propuestas son insignias con ícono y texto;
+  - el voto propio se marca con borde y tilde;
+  - los saldos dicen "Le debés" o "Te debe".
+- **Listas:** mientras cargan muestran siluetas (`SiluetaCarga`). Vacías, explican por qué y ofrecen la acción para empezar (`EstadoVacio`).
+- **Formularios:** validan cada campo al salir de él con el mismo esquema que la API (`useValidacion`). El error aparece debajo del campo, enlazado con `aria-describedby`, y desaparece al corregirlo.
 
 ### 7.2 Stores de Pinia
 

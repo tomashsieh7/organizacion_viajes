@@ -35,12 +35,13 @@ const emit = defineEmits<{
 
 <style scoped>
 .alternativas {
-  margin: -0.25rem 0 0.75rem 1.5rem;
-  padding-left: 0.75rem;
-  border-left: 3px solid var(--color-borde);
+  margin: calc(-1 * var(--esp-1)) 0 var(--esp-3) var(--esp-4);
+  padding-left: var(--esp-3);
+  border-left: 3px dashed var(--color-borde-fuerte);
 }
 h4 {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
+  margin: 0 0 var(--esp-2);
+  font-size: 0.9375rem;
+  color: var(--color-texto-secundario);
 }
 </style>

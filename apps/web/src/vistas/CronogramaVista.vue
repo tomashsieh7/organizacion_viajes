@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import { inject, nextTick, onMounted, ref } from 'vue';
 import type { Cronograma } from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
@@ -40,6 +41,6 @@ onMounted(async () => {
         :es-hoy="d.fecha === hoy"
       />
     </template>
-    <p v-else>Cargando…</p>
+    <SiluetaCarga v-else :cantidad="4" />
   </section>
 </template>

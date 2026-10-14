@@ -6,23 +6,26 @@ import CampoFormulario from '../componentes/base/CampoFormulario.vue';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import { ErrorDeApi, mensajeDeError } from '../clientes/http';
 import { useSesionStore } from '../stores/sesion';
-import { erroresDeValidacion } from '../utiles/formularios';
+import { useValidacion } from '../composables/useValidacion';
+import { problemasSegun } from '../utiles/formularios';
 
 const sesion = useSesionStore();
 const router = useRouter();
 const datos = reactive({ nombre: '', apodo: '', email: '', password: '' });
-const errores = ref<Record<string, string>>({});
+const { errores, alSalir, validarTodo, aria } = useValidacion(() => {
+  const problemas = problemasSegun(esquemaRegistro, datos);
+  // RN-S1: la contraseña común se avisa antes de llamar a la API.
+  if (!problemas['password'] && datos.password && esContrasenaComun(datos.password)) {
+    problemas['password'] = 'Esa contraseña es demasiado común; elegí otra';
+  }
+  return problemas;
+}, datos);
 const error = ref('');
 const enviando = ref(false);
 
 async function enviar() {
   error.value = '';
-  const resultado = esquemaRegistro.safeParse(datos);
-  errores.value = resultado.success ? {} : erroresDeValidacion(resultado.error);
-  if (resultado.success && esContrasenaComun(datos.password)) {
-    errores.value = { password: 'Esa contraseña es demasiado común; elegí otra' };
-  }
-  if (Object.keys(errores.value).length > 0) return;
+  if (!validarTodo()) return;
   enviando.value = true;
   try {
     await sesion.registrarse(datos);
@@ -40,22 +43,46 @@ async function enviar() {
 <template>
   <main class="pagina pagina--angosta">
     <h1>Crear cuenta</h1>
-    <form novalidate @submit.prevent="enviar">
+    <p class="texto-secundario">Con tu cuenta podés crear grupos o sumarte a los de tus amigos.</p>
+    <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
       <CampoFormulario id="nombre" etiqueta="Nombre" :error="errores['nombre']">
-        <input id="nombre" v-model="datos.nombre" autocomplete="name" required />
+        <input
+          id="nombre"
+          v-model="datos.nombre"
+          name="nombre"
+          autocomplete="name"
+          required
+          v-bind="aria('nombre', 'nombre')"
+        />
       </CampoFormulario>
       <CampoFormulario id="apodo" etiqueta="Apodo (opcional)" :error="errores['apodo']">
-        <input id="apodo" v-model="datos.apodo" autocomplete="nickname" />
+        <input
+          id="apodo"
+          v-model="datos.apodo"
+          name="apodo"
+          autocomplete="nickname"
+          v-bind="aria('apodo', 'apodo')"
+        />
       </CampoFormulario>
       <CampoFormulario id="email" etiqueta="Email" :error="errores['email']">
-        <input id="email" v-model="datos.email" type="email" autocomplete="email" required />
+        <input
+          id="email"
+          v-model="datos.email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          required
+          v-bind="aria('email', 'email')"
+        />
       </CampoFormulario>
       <CampoFormulario id="password" etiqueta="Contraseña" :error="errores['password']">
         <input
           id="password"
           v-model="datos.password"
+          name="password"
           type="password"
           autocomplete="new-password"
+          v-bind="aria('password', 'password')"
           required
         />
         <small class="ayuda"

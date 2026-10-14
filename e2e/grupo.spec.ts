@@ -20,7 +20,7 @@ test('CU01 y CU02: registrarse, crear un grupo de viaje y agregar a un viajero',
   await page.fill('#viaje-destino', 'Bariloche');
   await page.fill('#viaje-inicio', '2026-12-10');
   await page.fill('#viaje-fin', '2026-12-16');
-  await page.getByRole('button', { name: 'Crear' }).click();
+  await page.getByRole('button', { name: 'Crear', exact: true }).click();
   await expect(page).toHaveURL(/\/participantes$/);
   await expect(page.getByRole('heading', { name: 'Bariloche 2026' })).toBeVisible();
 

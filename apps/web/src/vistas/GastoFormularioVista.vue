@@ -13,7 +13,8 @@ import { useGastosStore } from '../stores/gastos';
 import { useSesionStore } from '../stores/sesion';
 import { useViajeStore } from '../stores/viaje';
 import { aUnidadMinima, formatearMonto } from '../utiles/formato';
-import { erroresDeValidacion } from '../utiles/formularios';
+import { useValidacion } from '../composables/useValidacion';
+import { problemasSegun } from '../utiles/formularios';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();
@@ -33,7 +34,6 @@ const datos = reactive({
 // P13: la lista arranca sin nadie elegido.
 const deudores = ref<string[]>([]);
 const montos = ref<Record<string, string>>({});
-const errores = ref<Record<string, string>>({});
 const error = ref('');
 const enviando = ref(false);
 
@@ -59,43 +59,41 @@ watch(deudores, (ids) => {
   );
 });
 
-function armarCuerpo(): DatosGastoNuevo | null {
-  if (total.value === null) {
-    errores.value = { monto: 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50' };
-    return null;
-  }
+const MONTO_INVALIDO = 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50';
+
+/** Arma el cuerpo para la API y devuelve sus problemas, con el mismo esquema que valida la API. */
+function armarCuerpo(): { cuerpo: DatosGastoNuevo; problemas: Record<string, string> } {
   const cuerpo: DatosGastoNuevo = {
     titulo: datos.titulo,
     categoriaId: datos.categoriaId,
-    monto: total.value,
+    monto: total.value ?? Number.NaN,
     pagadoPorId: datos.pagadoPorId,
     deudores: deudores.value,
     modoDivision: datos.modo,
   };
+  let partesInvalidas = false;
   if (datos.modo === 'ARBITRARIA') {
-    const partes = deudores.value.map((usuarioId) => ({
-      usuarioId,
-      monto: aUnidadMinima(montos.value[usuarioId] ?? '', actual.moneda.decimales),
-    }));
-    if (partes.some((p) => p.monto === null)) {
-      errores.value = { partes: 'Completá un monto válido para cada persona' };
-      return null;
-    }
-    cuerpo.partes = partes as { usuarioId: string; monto: number }[];
+    cuerpo.partes = deudores.value.map((usuarioId) => {
+      const monto = aUnidadMinima(montos.value[usuarioId] ?? '', actual.moneda.decimales);
+      partesInvalidas ||= monto === null;
+      return { usuarioId, monto: monto ?? Number.NaN };
+    });
   }
-  return cuerpo;
+  const problemas = problemasSegun(esquemaGastoNuevo, cuerpo);
+  if (total.value === null) problemas['monto'] = MONTO_INVALIDO;
+  if (partesInvalidas) problemas['partes'] = 'Completá un monto válido para cada persona';
+  return { cuerpo, problemas };
 }
+
+const { errores, alSalir, validarTodo, aria } = useValidacion(
+  () => armarCuerpo().problemas,
+  [datos, deudores, montos],
+);
 
 async function enviar() {
   error.value = '';
-  errores.value = {};
-  const cuerpo = armarCuerpo();
-  if (!cuerpo) return;
-  const resultado = esquemaGastoNuevo.safeParse(cuerpo);
-  if (!resultado.success) {
-    errores.value = erroresDeValidacion(resultado.error);
-    return;
-  }
+  if (!validarTodo()) return;
+  const { cuerpo } = armarCuerpo();
   enviando.value = true;
   try {
     await gastos.anotar(cuerpo);
@@ -118,14 +116,25 @@ async function enviar() {
 <template>
   <section>
     <h2>Anotar gasto</h2>
-    <form novalidate @submit.prevent="enviar">
+    <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
       <CampoFormulario id="gasto-titulo" etiqueta="Título" :error="errores['titulo']">
-        <input id="gasto-titulo" v-model="datos.titulo" placeholder="Cena en el centro" />
+        <input
+          id="gasto-titulo"
+          v-model="datos.titulo"
+          name="titulo"
+          placeholder="Cena en el centro"
+          v-bind="aria('titulo', 'gasto-titulo')"
+        />
       </CampoFormulario>
       <div class="fila">
         <CampoFormulario id="gasto-categoria" etiqueta="Categoría" :error="errores['categoriaId']">
           <!-- RN-G1: la categoría la elige quien anota; no se preselecciona ninguna. -->
-          <select id="gasto-categoria" v-model="datos.categoriaId">
+          <select
+            id="gasto-categoria"
+            v-model="datos.categoriaId"
+            name="categoriaId"
+            v-bind="aria('categoriaId', 'gasto-categoria')"
+          >
             <option value="" disabled>Elegí una categoría</option>
             <option v-for="c in gastos.categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
           </select>
@@ -135,7 +144,14 @@ async function enviar() {
           :etiqueta="`Monto en ${actual.moneda.codigo}`"
           :error="errores['monto']"
         >
-          <input id="gasto-monto" v-model="datos.monto" inputmode="decimal" placeholder="48000" />
+          <input
+            id="gasto-monto"
+            v-model="datos.monto"
+            name="monto"
+            inputmode="decimal"
+            placeholder="48000"
+            v-bind="aria('monto', 'gasto-monto')"
+          />
         </CampoFormulario>
       </div>
       <SelectorPagador

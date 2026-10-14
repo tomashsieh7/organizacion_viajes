@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aUnidadMinima, formatearMonto } from '../src/utiles/formato';
+import { aUnidadMinima, formatearMonto, formatearRango } from '../src/utiles/formato';
 
 describe('aUnidadMinima', () => {
   it('interpreta montos escritos en castellano', () => {
@@ -22,5 +22,13 @@ describe('aUnidadMinima', () => {
       /\$\s?1\.500,00/,
     );
     expect(formatearMonto(1500, { codigo: 'CLP', nombre: '', decimales: 0 })).toMatch(/1\.500/);
+  });
+});
+
+describe('formatearRango', () => {
+  it('no repite el mes ni el año cuando coinciden', () => {
+    expect(formatearRango('2026-12-10', '2026-12-16')).toBe('10 al 16 dic 2026');
+    expect(formatearRango('2026-11-28', '2026-12-03')).toBe('28 nov al 3 dic 2026');
+    expect(formatearRango('2026-12-28', '2027-01-03')).toBe('28 dic 2026 al 3 ene 2027');
   });
 });
