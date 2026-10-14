@@ -1381,3 +1381,10 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - la cobertura pasa 521 pruebas: 349 del backend y 172 del frontend;
 - la e2e pasa 8 de 8;
 - `knip` solo muestra sus falsos positivos conocidos.
+
+## 2026-10-14 12:50 — Ajuste de la configuración de Dependabot
+
+- **Falla:** en el PR #18 apareció el check "Dependabot" en rojo. Lo genera GitHub al ejecutar el `dependabot.yml` nuevo. El error fue `dependency_file_not_resolvable`: Dependabot intentó llevar TypeScript a la versión 7 y chocó con la dependencia de pares de `vue-tsc`.
+- **Arreglo:**
+  - se ignoran las versiones mayores de `typescript` hasta que `vue-tsc` las soporte;
+  - se agrega `target-branch: main`, porque la rama por defecto de GitHub todavía es `claude/elegant-maxwell-60322c` y, sin esa línea, los PRs de Dependabot se abrirían contra ella.
