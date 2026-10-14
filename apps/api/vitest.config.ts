@@ -5,6 +5,13 @@ import { defineConfig } from 'vitest/config';
 // de a un archivo para no pisarse los datos.
 export default defineConfig({
   test: {
+    // `npm run test:cobertura`: cobertura del código propio, sin el cliente generado de Prisma.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/generado/**', 'src/tipos/**'],
+      reporter: ['text-summary', 'html'],
+    },
     projects: [
       {
         test: {

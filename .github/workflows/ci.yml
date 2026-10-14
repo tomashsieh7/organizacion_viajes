@@ -56,7 +56,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      # Las mismas pruebas que `npm test`, midiendo la cobertura; el resumen queda en el log.
+      - run: npm run cobertura
+      - name: Guardar el informe de cobertura
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cobertura
+          path: |
+            apps/api/coverage/
+            apps/web/coverage/
+          retention-days: 7
 
   e2e:
     name: Pruebas de punta a punta

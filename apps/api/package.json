@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/servidor.js",
     "test": "vitest run",
+    "test:cobertura": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json",
     "generar": "prisma generate",
     "postinstall": "prisma generate",

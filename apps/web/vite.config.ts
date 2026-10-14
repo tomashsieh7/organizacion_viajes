@@ -17,5 +17,12 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     include: ['test/**/*.test.ts'],
+    // `npm run test:cobertura`: cobertura de los componentes, vistas, stores y utilidades.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/env.d.ts', 'src/main.ts'],
+      reporter: ['text-summary', 'html'],
+    },
   },
 });
