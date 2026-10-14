@@ -116,7 +116,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .viaje nav {
   display: flex;
-  gap: 1rem;
+  /* En pantallas angostas las secciones pasan a otra línea en lugar de ensanchar la página. */
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
   border-bottom: 1px solid var(--color-borde);
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;

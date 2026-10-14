@@ -11,6 +11,9 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/generado/**', 'src/tipos/**'],
       reporter: ['text-summary', 'html'],
+      // Mínimos unos puntos por debajo de la medición del 2026-10-14, para notar si la
+      // cobertura baja sin que molesten las variaciones chicas.
+      thresholds: { lines: 96, statements: 94, branches: 84, functions: 97 },
     },
     projects: [
       {

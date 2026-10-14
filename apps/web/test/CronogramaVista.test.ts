@@ -62,7 +62,7 @@ describe('CronogramaVista', () => {
     const [primero, segundo] = vista.findAll('.dia');
     expect(primero!.text()).toContain('Sin actividades confirmadas');
     expect(primero!.text()).toContain('Noche en Hostel (Mitre 100)');
-    expect(segundo!.text()).toContain('10:00 a 12:00');
+    expect(segundo!.text()).toContain('10:00 a 12:00 · Kayak · Bahía López');
     expect(segundo!.find('a').attributes('href')).toBe('/viajes/v1/mapa?actividad=k');
     expect(segundo!.text()).not.toContain('Noche en');
   });

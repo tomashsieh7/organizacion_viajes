@@ -23,6 +23,9 @@ export default defineConfig({
       include: ['src/**/*.{ts,vue}'],
       exclude: ['src/env.d.ts', 'src/main.ts'],
       reporter: ['text-summary', 'html'],
+      // Mínimos unos puntos por debajo de la medición del 2026-10-14, para notar si la
+      // cobertura baja sin que molesten las variaciones chicas.
+      thresholds: { lines: 84, statements: 82, branches: 80, functions: 74 },
     },
   },
 });

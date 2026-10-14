@@ -49,7 +49,7 @@ En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, las pruebas con co
 | `npm run dev` | Levanta el paquete compartido en modo observación, la API y la web. |
 | `npm run build` | Compila los tres paquetes. |
 | `npm test` | Corre las pruebas del backend y del frontend con Vitest. |
-| `npm run cobertura` | Corre las mismas pruebas y mide la cobertura; el informe HTML queda en `apps/*/coverage/`. |
+| `npm run cobertura` | Corre las mismas pruebas y mide la cobertura; falla si baja de los mínimos de cada paquete. El informe HTML queda en `apps/*/coverage/`. |
 | `npm run e2e` | Corre las pruebas de punta a punta con Playwright. |
 | `npm run lint` | ESLint, verificación de formato con Prettier y chequeo de tipos. |
 | `npm run format` | Aplica el formato de Prettier. |

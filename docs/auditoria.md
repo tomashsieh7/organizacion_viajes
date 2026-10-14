@@ -32,7 +32,7 @@ Esta lista sirve para auditar el proyecto varias veces con el mismo criterio, as
 - `@prisma/client`: lo usa el cliente generado en `src/generado`.
 - `pg` y `@types/pg`: los necesitan `@prisma/adapter-pg` y `prepararBase.ts`.
 
-La cobertura se mide con `npm run cobertura` (necesita la base de prueba, como `npm test`). Se anota el resumen de cada paquete y se comparan los archivos con menos cobertura contra la pasada anterior; el detalle queda en `apps/api/coverage/` y `apps/web/coverage/`.
+La cobertura se mide con `npm run cobertura` (necesita la base de prueba, como `npm test`), que falla si baja de los mínimos fijados en `apps/api/vitest.config.ts` y `apps/web/vite.config.ts`. Se anota el resumen de cada paquete, se comparan los archivos con menos cobertura contra la pasada anterior y, si la medición subió bastante, se suben los mínimos. El detalle queda en `apps/api/coverage/` y `apps/web/coverage/`.
 
 ## 2. Código muerto
 
@@ -145,7 +145,10 @@ grep -rn "from '" apps/api/src/modulos/*/casos-de-uso | grep -E "infraestructura
 - **Estados de cada vista:** carga, error (con `mensajeDeError`) y lista vacía.
 - **Formularios:** tienen etiquetas, con `CampoFormulario`.
 - **Diálogos:** manejan el foco y se pueden usar con teclado.
-- **Contraste y pantallas chicas:** el contraste alcanza y el diseño se adapta a pantallas chicas.
+- **Contraste y pantallas chicas:**
+  - los colores de `App.vue` cumplen el contraste AA (4,5:1) contra los fondos donde se usan;
+  - `e2e/diseno.spec.ts` verifica que ninguna página del viaje se desborde a 360 px de ancho;
+  - en cada pasada conviene sacar capturas en celular y en escritorio con un spec temporal de Playwright, para mirar lo que las pruebas no ven.
 - **Textos:** español rioplatense consistente en toda la interfaz.
 - **Consola:** sin advertencias ni errores durante las pruebas de punta a punta.
 
