@@ -32,7 +32,7 @@ Esta lista sirve para auditar el proyecto varias veces con el mismo criterio, as
 - `@prisma/client`: lo usa el cliente generado en `src/generado`.
 - `pg` y `@types/pg`: los necesitan `@prisma/adapter-pg` y `prepararBase.ts`.
 
-La cobertura (`vitest --coverage`) requiere instalar `@vitest/coverage-v8`, y por ahora no está incorporada.
+La cobertura se mide con `npm run cobertura` (necesita la base de prueba, como `npm test`). Se anota el resumen de cada paquete y se comparan los archivos con menos cobertura contra la pasada anterior; el detalle queda en `apps/api/coverage/` y `apps/web/coverage/`.
 
 ## 2. Código muerto
 

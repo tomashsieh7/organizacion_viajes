@@ -14,6 +14,7 @@
     "dev": "npm run build -w packages/compartido && concurrently -k -n compartido,api,web -c gray,blue,green \"npm run dev -w packages/compartido\" \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
     "build": "npm run build -w packages/compartido && npm run build -w apps/api && npm run build -w apps/web",
     "test": "npm run build -w packages/compartido && npm test --workspaces --if-present",
+    "cobertura": "npm run build -w packages/compartido && npm run test:cobertura --workspaces --if-present",
     "lint": "eslint . && prettier --check . && npm run build -w packages/compartido && npm run typecheck --workspaces --if-present && tsc -p e2e/tsconfig.json",
     "format": "prettier --write .",
     "db:reset": "npm run db:reset -w apps/api",
@@ -23,6 +24,7 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
+    "@vitest/coverage-v8": "^5.0.4",
     "concurrently": "^10.0.5",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
@@ -31,6 +33,6 @@
     "prettier": "^3.9.9",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.1",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.4"
   }
 }

@@ -40,7 +40,7 @@ La web redirige `/api` al backend, así que en desarrollo alcanza con abrir `htt
 
 Para auditar el código periódicamente (código muerto, duplicación, arquitectura, seguridad, pruebas y documentación) se sigue la lista de `docs/auditoria.md`.
 
-En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, `npm test` y `npm run e2e` en cada pull request y en cada push a `main`. Si fallan las pruebas de punta a punta, el informe queda como artefacto de la corrida (`reporte-playwright`).
+En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, las pruebas con cobertura (`npm run cobertura`) y `npm run e2e` en cada pull request y en cada push a `main`. El informe de cobertura queda como artefacto de cada corrida (`cobertura`) y, si fallan las pruebas de punta a punta, también el de Playwright (`reporte-playwright`).
 
 ## Scripts
 
@@ -49,6 +49,7 @@ En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, `npm test` y `npm 
 | `npm run dev` | Levanta el paquete compartido en modo observación, la API y la web. |
 | `npm run build` | Compila los tres paquetes. |
 | `npm test` | Corre las pruebas del backend y del frontend con Vitest. |
+| `npm run cobertura` | Corre las mismas pruebas y mide la cobertura; el informe HTML queda en `apps/*/coverage/`. |
 | `npm run e2e` | Corre las pruebas de punta a punta con Playwright. |
 | `npm run lint` | ESLint, verificación de formato con Prettier y chequeo de tipos. |
 | `npm run format` | Aplica el formato de Prettier. |

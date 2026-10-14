@@ -1058,3 +1058,43 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - la rama se alineó con `main` por avance directo;
   - el push se hizo con la confirmación del usuario.
 - **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-10-13 23:24 — Páginas viejas del story mapping y cobertura de pruebas
+
+- **Diagramas:** a pedido del usuario se borraron de `docs/diagramas.drawio` las páginas "story mapping" y "Copia de story mapping".
+  - Contradecían a "Página-13", que el PLAN ya fijaba como versión final (P22).
+  - Se borraron solo sus bloques `<diagram>` y se ajustó `pages` de 13 a 11. El resto del archivo no cambió, y el XML sigue siendo válido.
+  - El PLAN no las citaba por nombre. La mención a "la primera versión del story mapping" en la sección 9 queda como historia.
+- **Cobertura:** a pedido del usuario se incorporó `@vitest/coverage-v8` como dependencia de desarrollo.
+  - Vitest pasó de 5.0.1 a 5.0.4, porque el proveedor exige la misma versión exacta.
+  - Cada paquete tiene un script `test:cobertura`, y la raíz tiene `npm run cobertura`.
+  - Se mide el código de `src/`, sin el cliente generado de Prisma, y el informe HTML queda en `apps/*/coverage/`, que ya está en `.gitignore`.
+  - No se fijaron umbrales ni se agregó al CI.
+  - Se actualizaron el README y la sección 1 de `docs/auditoria.md`.
+- **Primera medición:**
+  - backend: 98,2 % de líneas y 86,5 % de ramas;
+  - frontend: 62,8 % de líneas;
+  - sin pruebas unitarias en el frontend: la guarda de sesión del router, varias vistas (viajes, gastos, alojamientos, registro y el formulario de alojamiento) y los clientes HTTP, que cubren en parte las pruebas de punta a punta.
+- **Archivos:** `docs/diagramas.drawio`, `package.json`, `package-lock.json`, `apps/api/package.json`, `apps/web/package.json`, `apps/api/vitest.config.ts`, `apps/web/vite.config.ts`, `README.md`, `docs/auditoria.md` y esta entrada.
+- **Verificación:** `npm run lint` pasa; `npm test` pasa 421 pruebas; `npm run cobertura` corre en los dos paquetes.
+
+## 2026-10-13 23:28 — Mejoras de la revisión: pruebas del frontend y cobertura en el CI
+
+- **Acción:** el usuario aprobó los cuatro puntos de la revisión hecha después de incorporar la cobertura.
+- **1. Guarda de sesión:** `apps/web/test/router.test.ts` prueba la guarda del router real con cuatro casos:
+  - sin sesión, una ruta privada lleva a `/ingresar` con `volver`;
+  - sin sesión, `/viajes` lleva a `/ingresar` sin parámetro;
+  - con sesión, las páginas públicas llevan a `/viajes`;
+  - con sesión, las privadas se abren.
+- **2. Listas:** `apps/web/test/listas.test.ts` cubre viajes, gastos, alojamientos y actividades, con dos casos por lista:
+  - "Cargando…" hasta la primera carga y después el texto de lista vacía;
+  - si la carga falla, el error sin el texto de lista vacía.
+
+  Se comprobó que la prueba falla al quitar a propósito el estado de carga de `GastosVista`.
+- **3. Rama por defecto:** no se pudo cambiar a `main`. El proxy de GitHub de la sesión rechaza modificar la configuración del repositorio ("Repository settings writes are not permitted through this proxy", HTTP 403). Queda para el usuario, en Settings → General → Default branch.
+- **4. CI:**
+  - el trabajo de Vitest corre `npm run cobertura` en lugar de `npm test` y guarda el informe como artefacto `cobertura` en cada corrida, sin umbrales;
+  - se actualizaron el README y D25 en el PLAN.
+- **Cobertura del frontend:** pasó de 62,8 % a 68,4 % de líneas. El backend sigue en 98,2 %.
+- **Archivos:** `apps/web/test/router.test.ts` (nuevo), `apps/web/test/listas.test.ts` (nuevo), `.github/workflows/ci.yml`, `README.md`, `PLAN.md` y esta entrada.
+- **Verificación:** `npm run lint` pasa; `npm run cobertura` pasa 433 pruebas, 345 del backend y 88 del frontend; `npm run e2e` pasa los seis flujos.
