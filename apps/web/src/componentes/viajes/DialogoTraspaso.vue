@@ -11,18 +11,23 @@ const emit = defineEmits<{ cerrar: [] }>();
 const store = useViajeStore();
 const sucesor = ref('');
 const error = ref('');
+const enviando = ref(false);
 const candidatos = computed(() => store.participantes.filter((p) => p.usuarioId !== props.miId));
 
 async function transferir() {
+  if (enviando.value) return;
   if (!sucesor.value) {
     error.value = 'Elegí quién va a ser el nuevo Admin';
     return;
   }
+  enviando.value = true;
   try {
     await store.transferirAdministracion(sucesor.value);
     emit('cerrar');
   } catch (e) {
     error.value = mensajeDeError(e);
+  } finally {
+    enviando.value = false;
   }
 }
 </script>
@@ -34,7 +39,9 @@ async function transferir() {
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <div class="acciones">
       <button class="boton" type="button" @click="emit('cerrar')">Cancelar</button>
-      <button class="boton boton--principal" type="button" @click="transferir">Transferir</button>
+      <button class="boton boton--principal" type="button" :disabled="enviando" @click="transferir">
+        Transferir
+      </button>
     </div>
   </DialogoModal>
 </template>

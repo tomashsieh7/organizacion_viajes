@@ -8,6 +8,7 @@ defineProps<{
   soyAdmin: boolean;
   moneda: Moneda;
   viajeId: string;
+  ocupada?: boolean;
 }>();
 const emit = defineEmits<{
   votar: [id: string, valor: ValorVoto];
@@ -24,6 +25,7 @@ const emit = defineEmits<{
       :key="a.id"
       :actividad="a"
       :soy-admin="soyAdmin"
+      :ocupada="ocupada"
       :moneda="moneda"
       :viaje-id="viajeId"
       @votar="(id, valor) => emit('votar', id, valor)"

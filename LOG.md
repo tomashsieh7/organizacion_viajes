@@ -1298,3 +1298,32 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Causa:** el selector era ambiguo, porque la página puede tener más de una región `status` a la vez.
 - **Arreglo:** las tres e2e que buscaban `getByRole('status')` (gastos, sesión e itinerario) ahora la filtran por el texto que esperan.
 - **Verificación:** lint pasa y la e2e pasa 8 de 8 en dos corridas seguidas.
+
+## 2026-10-14 12:04 — Merge del PR #15
+
+- Con la autorización del usuario ("si"), el PR #15 ("Título de cada página y fechas con el mismo formato") se mergeó a `main` en `d1cb8af`, fijando la cabeza verificada `2751615`.
+- **CI:** la primera corrida falló por el selector ambiguo de las e2e, que se registró en la entrada anterior. Con el arreglo pasaron los tres trabajos, sin conflictos ni comentarios.
+- **Después del merge:** se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
+
+## 2026-10-14 12:04 — Tercera pasada: botones bloqueados mientras esperan respuesta
+
+- **Pedido del usuario:** "Fijate si hay más cosas para mejorar o arreglar". Después de la pasada, "sí, arreglá lo de los botones".
+- **Hallazgo** (prioridad baja): los formularios ya deshabilitaban el botón mientras enviaban, pero no lo hacían cuatro acciones:
+  - resolver una propuesta (confirmar, denegar o cancelar);
+  - eliminar a un participante;
+  - salir del grupo;
+  - transferir la administración.
+
+  Con un doble clic salían dos pedidos. El segundo volvía con error ("ya está resuelta", "no participa") aunque la acción se había hecho bien. Retirar un voto dos veces también daba `SIN_VOTO`.
+- **Corregido** (cambio menor, con el mismo patrón `enviando` de los formularios):
+  - `AlojamientosVista` y `ActividadesVista` marcan `ocupado` mientras corre un voto o una resolución y se lo pasan a las tarjetas con la prop `ocupada` (`TarjetaPropuesta`, `TarjetaActividad` y `ListaAlternativas`), que deshabilita sus botones;
+  - `ParticipantesVista`, `DialogoSalir` y `DialogoTraspaso` deshabilitan el botón de confirmar mientras esperan;
+  - la sección 7.1.1 de `PLAN.md` suma la pauta.
+- **Pruebas nuevas:** de doble clic en `ActividadesVista`, `ParticipantesVista` y `DialogoTraspaso`. Las tres fallan sin el arreglo.
+- **Sin cambio:**
+  - **apagado ordenado del servidor:** PostgreSQL deshace solo las transacciones a medias y no hay despliegue definido;
+  - **límite de mensajes en el chat:** los participantes son invitados por el Admin, que puede eliminarlos.
+- **Verificación:**
+  - lint pasa;
+  - la cobertura pasa 512 pruebas: 349 del backend y 163 del frontend, con 89,6 % de líneas;
+  - la e2e pasa 8 de 8.

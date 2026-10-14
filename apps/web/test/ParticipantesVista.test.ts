@@ -78,4 +78,28 @@ describe('ParticipantesVista', () => {
     expect(push).toHaveBeenCalledWith('/viajes/v1/saldos');
     expect(useViajeStore().aviso).toContain('Podés seguir viendo tus saldos');
   });
+
+  it('al eliminar a un participante, un doble clic manda un solo pedido', async () => {
+    let terminar!: () => void;
+    const eliminarParticipante = vi.fn(
+      () =>
+        new Promise<{ bajaConDeuda: boolean }>(
+          (ok) => (terminar = () => ok({ bajaConDeuda: false })),
+        ),
+    );
+    const vista = await montarComo('ADMIN', 'ana', { eliminarParticipante });
+    await vista
+      .findAll('button')
+      .find((b) => b.text() === 'Eliminar')!
+      .trigger('click');
+    const confirmar = () =>
+      vista.findAll('[role="dialog"] button').find((b) => b.text() === 'Eliminar')!;
+    await confirmar().trigger('click');
+    expect(confirmar().attributes('disabled')).toBeDefined();
+    await confirmar().trigger('click');
+    expect(eliminarParticipante).toHaveBeenCalledTimes(1);
+    terminar();
+    await flushPromises();
+    expect(vista.text()).toContain('Se eliminó a');
+  });
 });

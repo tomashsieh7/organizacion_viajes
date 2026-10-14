@@ -21,9 +21,12 @@ const miId = () => sesion.usuario?.id ?? '';
 
 onMounted(() => store.cargarParticipantes().catch((e) => (error.value = mensajeDeError(e))));
 
+const eliminando = ref(false);
+
 async function confirmarEliminacion() {
   const p = aEliminar.value;
-  if (!p) return;
+  if (!p || eliminando.value) return;
+  eliminando.value = true;
   try {
     const { bajaConDeuda } = await store.eliminarParticipante(p.usuarioId);
     aviso.value = bajaConDeuda
@@ -33,6 +36,7 @@ async function confirmarEliminacion() {
     error.value = mensajeDeError(e);
   } finally {
     aEliminar.value = null;
+    eliminando.value = false;
   }
 }
 </script>
@@ -65,7 +69,12 @@ async function confirmarEliminacion() {
       </p>
       <div class="acciones">
         <button class="boton" type="button" @click="aEliminar = null">Cancelar</button>
-        <button class="boton boton--peligro" type="button" @click="confirmarEliminacion">
+        <button
+          class="boton boton--peligro"
+          type="button"
+          :disabled="eliminando"
+          @click="confirmarEliminacion"
+        >
           Eliminar
         </button>
       </div>

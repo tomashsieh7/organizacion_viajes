@@ -14,15 +14,18 @@ const store = useViajeStore();
 const router = useRouter();
 const sucesor = ref('');
 const error = ref('');
+const enviando = ref(false);
 const candidatos = computed(() => store.participantes.filter((p) => p.usuarioId !== props.miId));
 const soloQuedoYo = computed(() => store.soyAdmin && candidatos.value.length === 0);
 const deuda = computed(() => store.actual?.miDeudaPendiente ?? 0);
 
 async function salir() {
+  if (enviando.value) return;
   if (store.soyAdmin && !sucesor.value) {
     error.value = 'Antes de salir tenés que elegir quién va a ser el nuevo Admin';
     return;
   }
+  enviando.value = true;
   try {
     const { id, nombre } = store.actual!;
     await store.salir(store.soyAdmin ? sucesor.value : undefined);
@@ -36,6 +39,8 @@ async function salir() {
     }
   } catch (e) {
     error.value = mensajeDeError(e);
+  } finally {
+    enviando.value = false;
   }
 }
 </script>
@@ -56,7 +61,13 @@ async function salir() {
     </template>
     <div class="acciones">
       <button class="boton" type="button" @click="emit('cerrar')">Cancelar</button>
-      <button v-if="!soloQuedoYo" class="boton boton--peligro" type="button" @click="salir">
+      <button
+        v-if="!soloQuedoYo"
+        class="boton boton--peligro"
+        type="button"
+        :disabled="enviando"
+        @click="salir"
+      >
         Salir del grupo
       </button>
     </div>
