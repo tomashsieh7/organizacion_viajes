@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DeudaVista, Moneda } from '@viajes/compartido';
-import { formatearMonto, nombreVisible } from '../../utiles/formato';
+import { formatearDia, formatearMonto, nombreVisible } from '../../utiles/formato';
 
 defineProps<{
   deuda: DeudaVista;
@@ -9,7 +9,6 @@ defineProps<{
   /** Desde qué lado se mira la deuda: cambia la frase y el color del monto. */
   sentido?: 'debo' | 'meDeben';
 }>();
-const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
 </script>
 
 <template>
@@ -19,13 +18,13 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
       <small v-if="sentido" class="frase">{{ sentido === 'debo' ? 'Le debés' : 'Te debe' }}</small>
       <strong class="monto">{{ formatearMonto(deuda.monto, moneda) }}</strong>
     </span>
-    <small class="actualizado">Actualizado el {{ fecha(deuda.ultimaActualizacion) }}</small>
+    <small class="actualizado">Actualizado el {{ formatearDia(deuda.ultimaActualizacion) }}</small>
     <!-- RN-P6: el historial de pagos se ve desde los dos lados. -->
     <details v-if="deuda.pagos.length" class="pagos">
       <summary>Pagos ({{ deuda.pagos.length }})</summary>
       <ul>
         <li v-for="p in deuda.pagos" :key="p.id">
-          {{ fecha(p.fecha) }} · {{ formatearMonto(p.monto, moneda) }} · registrado por
+          {{ formatearDia(p.fecha) }} · {{ formatearMonto(p.monto, moneda) }} · registrado por
           {{ p.registradoPor.id === miId ? 'vos' : nombreVisible(p.registradoPor) }}
         </li>
       </ul>
