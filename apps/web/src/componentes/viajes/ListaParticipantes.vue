@@ -7,7 +7,7 @@ const emit = defineEmits<{ eliminar: [participante: Participante] }>();
 </script>
 
 <template>
-  <ul class="participantes">
+  <ul class="participantes panel">
     <li v-for="p in participantes" :key="p.usuarioId" class="participante">
       <span class="quien">
         <span class="inicial" aria-hidden="true">{{ p.nombre.charAt(0).toUpperCase() }}</span>
@@ -31,12 +31,9 @@ const emit = defineEmits<{ eliminar: [participante: Participante] }>();
 <style scoped>
 .participantes {
   list-style: none;
+  /* Cada participante lleva su propio relleno, separado por una línea. */
   padding: 0;
   margin: 0 0 var(--esp-4);
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-grande);
-  box-shadow: var(--sombra);
 }
 .participante {
   display: flex;

@@ -82,10 +82,10 @@ async function enviar() {
           name="password"
           type="password"
           autocomplete="new-password"
-          v-bind="aria('password', 'password')"
+          v-bind="aria('password', 'password', 'password-ayuda')"
           required
         />
-        <small class="ayuda"
+        <small id="password-ayuda" class="ayuda"
           >Al menos {{ CONTRASENA_MIN }} caracteres. Evitá contraseñas comunes.</small
         >
       </CampoFormulario>

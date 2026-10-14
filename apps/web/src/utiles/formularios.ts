@@ -1,3 +1,6 @@
+/** Mensaje para un monto que no se pudo interpretar (precio, monto del gasto). */
+export const MONTO_INVALIDO = 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50';
+
 /** Problema de validación tal como lo informa Zod: el campo afectado y su mensaje. */
 interface ProblemaDeValidacion {
   path: PropertyKey[];

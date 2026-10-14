@@ -9,7 +9,7 @@ withDefaults(defineProps<{ cantidad?: number }>(), { cantidad: 3 });
 <template>
   <div class="siluetas" aria-busy="true">
     <span class="solo-lectores" role="status">Cargando…</span>
-    <div v-for="n in cantidad" :key="n" class="silueta" aria-hidden="true">
+    <div v-for="n in cantidad" :key="n" class="silueta panel" aria-hidden="true">
       <span class="linea linea--titulo"></span>
       <span class="linea"></span>
       <span class="linea linea--corta"></span>
@@ -25,10 +25,6 @@ withDefaults(defineProps<{ cantidad?: number }>(), { cantidad: 3 });
 .silueta {
   display: grid;
   gap: var(--esp-2);
-  padding: var(--esp-4);
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-grande);
 }
 .linea {
   height: 0.875rem;

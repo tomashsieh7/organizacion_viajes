@@ -13,7 +13,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
 </script>
 
 <template>
-  <li class="fila-saldo">
+  <li class="fila-saldo panel">
     <span class="nombre">{{ nombreVisible(deuda.contraparte) }}</span>
     <span class="importe" :class="sentido">
       <small v-if="sentido" class="frase">{{ sentido === 'debo' ? 'Le debés' : 'Te debe' }}</small>
@@ -40,12 +40,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: var(--esp-1) var(--esp-3);
-  padding: var(--esp-4);
   margin-bottom: var(--esp-3);
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-grande);
-  box-shadow: var(--sombra);
 }
 .nombre {
   font-weight: 600;
