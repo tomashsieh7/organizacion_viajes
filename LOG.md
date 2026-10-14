@@ -1327,3 +1327,9 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - lint pasa;
   - la cobertura pasa 512 pruebas: 349 del backend y 163 del frontend, con 89,6 % de líneas;
   - la e2e pasa 8 de 8.
+
+## 2026-10-14 12:27 — Merge del PR #16
+
+- Con la autorización del usuario ("Hacelo"), el PR #16 ("Bloquear los botones mientras esperan respuesta") se mergeó a `main` en `9c58624`. Se fijó la cabeza verificada `bf9df00`.
+- El CI pasó los tres trabajos (Lint y tipos, Pruebas de Vitest y Pruebas de punta a punta), sin conflictos ni comentarios.
+- Después del merge se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
