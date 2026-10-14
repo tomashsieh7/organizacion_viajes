@@ -981,3 +981,26 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - pruebas: `eventos.test.ts`, `casosDeUsoGastos.test.ts`, `casosDeUsoActividades.test.ts` y `integracion/gastos.bd.test.ts`;
   - documentación: `PLAN.md` y esta entrada en `LOG.md`.
 - **Verificación:** `npm run lint` pasa; `npm test` pasa 417 pruebas, 343 del backend y 74 del frontend; `npm run e2e` pasa los seis flujos.
+
+## 2026-10-06 15:59 — Merge del PR #6
+
+- **Acción:** con la autorización explícita del usuario ("Sí, mergealo") se mergeó a `main` el PR #6 ("Revisión de deuda técnica: notificaciones, bajas simultáneas con gastos y limpieza") con un commit de merge, en `eff5851`, fijando la cabeza verificada `ab38302` con `expectedHeadSha`.
+- **Estado previo:** el CI del PR pasó sus tres trabajos (lint y tipos, Vitest y punta a punta), sin conflictos ni comentarios de revisión. La revisión de respaldo programada confirmó el mismo estado antes del merge.
+- **Después:** la sesión dejó de seguir el PR y la rama `claude/elegant-maxwell-60322c` se alineó con `main` por avance directo, sin reescribir historia.
+- **Archivos:** esta entrada en `LOG.md`.
+
+## 2026-10-13 22:53 — Lista de auditoría repetible
+
+- **Acción:** a pedido del usuario se creó `docs/auditoria.md`, una lista para auditar el código varias veces con el mismo criterio. El usuario eligió guardarla en el repo y que cubra todos los frentes: código muerto, duplicación, arquitectura y capas, diseño según `CLAUDE.md`, correctitud y concurrencia, seguridad, pruebas, rendimiento, dependencias, frontend y accesibilidad, documentación y diagramas, y CI. Incluye una plantilla para registrar cada pasada en este archivo. Es un cambio menor: solo documentación, sin código ni diagramas, y `CLAUDE.md` no se tocó.
+- **Comandos verificados en este entorno:**
+  - `npx knip` y `npx jscpd` corren sin configuración;
+  - `prisma migrate diff` contra `viajes_test` dice "No difference detected" después de aplicar las migraciones;
+  - el script que compara los nombres del PLAN con el código ya no encuentra componentes inexistentes;
+  - la búsqueda de `.only` y `.skip` y la de dependencias entre capas no devuelven nada.
+- **Comparación de migraciones:** la variante con `--from-migrations` necesita una base sombra (`shadowDatabaseUrl`), así que la lista usa la base de prueba ya migrada.
+- **Sin dependencias nuevas:** la cobertura (`@vitest/coverage-v8`) queda como decisión pendiente.
+- **Primera corrida de `knip`, todavía sin revisar a fondo:**
+  - falsos positivos ya identificados: `e2e/soporte/prepararBase.ts`, `@prisma/client` y `pg`;
+  - candidatos a código muerto: `@types/pg`, las exportaciones `CONTRASENA_DE_EJEMPLO`, `LARGO_MAXIMO_MENSAJE`, `leerCookie`, `aVistaEnMemoria` y `rutas`, y los tipos `DatosSocket` y `Voto`.
+- **Primera corrida de `jscpd`:** 35 clones exactos, el 1,37 % de las líneas.
+- **Archivos:** `docs/auditoria.md` (nuevo), una línea en `README.md` y esta entrada en `LOG.md`.

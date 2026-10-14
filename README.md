@@ -38,6 +38,8 @@ La web redirige `/api` al backend, así que en desarrollo alcanza con abrir `htt
 - **Requisitos:** `docker compose up -d` levantado y el navegador instalado una vez con `npx playwright install chromium`. Si Chromium ya está instalado en otra ruta, se indica con `E2E_CHROMIUM=/ruta/al/chrome npm run e2e`.
 - **Si algo falla:** el informe queda en `playwright-report/`.
 
+Para auditar el código periódicamente (código muerto, duplicación, arquitectura, seguridad, pruebas y documentación) se sigue la lista de `docs/auditoria.md`.
+
 En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, `npm test` y `npm run e2e` en cada pull request y en cada push a `main`. Si fallan las pruebas de punta a punta, el informe queda como artefacto de la corrida (`reporte-playwright`).
 
 ## Scripts
