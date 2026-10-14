@@ -40,7 +40,7 @@ La web redirige `/api` al backend, así que en desarrollo alcanza con abrir `htt
 
 Para auditar el código periódicamente (código muerto, duplicación, arquitectura, seguridad, pruebas y documentación) se sigue la lista de `docs/auditoria.md`.
 
-En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, las pruebas con cobertura (`npm run cobertura`) y `npm run e2e` en cada pull request y en cada push a `main`. El informe de cobertura queda como artefacto de cada corrida (`cobertura`) y, si fallan las pruebas de punta a punta, también el de Playwright (`reporte-playwright`).
+En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, las pruebas con cobertura (`npm run cobertura`) y `npm run e2e` en cada pull request y en cada push a `main`. El informe de cobertura queda como artefacto de cada corrida (`cobertura`) y, si fallan las pruebas de punta a punta, también el de Playwright (`reporte-playwright`). Los navegadores de Playwright quedan en caché entre corridas. Además, `.github/dependabot.yml` hace que GitHub abra cada semana PRs con las actualizaciones de dependencias de npm y de las acciones del CI; cada uno pasa por el mismo CI antes de mergearse.
 
 ## Scripts
 

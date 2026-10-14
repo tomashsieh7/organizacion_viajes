@@ -670,6 +670,8 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
 - **Listas:** mientras cargan muestran siluetas (`SiluetaCarga`). Vacías, explican por qué y ofrecen la acción para empezar (`EstadoVacio`).
 - **Formularios:** validan cada campo al salir de él con el mismo esquema que la API (`useValidacion`). El error aparece debajo del campo, enlazado con `aria-describedby`, y desaparece al corregirlo.
 - **Acciones en curso:** mientras se espera la respuesta de un envío, un voto, una resolución, una baja, una salida o un traspaso, su botón queda deshabilitado, así un doble clic no manda dos pedidos.
+- **Teclado y lectores de pantalla:** el enlace "Saltar al contenido" lleva el foco más allá del encabezado y los menús (WCAG 2.4.1), y al cambiar de página una región `aria-live` anuncia el título nuevo sin mover el foco.
+- **Errores inesperados:** si un componente falla sin manejar el error, `App.vue` lo captura (`onErrorCaptured`), lo registra en la consola y muestra un aviso para recargar, que se quita al cambiar de página.
 - **Títulos de página:** cada ruta define su título (`meta.titulo`) y la pestaña muestra, por ejemplo, "Saldos · Organizador de viajes" (WCAG 2.4.2).
 - **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026"), con `formatearRango` y `formatearDia` de `utiles/formato.ts`.
 

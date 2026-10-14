@@ -1,0 +1,15 @@
+# Actualizaciones automáticas: una vez por semana GitHub abre PRs con las dependencias de npm
+# (agrupando versiones menores y parches) y con las acciones del CI. Cada PR pasa por el CI.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      menores-y-parches:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
