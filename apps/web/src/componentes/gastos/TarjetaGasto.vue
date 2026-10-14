@@ -9,7 +9,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
 </script>
 
 <template>
-  <article class="gasto">
+  <article class="gasto panel">
     <header>
       <h3>{{ gasto.titulo }}</h3>
       <strong class="monto">{{ formatearMonto(gasto.monto, moneda) }}</strong>
@@ -29,11 +29,6 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR');
 
 <style scoped>
 .gasto {
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-grande);
-  box-shadow: var(--sombra);
-  padding: var(--esp-4);
   margin-bottom: var(--esp-3);
 }
 header {

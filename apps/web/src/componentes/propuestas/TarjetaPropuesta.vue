@@ -37,7 +37,7 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
 </script>
 
 <template>
-  <article class="propuesta" :data-estado="propuesta.estado">
+  <article class="propuesta panel" :data-estado="propuesta.estado">
     <header>
       <h3>{{ titulo }}</h3>
       <span class="insignia estado" :class="`insignia--${propuesta.estado}`">
@@ -103,12 +103,7 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
 
 <style scoped>
 .propuesta {
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
   border-left: 4px solid var(--color-aviso);
-  border-radius: var(--radio-grande);
-  box-shadow: var(--sombra);
-  padding: var(--esp-4);
   margin-bottom: var(--esp-3);
 }
 .propuesta[data-estado='CONFIRMADA'] {

@@ -41,11 +41,17 @@ export function useValidacion(
   // Mientras se corrige un campo ya tocado, su error se actualiza sin esperar a salir de él.
   watch(datos, () => tocados.size > 0 && revisarTocados(), { deep: true });
 
-  /** Atributos de accesibilidad del campo: inválido y descripto por su mensaje de error. */
-  function aria(campo: string, id: string) {
-    return errores.value[campo]
-      ? { 'aria-invalid': 'true' as const, 'aria-describedby': `${id}-error` }
-      : {};
+  /**
+   * Atributos de accesibilidad del campo: inválido y descripto por su mensaje de error y por los
+   * textos de ayuda que se indiquen (sus ids), para que el lector de pantalla los lea al entrar.
+   */
+  function aria(campo: string, id: string, ...ayudas: string[]) {
+    const error = errores.value[campo];
+    const descripciones = [...(error ? [`${id}-error`] : []), ...ayudas];
+    return {
+      ...(error ? { 'aria-invalid': 'true' as const } : {}),
+      ...(descripciones.length ? { 'aria-describedby': descripciones.join(' ') } : {}),
+    };
   }
 
   return { errores, alSalir, validarTodo, aria };

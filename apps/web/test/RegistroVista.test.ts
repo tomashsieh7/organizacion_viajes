@@ -60,3 +60,15 @@ describe('RegistroVista', () => {
     expect(push).not.toHaveBeenCalled();
   });
 });
+
+describe('RegistroVista: accesibilidad', () => {
+  it('la ayuda de la contraseña describe al campo, y el error se suma cuando aparece', async () => {
+    const { vista } = montar();
+    const password = vista.find('#password');
+    expect(password.attributes('aria-describedby')).toBe('password-ayuda');
+    await password.setValue('corta');
+    await password.trigger('focusout');
+    expect(password.attributes('aria-describedby')).toBe('password-error password-ayuda');
+    expect(password.attributes('aria-invalid')).toBe('true');
+  });
+});

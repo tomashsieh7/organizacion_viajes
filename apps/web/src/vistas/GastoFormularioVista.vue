@@ -14,7 +14,7 @@ import { useSesionStore } from '../stores/sesion';
 import { useViajeStore } from '../stores/viaje';
 import { aUnidadMinima, formatearMonto } from '../utiles/formato';
 import { useValidacion } from '../composables/useValidacion';
-import { problemasSegun } from '../utiles/formularios';
+import { MONTO_INVALIDO, problemasSegun } from '../utiles/formularios';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();
@@ -58,8 +58,6 @@ watch(deudores, (ids) => {
     Object.entries(montos.value).filter(([id]) => ids.includes(id)),
   );
 });
-
-const MONTO_INVALIDO = 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50';
 
 /** Arma el cuerpo para la API y devuelve sus problemas, con el mismo esquema que valida la API. */
 function armarCuerpo(): { cuerpo: DatosGastoNuevo; problemas: Record<string, string> } {

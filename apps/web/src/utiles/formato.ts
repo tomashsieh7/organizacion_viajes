@@ -11,7 +11,7 @@ export function formatearMonto(monto: number, moneda: Moneda): string {
 }
 
 /** "2026-12-10" → "10/12/2026". */
-export function formatearFecha(fecha: string): string {
+function formatearFecha(fecha: string): string {
   const [a, m, d] = fecha.split('-');
   return `${d}/${m}/${a}`;
 }

@@ -1207,3 +1207,18 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - con el arreglo pasó 11 de 11, sin deadlocks.
 - **Documentación:** se completó D18 en el PLAN.
 - **Archivos:** `apps/api/src/modulos/gastos/infraestructura/prisma.ts`, `apps/api/test/integracion/gastos.bd.test.ts`, `PLAN.md` y esta entrada.
+
+## 2026-10-14 00:45 — Merge del PR #12 y mejoras de la nueva revisión
+
+- **Merge del PR #12:** con la autorización del usuario ("mergealo si pasa"), el PR #12 ("Evitar el deadlock al crear filas de deuda en gastos simultáneos") se mergeó a `main` en `d70b9ea`, fijando la cabeza verificada `1d09a48`. Su CI pasó los tres trabajos, sin conflictos ni comentarios. Se dejó de seguir el PR y la rama se alineó con `main` por avance directo.
+- **Nueva revisión:** a pedido del usuario se repasó `docs/auditoria.md` sobre el código con la mejora visual y el arreglo del deadlock. No hubo hallazgos de prioridad media ni alta. El usuario aprobó las cinco mejoras de prioridad baja:
+  1. el mensaje de monto inválido, copiado en 3 formularios, pasa a la constante `MONTO_INVALIDO` de `utiles/formularios.ts`;
+  2. la clase global `.panel`, que estaba definida y sin uso, ahora la usan las tarjetas (gasto, propuesta, saldo, participantes, viaje y siluetas de carga), y se borraron sus 6 copias del mismo estilo;
+  3. la ayuda de la contraseña del registro queda enlazada al campo: `aria()` de `useValidacion` acepta ids de ayuda y los suma a `aria-describedby`, junto al error si lo hay; tiene una prueba nueva;
+  4. se quitó el `export` sobrante de `formatearFecha`, y `knip` vuelve a mostrar solo sus falsos positivos conocidos;
+  5. `npm update` actualizó 21 dependencias a versiones menores o parches dentro de los rangos de `package.json`, entre ellas Vue, Vite, Express, Zod, Socket.IO y Playwright. Solo cambió el lockfile, y `npm audit` sigue con las 4 advertencias conocidas de Prisma.
+- **Archivos:** `package-lock.json`, `utiles/formularios.ts`, `utiles/formato.ts`, `composables/useValidacion.ts`, los 3 formularios con monto, `RegistroVista.vue`, 6 componentes y vistas con tarjetas, `RegistroVista.test.ts` y esta entrada.
+- **Verificación:**
+  - `npm run lint` pasa;
+  - `npm run cobertura` pasa 499 pruebas, 346 del backend y 153 del frontend, por encima de los mínimos;
+  - `npm run e2e` pasa los siete flujos.

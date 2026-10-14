@@ -10,7 +10,7 @@ import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
 import { aUnidadMinima } from '../utiles/formato';
 import { useValidacion } from '../composables/useValidacion';
-import { problemasSegun } from '../utiles/formularios';
+import { MONTO_INVALIDO, problemasSegun } from '../utiles/formularios';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
@@ -28,8 +28,6 @@ const ubicacion = ref<ValorUbicacion>({ ubicacion: '', latitud: null, longitud: 
 const error = ref('');
 const enviando = ref(false);
 
-const PRECIO_INVALIDO = 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50';
-
 /** Arma el cuerpo para la API y devuelve sus problemas, con el mismo esquema que valida la API. */
 function armarCuerpo() {
   const precio =
@@ -46,7 +44,7 @@ function armarCuerpo() {
     ...(precio === undefined || precio === null ? {} : { precio }),
   };
   const problemas = problemasSegun(esquemaAlojamientoNuevo, cuerpo);
-  if (precio === null) problemas['precio'] = PRECIO_INVALIDO;
+  if (precio === null) problemas['precio'] = MONTO_INVALIDO;
   return { cuerpo, problemas };
 }
 

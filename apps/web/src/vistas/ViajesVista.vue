@@ -51,6 +51,7 @@ function alCrear(viajeId: string) {
     <ul class="tarjetas">
       <li v-for="v in store.viajes" :key="v.id" class="tarjeta">
         <RouterLink
+          class="panel"
           :to="v.miAcceso === 'SOLO_SALDOS' ? `/viajes/${v.id}/saldos` : `/viajes/${v.id}`"
         >
           <span class="tarjeta__titulo">
@@ -83,11 +84,6 @@ function alCrear(viajeId: string) {
   display: flex;
   flex-direction: column;
   gap: var(--esp-1);
-  padding: var(--esp-4);
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-grande);
-  box-shadow: var(--sombra);
   color: inherit;
   text-decoration: none;
   transition:
