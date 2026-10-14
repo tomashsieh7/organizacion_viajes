@@ -34,12 +34,19 @@ async function cargar() {
   }
 }
 
+/** Hay un voto o una resolución en curso: un segundo clic no manda otro pedido. */
+const ocupado = ref(false);
+
 async function intentar(accion: () => Promise<void>) {
+  if (ocupado.value) return;
+  ocupado.value = true;
   error.value = '';
   try {
     await accion();
   } catch (e) {
     error.value = mensajeDeError(e);
+  } finally {
+    ocupado.value = false;
   }
 }
 
@@ -98,6 +105,7 @@ onMounted(cargar);
       :titulo="a.alojamiento.nombre"
       :soy-admin="viaje.soyAdmin"
       :moneda="viaje.actual!.moneda"
+      :ocupada="ocupado"
       @votar="votar(a.id, $event)"
       @desvotar="desvotar(a.id)"
       @resolver="resolver(a.id, $event)"

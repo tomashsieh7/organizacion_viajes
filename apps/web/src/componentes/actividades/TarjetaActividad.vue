@@ -10,6 +10,7 @@ const props = defineProps<{
   viajeId: string;
   /** Si se muestra la referencia a la original (cuando la alternativa aparece fuera de su grupo). */
   mostrarOriginal?: boolean;
+  ocupada?: boolean;
 }>();
 const emit = defineEmits<{
   votar: [id: string, valor: ValorVoto];
@@ -24,6 +25,7 @@ const id = props.actividad.id;
     :propuesta="actividad"
     :titulo="actividad.actividad.titulo"
     :soy-admin="soyAdmin"
+    :ocupada="ocupada"
     :moneda="moneda"
     @votar="emit('votar', id, $event)"
     @desvotar="emit('desvotar', id)"

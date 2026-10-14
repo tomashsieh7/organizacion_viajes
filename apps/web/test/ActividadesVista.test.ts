@@ -92,4 +92,23 @@ describe('ActividadesVista', () => {
     });
     expect(vista.text()).toContain('Falló la carga');
   });
+
+  it('mientras se resuelve una propuesta, un segundo clic no manda otro pedido', async () => {
+    let terminar!: () => void;
+    const resolver = vi.fn(
+      () =>
+        new Promise<{ propuesta: typeof kayak; afectadas: string[] }>((ok) => {
+          terminar = () => ok({ propuesta: { ...kayak, estado: 'CONFIRMADA' }, afectadas: [] });
+        }),
+    );
+    const vista = await montar({ listarActividades: async () => [kayak], resolver });
+    const confirmar = () => vista.findAll('button').find((b) => b.text() === 'Confirmar')!;
+    await confirmar().trigger('click');
+    expect(confirmar().attributes('disabled')).toBeDefined();
+    await confirmar().trigger('click');
+    expect(resolver).toHaveBeenCalledTimes(1);
+    terminar();
+    await flushPromises();
+    expect(vista.text()).not.toContain('ya está resuelta');
+  });
 });

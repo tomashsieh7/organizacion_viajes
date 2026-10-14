@@ -21,7 +21,12 @@ const grupos = computed(() => agruparOpciones(propuestas.actividades));
 /** Hasta la primera carga no se muestra la lista vacía. */
 const cargado = ref(false);
 
+/** Hay un voto o una resolución en curso: un segundo clic no manda otro pedido. */
+const ocupado = ref(false);
+
 async function intentar(accion: () => Promise<void>) {
+  if (ocupado.value) return;
+  ocupado.value = true;
   error.value = '';
   conflictos.value = [];
   try {
@@ -31,6 +36,8 @@ async function intentar(accion: () => Promise<void>) {
     if (e instanceof ErrorDeApi && e.codigo === 'SUPERPOSICION_HORARIA') {
       conflictos.value = (e.detalles as { conflictos: ConflictoHorario[] }).conflictos;
     } else error.value = mensajeDeError(e);
+  } finally {
+    ocupado.value = false;
   }
 }
 
@@ -97,6 +104,7 @@ onMounted(cargar);
         :soy-admin="viaje.soyAdmin"
         :moneda="viaje.actual!.moneda"
         :viaje-id="viaje.actual!.id"
+        :ocupada="ocupado"
         mostrar-original
         @votar="votar"
         @desvotar="desvotar"
@@ -108,6 +116,7 @@ onMounted(cargar);
         :soy-admin="viaje.soyAdmin"
         :moneda="viaje.actual!.moneda"
         :viaje-id="viaje.actual!.id"
+        :ocupada="ocupado"
         @votar="votar"
         @desvotar="desvotar"
         @resolver="resolver"

@@ -8,6 +8,8 @@ const props = defineProps<{
   soyAdmin: boolean;
   moneda: Moneda;
   titulo: string;
+  /** Mientras se espera la respuesta de un voto o una resolución, los botones no responden. */
+  ocupada?: boolean;
 }>();
 const emit = defineEmits<{
   votar: [valor: ValorVoto];
@@ -68,6 +70,7 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
         <button
           type="button"
           class="boton"
+          :disabled="ocupada"
           :aria-pressed="propuesta.miVoto === 'A_FAVOR'"
           @click="emit('votar', 'A_FAVOR')"
         >
@@ -76,12 +79,19 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
         <button
           type="button"
           class="boton"
+          :disabled="ocupada"
           :aria-pressed="propuesta.miVoto === 'EN_CONTRA'"
           @click="emit('votar', 'EN_CONTRA')"
         >
           En contra
         </button>
-        <button v-if="propuesta.miVoto" type="button" class="boton" @click="emit('desvotar')">
+        <button
+          v-if="propuesta.miVoto"
+          type="button"
+          class="boton"
+          :disabled="ocupada"
+          @click="emit('desvotar')"
+        >
           Retirar voto
         </button>
       </div>
@@ -92,6 +102,7 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
           type="button"
           class="boton"
           :class="a.accion === 'confirmar' ? 'boton--principal' : 'boton--peligro'"
+          :disabled="ocupada"
           @click="emit('resolver', a.accion)"
         >
           {{ a.texto }}

@@ -50,4 +50,19 @@ describe('DialogoTraspaso (CU24)', () => {
     expect(dialogo.text()).toContain('El nuevo Admin tiene que ser otro participante');
     expect(dialogo.emitted('cerrar')).toBeUndefined();
   });
+
+  it('un doble clic en Transferir manda un solo pedido', async () => {
+    let terminar!: () => void;
+    const pendiente = vi.fn(() => new Promise<undefined>((ok) => (terminar = () => ok(undefined))));
+    const { dialogo } = await montar(pendiente);
+    await dialogo.find('#sucesor').setValue('tomas');
+    const transferir = dialogo.findAll('button')[1]!;
+    await transferir.trigger('click');
+    expect(transferir.attributes('disabled')).toBeDefined();
+    await transferir.trigger('click');
+    expect(pendiente).toHaveBeenCalledTimes(1);
+    terminar();
+    await flushPromises();
+    expect(dialogo.emitted('cerrar')).toHaveLength(1);
+  });
 });
