@@ -1048,3 +1048,13 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - pruebas: `casosDeUsoPropuestas.test.ts`, `casosDeUsoActividades.test.ts`, `propuestas.bd.test.ts`, `memoria.ts`, `DialogoModal.test.ts` (nuevo) y `formularios.test.ts` (nuevo);
   - otros: `package-lock.json`, `PLAN.md` (D18 y RN-E5), `docs/auditoria.md` y esta entrada.
 - **Verificación:** `npm run lint` pasa; `npm test` pasa 421 pruebas, 345 del backend y 76 del frontend; `npm run e2e` pasa los seis flujos.
+
+## 2026-10-13 23:19 — Merge del PR #8
+
+- **Acción:** con la autorización del usuario ("mergealo si pasa el CI"), el PR #8 ("Correcciones de la primera pasada de auditoría") se mergeó a `main` con un commit de merge, en `ecc50df`, fijando la cabeza verificada `6961f97` con `expectedHeadSha`.
+- **Estado previo:** el CI pasó sus tres trabajos (lint y tipos, Vitest y punta a punta), sin conflictos ni comentarios de revisión.
+- **Después:**
+  - la sesión dejó de seguir el PR y se borró su revisión programada;
+  - la rama se alineó con `main` por avance directo;
+  - el push se hizo con la confirmación del usuario.
+- **Archivos:** esta entrada en `LOG.md`.
