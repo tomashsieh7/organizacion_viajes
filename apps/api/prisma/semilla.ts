@@ -14,7 +14,7 @@ import type { PrismaClient } from '../src/compartido/infraestructura/prisma.js';
 import { HasheadorArgon2 } from '../src/modulos/auth/infraestructura/adaptadores.js';
 
 /** Contraseña de los usuarios de ejemplo; solo existe en la base de desarrollo. */
-export const CONTRASENA_DE_EJEMPLO = 'viaje-de-prueba-2026';
+const CONTRASENA_DE_EJEMPLO = 'viaje-de-prueba-2026';
 
 const CATEGORIAS = [
   { codigo: 'ALOJAMIENTO', nombre: 'Alojamiento' },

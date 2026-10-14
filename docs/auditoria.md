@@ -30,7 +30,7 @@ Esta lista sirve para auditar el proyecto varias veces con el mismo criterio, as
 **Falsos positivos conocidos de `knip`:**
 - `e2e/soporte/prepararBase.ts`: lo ejecuta `prepararTodo.ts` con `tsx`.
 - `@prisma/client`: lo usa el cliente generado en `src/generado`.
-- `pg`: lo necesita `@prisma/adapter-pg`.
+- `pg` y `@types/pg`: los necesitan `@prisma/adapter-pg` y `prepararBase.ts`.
 
 La cobertura (`vitest --coverage`) requiere instalar `@vitest/coverage-v8`, y por ahora no está incorporada.
 

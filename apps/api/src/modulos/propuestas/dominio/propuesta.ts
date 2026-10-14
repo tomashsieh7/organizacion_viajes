@@ -4,7 +4,7 @@ import type { Coordenadas } from '../../../compartido/valores/coordenadas.js';
 
 export type TipoPropuesta = 'ACTIVIDAD' | 'ALOJAMIENTO';
 
-export interface Voto {
+interface Voto {
   usuarioId: string;
   valor: ValorVoto;
   emitidoEn: Date;

@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw, type Router } from 'vue-router';
 import { useSesionStore } from '../stores/sesion';
 
-export const rutas: RouteRecordRaw[] = [
+const rutas: RouteRecordRaw[] = [
   { path: '/', redirect: '/viajes' },
   {
     path: '/ingresar',

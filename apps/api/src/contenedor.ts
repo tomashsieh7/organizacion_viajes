@@ -215,6 +215,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   // Propuestas (comunes a alojamientos y actividades)
   const unidadPropuestas = new UnidadDeTrabajoPrisma<ReposPropuestas>(prisma, (tx) => ({
     propuestas: new RepositorioPropuestasPrisma(tx),
+    viajes: new LectorDeViajesCompartidoPrisma(tx),
   }));
   const consultasPropuestas = new ConsultaPropuestasPrisma(prisma);
 
@@ -227,15 +228,19 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
     fechas: new ConsultaFechasDeViajePrisma(prisma),
     reloj,
   };
-  // La resolución de propuestas suma las reglas de actividades sin modificar ResolverPropuesta (F3).
+  // La resolución de propuestas suma las reglas de actividades sin modificar ResolverPropuesta.
   const unidadResolucion = new UnidadDeTrabajoPrisma<ReposResolucionConActividades>(
     prisma,
     (tx) => {
       const propuestas = new RepositorioPropuestasPrisma(tx);
       const actividades = new RepositorioActividadesPrisma(tx, propuestas);
+      const viajes = new RepositorioViajesPrisma(tx);
       return {
         propuestas: new PropuestasConAgendaBloqueadaPrimero(propuestas, actividades),
         actividades,
+        // Resolver modifica la agenda: el viaje se toma con FOR UPDATE desde el principio, como
+        // en las bajas y los traspasos, para no subir después un bloqueo compartido.
+        viajes: { obtener: (viajeId) => viajes.obtenerParaModificar(viajeId) },
       };
     },
   );

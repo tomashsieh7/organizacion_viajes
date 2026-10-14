@@ -6,6 +6,7 @@ import CampoFormulario from '../componentes/base/CampoFormulario.vue';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import { ErrorDeApi, mensajeDeError } from '../clientes/http';
 import { useSesionStore } from '../stores/sesion';
+import { erroresDeValidacion } from '../utiles/formularios';
 
 const sesion = useSesionStore();
 const router = useRouter();
@@ -17,9 +18,7 @@ const enviando = ref(false);
 async function enviar() {
   error.value = '';
   const resultado = esquemaRegistro.safeParse(datos);
-  errores.value = resultado.success
-    ? {}
-    : Object.fromEntries(resultado.error.issues.map((i) => [String(i.path[0]), i.message]));
+  errores.value = resultado.success ? {} : erroresDeValidacion(resultado.error);
   if (resultado.success && esContrasenaComun(datos.password)) {
     errores.value = { password: 'Esa contraseña es demasiado común; elegí otra' };
   }

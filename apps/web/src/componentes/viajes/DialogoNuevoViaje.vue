@@ -6,6 +6,7 @@ import AvisoMensaje from '../base/AvisoMensaje.vue';
 import DialogoModal from '../base/DialogoModal.vue';
 import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { useViajeStore } from '../../stores/viaje';
+import { erroresDeValidacion } from '../../utiles/formularios';
 
 const emit = defineEmits<{ cerrar: []; creado: [viajeId: string] }>();
 const store = useViajeStore();
@@ -25,9 +26,7 @@ onMounted(() => store.cargarMonedas().catch((e) => (error.value = mensajeDeError
 async function enviar() {
   error.value = '';
   const resultado = esquemaViajeNuevo.safeParse(datos);
-  errores.value = resultado.success
-    ? {}
-    : Object.fromEntries(resultado.error.issues.map((i) => [String(i.path[0]), i.message]));
+  errores.value = resultado.success ? {} : erroresDeValidacion(resultado.error);
   if (!resultado.success) return;
   enviando.value = true;
   try {

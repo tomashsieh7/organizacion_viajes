@@ -9,6 +9,7 @@ import { ErrorDeApi, mensajeDeError } from '../clientes/http';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
 import { aUnidadMinima } from '../utiles/formato';
+import { erroresDeValidacion } from '../utiles/formularios';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
@@ -49,9 +50,7 @@ async function enviar() {
   };
   const resultado = esquemaAlojamientoNuevo.safeParse(cuerpo);
   if (!resultado.success) {
-    errores.value = Object.fromEntries(
-      resultado.error.issues.map((i) => [String(i.path[0]), i.message]),
-    );
+    errores.value = erroresDeValidacion(resultado.error);
     return;
   }
   enviando.value = true;

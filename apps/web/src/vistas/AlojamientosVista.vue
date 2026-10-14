@@ -11,6 +11,8 @@ import { formatearFecha, NOMBRES_ESTADO } from '../utiles/formato';
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
 const error = ref('');
+/** Hasta la primera carga no se muestra la lista vacía. */
+const cargado = ref(false);
 
 async function cargar() {
   error.value = '';
@@ -18,6 +20,8 @@ async function cargar() {
     await propuestas.cargarAlojamientos();
   } catch (e) {
     error.value = mensajeDeError(e);
+  } finally {
+    cargado.value = true;
   }
 }
 
@@ -57,7 +61,10 @@ onMounted(cargar);
       </option>
     </select>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
-    <p v-if="!propuestas.alojamientos.length">Todavía no hay alojamientos propuestos.</p>
+    <p v-if="!cargado">Cargando…</p>
+    <p v-else-if="!error && !propuestas.alojamientos.length">
+      Todavía no hay alojamientos propuestos.
+    </p>
     <TarjetaPropuesta
       v-for="a in propuestas.alojamientos"
       :key="a.id"
