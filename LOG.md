@@ -1470,3 +1470,9 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   Todos cumplen AA.
 - **Story map:** en "Página-13" de `docs/diagramas.drawio` se agregó la tarjeta "Viajero ve el progreso del viaje, los próximos pasos y la cuenta regresiva", en el Release 10 "Ideas exploratorias", columna "Gestionar el grupo". Lo eligió el usuario ("Mételo en ideas exploratorias"). La página pasó de 95 a 96 celdas y no cambió ninguna otra.
 - **`PLAN.md`:** en 7.1.1, los neutros sin tinte y la ubicación en el story map. En 9, la fila R10.
+
+## 2026-10-14 14:12 — Merge del PR #19
+
+- Con la autorización del usuario ("sí, hacé el commit y mergealo si pasa el CI"), el PR #19 ("Rediseño visual con gamificación: Resumen, progreso y celebraciones") se mergeó a `main` en `06bf4d1`, fijando la cabeza verificada `c0b5249`.
+- El CI pasó los tres trabajos (Lint y tipos, Pruebas de Vitest y Pruebas de punta a punta), sin conflictos ni comentarios.
+- Después del merge se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
