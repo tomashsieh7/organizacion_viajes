@@ -23,6 +23,24 @@ async function cargar<R extends ReposPropuestas>(
   return propuesta;
 }
 
+/** RN-X1 y RN-E5: dentro de la transacción, quien vota tiene que seguir participando. */
+async function exigirParticipante(repos: ReposPropuestas, viajeId: string, usuarioId: string) {
+  const viaje = await repos.viajes.obtener(viajeId);
+  if (!viaje) throw noEncontrada();
+  if (!viaje.esParticipanteActivo(usuarioId)) {
+    throw new ErrorDeDominio('PROHIBIDO', 'NO_PARTICIPANTE', 'No participás de este viaje');
+  }
+}
+
+/** RN-X2: dentro de la transacción, quien resuelve tiene que seguir siendo el Admin. */
+async function exigirAdmin(repos: ReposPropuestas, viajeId: string, usuarioId: string) {
+  const viaje = await repos.viajes.obtener(viajeId);
+  if (!viaje) throw noEncontrada();
+  if (!viaje.esAdmin(usuarioId)) {
+    throw new ErrorDeDominio('PROHIBIDO', 'SOLO_ADMIN', 'Solo el Admin del viaje puede hacer esto');
+  }
+}
+
 async function vista(
   consultas: ConsultaPropuestas,
   viajeId: string,
@@ -49,6 +67,7 @@ export class Votar {
     valor: ValorVoto,
   ): Promise<PropuestaVista> {
     await this.unidad.ejecutar(async (repos) => {
+      await exigirParticipante(repos, viajeId, usuarioId);
       const p = await cargar(repos, viajeId, propuestaId);
       p.votar(usuarioId, valor, this.reloj.ahora());
       await repos.propuestas.guardar(p);
@@ -58,6 +77,7 @@ export class Votar {
 
   async desvotar(viajeId: string, propuestaId: string, usuarioId: string): Promise<PropuestaVista> {
     await this.unidad.ejecutar(async (repos) => {
+      await exigirParticipante(repos, viajeId, usuarioId);
       const p = await cargar(repos, viajeId, propuestaId);
       p.desvotar(usuarioId);
       await repos.propuestas.guardar(p);
@@ -85,6 +105,7 @@ export class ResolverPropuesta<R extends ReposPropuestas> {
     adminId: string,
   ): Promise<RespuestaResolucion> {
     const afectadas = await this.unidad.ejecutar(async (repos) => {
+      await exigirAdmin(repos, viajeId, adminId);
       const propuesta = await cargar(repos, viajeId, propuestaId);
       const ahora = this.reloj.ahora();
       propuesta.resolver(accion, adminId, ahora);

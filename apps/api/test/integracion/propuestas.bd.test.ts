@@ -137,6 +137,18 @@ describe('CU06 y CU25: votar y desvotar', () => {
     });
     expect(ajena.status).toBe(404);
   });
+
+  it('RN-E5 y D18: un voto simultáneo con la baja de quien vota no queda guardado', async () => {
+    const id = await proponer();
+    const [voto, baja] = await Promise.all([
+      tomas.c.put(url(`/propuestas/${id}/voto`), { valor: 'A_FAVOR' }),
+      ana.c.delete(url(`/participantes/${tomas.id}`)),
+    ]);
+    expect(baja.status).toBe(200);
+    // Si el voto llegó antes, la baja lo retira; si llegó después, se rechaza.
+    expect([200, 403]).toContain(voto.status);
+    expect(await db.voto.count({ where: { propuestaId: id, usuarioId: tomas.id } })).toBe(0);
+  });
 });
 
 describe('CU07 a CU09: resolución', () => {

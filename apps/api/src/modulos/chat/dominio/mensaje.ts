@@ -1,6 +1,6 @@
 import { ErrorDeDominio } from '../../../compartido/errores.js';
 
-export const LARGO_MAXIMO_MENSAJE = 2000;
+const LARGO_MAXIMO_MENSAJE = 2000;
 
 export interface DatosMensaje {
   id: string;

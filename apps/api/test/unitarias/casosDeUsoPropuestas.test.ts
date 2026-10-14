@@ -22,6 +22,7 @@ import {
   RepositorioAlojamientosEnMemoria,
   RepositorioPropuestasEnMemoria,
   type BaseEnMemoria,
+  RepositorioViajesEnMemoria,
 } from '../soporte/memoria.js';
 
 const reloj = { ahora: () => new Date('2026-09-24T12:00:00Z') };
@@ -45,7 +46,24 @@ beforeEach(() => {
     monedaCodigo: 'ARS',
     creadoPorId: 'ana',
     creadoEn: new Date(),
-    membresias: [],
+    membresias: [
+      {
+        usuarioId: 'ana',
+        rol: 'ADMIN',
+        estado: 'ACTIVA',
+        bajaConDeuda: false,
+        altaEn: new Date(),
+        bajaEn: null,
+      },
+      {
+        usuarioId: 'tomas',
+        rol: 'VIAJERO',
+        estado: 'ACTIVA',
+        bajaConDeuda: false,
+        altaEn: new Date(),
+        bajaEn: null,
+      },
+    ],
   });
   unidadAlojamientos = new UnidadDeTrabajoEnMemoria(base, (e) => ({
     alojamientos: new RepositorioAlojamientosEnMemoria(e),
@@ -56,6 +74,7 @@ beforeEach(() => {
 function unidadDePropuestasSobre(estado: BaseEnMemoria) {
   unidadPropuestas = new UnidadDeTrabajoEnMemoria(estado, (e) => ({
     propuestas: new RepositorioPropuestasEnMemoria(e),
+    viajes: new RepositorioViajesEnMemoria(e),
   }));
   return unidadPropuestas;
 }
@@ -198,5 +217,30 @@ describe('Votar y resolver', () => {
       'rechazada por la regla',
     );
     expect(unidadPropuestas.confirmado.propuestas[0]?.datos.estado).toBe('PENDIENTE');
+  });
+
+  it('RN-E5 y RN-X2: dentro de la transacción se vuelven a verificar la participación y el rol', async () => {
+    const lector: ConsultaPropuestas = {
+      obtenerVista: (...a) => consultas().obtenerVista(...a),
+    };
+    const votar = new Votar(unidadPropuestas, lector, reloj);
+    const resolver = new ResolverPropuesta(unidadPropuestas, lector, reloj);
+    // Un exparticipante no puede votar ni desvotar, aunque el middleware lo haya dejado pasar.
+    unidadPropuestas.prepararEstado((e) => void (e.viajes[0]!.membresias[1]!.estado = 'RETIRADA'));
+    await expect(votar.votar(VIAJE, id, 'tomas', 'A_FAVOR')).rejects.toMatchObject({
+      codigo: 'NO_PARTICIPANTE',
+    });
+    await expect(votar.desvotar(VIAJE, id, 'tomas')).rejects.toMatchObject({
+      codigo: 'NO_PARTICIPANTE',
+    });
+    // Quien ya no es Admin no puede resolver.
+    unidadPropuestas.prepararEstado((e) => void (e.viajes[0]!.membresias[0]!.rol = 'VIAJERO'));
+    await expect(resolver.ejecutar(VIAJE, id, 'confirmar', 'ana')).rejects.toMatchObject({
+      codigo: 'SOLO_ADMIN',
+    });
+    expect(unidadPropuestas.confirmado.propuestas[0]?.datos).toMatchObject({
+      estado: 'PENDIENTE',
+      votos: [],
+    });
   });
 });

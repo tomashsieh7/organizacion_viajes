@@ -1,5 +1,6 @@
 import type { AccionSobrePropuesta, PropuestaVista } from '@viajes/compartido';
 import type { RangoFechas } from '../../../compartido/valores/rangoFechas.js';
+import type { LectorDeViajes } from '../../viajes/dominio/puertos.js';
 import type { Propuesta } from './propuesta.js';
 
 export interface RepositorioPropuestas {
@@ -9,15 +10,20 @@ export interface RepositorioPropuestas {
   guardar(propuesta: Propuesta): Promise<void>;
 }
 
-/** Repositorios mínimos de una transacción de propuestas; F4 los amplía en el punto de composición. */
+/** Repositorios mínimos de una transacción de propuestas; las reglas de cada tipo los amplían. */
 export interface ReposPropuestas {
   propuestas: RepositorioPropuestas;
+  /**
+   * Lee el viaje y lo bloquea antes que la propuesta, para que una baja o un traspaso simultáneos
+   * esperen y la participación o el rol se verifiquen sobre el estado vigente (D18, RN-E5).
+   */
+  viajes: LectorDeViajes;
 }
 
 /**
  * Punto de extensión de la resolución (abierto/cerrado): cada regla se ejecuta dentro de la
  * transacción después de aplicar la transición, puede rechazarla lanzando un error y devuelve los
- * ids de otras propuestas que modificó. F4 agrega las reglas de superposición y de opciones.
+ * ids de otras propuestas que modificó. Las actividades suman las reglas de superposición y de opciones.
  */
 export interface ReglaAlResolver<R extends ReposPropuestas> {
   alResolver(contexto: {

@@ -16,6 +16,8 @@ const propuestas = usePropuestasStore();
 const error = ref('');
 const conflictos = ref<ConflictoHorario[]>([]);
 const grupos = computed(() => agruparOpciones(propuestas.actividades));
+/** Hasta la primera carga no se muestra la lista vacía. */
+const cargado = ref(false);
 
 async function intentar(accion: () => Promise<void>) {
   error.value = '';
@@ -30,7 +32,8 @@ async function intentar(accion: () => Promise<void>) {
   }
 }
 
-const cargar = () => intentar(() => propuestas.cargarActividades());
+const cargar = () =>
+  intentar(() => propuestas.cargarActividades()).finally(() => (cargado.value = true));
 const votar = (id: string, valor: ValorVoto) => intentar(() => propuestas.votar(id, valor));
 const desvotar = (id: string) => intentar(() => propuestas.desvotar(id));
 const resolver = (id: string, accion: AccionSobrePropuesta) =>
@@ -61,7 +64,8 @@ onMounted(cargar);
     <AvisoSuperposicion v-if="conflictos.length" :conflictos="conflictos">
       Para confirmarla, primero hay que cancelar la actividad que ocupa ese horario.
     </AvisoSuperposicion>
-    <p v-if="!grupos.length">Todavía no hay actividades propuestas.</p>
+    <p v-if="!cargado">Cargando…</p>
+    <p v-else-if="!error && !grupos.length">Todavía no hay actividades propuestas.</p>
     <template v-for="g in grupos" :key="g.actividad.id">
       <TarjetaActividad
         :actividad="g.actividad"

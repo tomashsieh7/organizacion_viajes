@@ -11,8 +11,15 @@ const viaje = useViajeStore();
 const gastos = useGastosStore();
 const sesion = useSesionStore();
 const error = ref('');
+/** Hasta la primera carga no se muestra la lista vacía. */
+const cargado = ref(false);
 
-onMounted(() => gastos.cargarGastos().catch((e) => (error.value = mensajeDeError(e))));
+onMounted(() =>
+  gastos
+    .cargarGastos()
+    .catch((e) => (error.value = mensajeDeError(e)))
+    .finally(() => (cargado.value = true)),
+);
 </script>
 
 <template>
@@ -23,7 +30,8 @@ onMounted(() => gastos.cargarGastos().catch((e) => (error.value = mensajeDeError
         Anotar gasto
       </RouterLink>
     </div>
-    <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
+    <p v-if="!cargado">Cargando…</p>
+    <AvisoMensaje v-else-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <p v-else-if="!gastos.gastos.length">Todavía no hay gastos anotados.</p>
     <TarjetaGasto
       v-for="g in gastos.gastos"

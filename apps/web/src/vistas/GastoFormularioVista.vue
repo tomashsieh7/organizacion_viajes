@@ -13,6 +13,7 @@ import { useGastosStore } from '../stores/gastos';
 import { useSesionStore } from '../stores/sesion';
 import { useViajeStore } from '../stores/viaje';
 import { aUnidadMinima, formatearMonto } from '../utiles/formato';
+import { erroresDeValidacion } from '../utiles/formularios';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();
@@ -92,9 +93,7 @@ async function enviar() {
   if (!cuerpo) return;
   const resultado = esquemaGastoNuevo.safeParse(cuerpo);
   if (!resultado.success) {
-    errores.value = Object.fromEntries(
-      resultado.error.issues.map((i) => [String(i.path[0]), i.message]),
-    );
+    errores.value = erroresDeValidacion(resultado.error);
     return;
   }
   enviando.value = true;

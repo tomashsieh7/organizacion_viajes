@@ -25,6 +25,7 @@ import {
   RepositorioActividadesEnMemoria,
   RepositorioPropuestasEnMemoria,
   type BaseEnMemoria,
+  RepositorioViajesEnMemoria,
 } from '../soporte/memoria.js';
 
 const reloj = { ahora: () => new Date('2026-09-24T12:00:00Z') };
@@ -47,11 +48,29 @@ beforeEach(() => {
     monedaCodigo: 'ARS',
     creadoPorId: 'ana',
     creadoEn: new Date(),
-    membresias: [],
+    membresias: [
+      {
+        usuarioId: 'ana',
+        rol: 'ADMIN',
+        estado: 'ACTIVA',
+        bajaConDeuda: false,
+        altaEn: new Date(),
+        bajaEn: null,
+      },
+      {
+        usuarioId: 'tomas',
+        rol: 'VIAJERO',
+        estado: 'ACTIVA',
+        bajaConDeuda: false,
+        altaEn: new Date(),
+        bajaEn: null,
+      },
+    ],
   });
   unidad = new UnidadDeTrabajoEnMemoria(base, (e) => ({
     propuestas: new RepositorioPropuestasEnMemoria(e),
     actividades: new RepositorioActividadesEnMemoria(e),
+    viajes: new RepositorioViajesEnMemoria(e),
   }));
   deps = {
     unidad,

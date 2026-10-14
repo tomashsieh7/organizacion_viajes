@@ -381,7 +381,7 @@ export class RepositorioPropuestasEnMemoria implements RepositorioPropuestas {
   }
 }
 
-export function aVistaEnMemoria(
+function aVistaEnMemoria(
   base: BaseEnMemoria,
   d: DatosPropuesta,
   usuarioId: string,

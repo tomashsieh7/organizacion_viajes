@@ -11,7 +11,7 @@ import { ErrorDeDominio } from '../../../compartido/errores.js';
 import type { EnviarMensaje, UnirseAlChat } from '../casos-de-uso/casosDeUsoChat.js';
 import type { NotificadorViaje } from '../dominio/puertos.js';
 
-export interface DatosSocket {
+interface DatosSocket {
   usuarioId: string;
   token: string;
 }
@@ -23,7 +23,7 @@ export const salaDelViaje = (viajeId: string) => `viaje:${viajeId}`;
 export const salaDelUsuario = (usuarioId: string) => `usuario:${usuarioId}`;
 
 /** Lee una cookie del encabezado `Cookie` del handshake. */
-export function leerCookie(encabezado: string | undefined, nombre: string): string | undefined {
+function leerCookie(encabezado: string | undefined, nombre: string): string | undefined {
   for (const parte of (encabezado ?? '').split(';')) {
     const [clave, ...valor] = parte.trim().split('=');
     if (clave === nombre) {

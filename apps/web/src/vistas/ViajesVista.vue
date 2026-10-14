@@ -11,8 +11,15 @@ const store = useViajeStore();
 const router = useRouter();
 const creando = ref(false);
 const error = ref('');
+/** Hasta la primera carga no se muestra la lista vacía. */
+const cargado = ref(false);
 
-onMounted(() => store.cargarViajes().catch((e) => (error.value = mensajeDeError(e))));
+onMounted(() =>
+  store
+    .cargarViajes()
+    .catch((e) => (error.value = mensajeDeError(e)))
+    .finally(() => (cargado.value = true)),
+);
 // El aviso se muestra una sola vez.
 onBeforeUnmount(() => (store.aviso = ''));
 
@@ -29,7 +36,8 @@ function alCrear(viajeId: string) {
       <button class="boton boton--principal" @click="creando = true">Nuevo grupo</button>
     </div>
     <AvisoMensaje v-if="store.aviso" tipo="info">{{ store.aviso }}</AvisoMensaje>
-    <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
+    <p v-if="!cargado">Cargando…</p>
+    <AvisoMensaje v-else-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <p v-else-if="store.viajes.length === 0">Todavía no participás de ningún viaje.</p>
     <ul class="tarjetas">
       <li v-for="v in store.viajes" :key="v.id" class="tarjeta">

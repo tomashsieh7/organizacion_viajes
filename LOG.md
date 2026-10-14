@@ -1004,3 +1004,47 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - candidatos a código muerto: `@types/pg`, las exportaciones `CONTRASENA_DE_EJEMPLO`, `LARGO_MAXIMO_MENSAJE`, `leerCookie`, `aVistaEnMemoria` y `rutas`, y los tipos `DatosSocket` y `Voto`.
 - **Primera corrida de `jscpd`:** 35 clones exactos, el 1,37 % de las líneas.
 - **Archivos:** `docs/auditoria.md` (nuevo), una línea en `README.md` y esta entrada en `LOG.md`.
+
+## 2026-10-13 23:10 — Merge del PR #7 y primera pasada de `docs/auditoria.md`
+
+- **Merge del PR #7:** con la autorización del usuario ("mergealo si pasa el CI"), el PR #7 ("Agregar una lista de auditoría repetible del código") se mergeó a `main` con un commit de merge, en `2d87262`. Antes del merge, el CI había pasado sus tres trabajos sobre `8c76b69` y no había conflictos ni revisiones. Se dejó de seguir el PR, se borró su revisión programada y la rama se alineó con `main` por avance directo. El push de esa alineación se hizo con la confirmación del usuario.
+- **Auditoría:** se recorrieron las secciones 1 a 13 de `docs/auditoria.md` sobre `2d87262`. El usuario aprobó corregir todos los hallazgos.
+- **Base automática:**
+  - el lint, las pruebas y las e2e estaban en verde;
+  - `npm audit` mostró 7 advertencias: las 5 conocidas de Prisma, más `shell-quote` (crítica, por `concurrently`) y `source-map-js` (alta, por `vite` y `vue`);
+  - `npm outdated` solo mostró versiones menores;
+  - los 7 avisos de exportaciones sin uso de `knip` eran `export` sobrantes;
+  - `jscpd` encontró 35 clones, casi todos en la preparación de pruebas;
+  - las migraciones y el schema coinciden.
+- **Hallazgo de prioridad media:** votar, desvotar y resolver verificaban la participación o el rol solo en el middleware, fuera de la transacción.
+  - Un voto simultáneo con la baja de quien vota quedaba guardado después de que la baja retiraba los votos pendientes, en contra de RN-E5.
+  - Un Admin podía resolver una propuesta mientras traspasaba la administración.
+  - **Corrección:**
+    - `ReposPropuestas` suma el puerto `viajes` (`LectorDeViajes`);
+    - `Votar` vuelve a verificar la participación dentro de la transacción, con `LectorDeViajesCompartidoPrisma` (`FOR SHARE`);
+    - `ResolverPropuesta` vuelve a verificar que quien resuelve sea Admin, con el viaje tomado con `FOR UPDATE` desde el principio, para no subir después un bloqueo compartido a exclusivo.
+  - **Orden de bloqueos:** en todas las operaciones el viaje es el primer bloqueo.
+  - **Dependencia nueva:** el módulo de propuestas depende del puerto de viajes, como ya lo hacen gastos e itinerario.
+  - **Pruebas:**
+    - la prueba de integración nueva falló 4 de 5 veces sin la verificación, a propósito, y pasó 5 de 5 con ella;
+    - una prueba unitaria cubre el rechazo de un exparticipante y de quien dejó de ser Admin.
+- **Hallazgos de prioridad baja, todos corregidos:**
+  - `npm audit fix` actualizó `shell-quote` y `source-map-js` en el lockfile, y quedan solo las 4 advertencias de Prisma;
+  - las listas de viajes, gastos, alojamientos y actividades muestran "Cargando…" hasta la primera carga, en lugar de "Todavía no hay…", y alojamientos ya no muestra el error y la lista vacía juntos;
+  - `DialogoModal` toma el foco al abrirse, así Escape lo cierra, y lo devuelve al cerrarse, con una prueba nueva;
+  - la conversión de errores de Zod quedó en `utiles/formularios.ts` (`erroresDeValidacion`), en lugar de seis copias, con una prueba nueva;
+  - se borraron 3 comentarios que citaban fases cerradas y 7 `export` sobrantes.
+- **Estado de `knip`:** ahora solo reporta los falsos positivos conocidos. La lista suma `@types/pg` a esos falsos positivos.
+- **Sin cambio:**
+  - propuestas o mensajes de alguien a quien están dando de baja en ese momento, porque RN-E5 admite que sus propuestas sigan en votación;
+  - montos acumulados mayores al entero seguro, porque harían falta cifras absurdas;
+  - bucles con consultas sobre pocas filas;
+  - preparación repetida de pruebas;
+  - tamaño de `contenedor.ts` y `viaje.ts`.
+- **Seguridad:** sin hallazgos. Todas las consultas por id filtran por viaje, cada ruta tiene su guarda, no hay SQL inseguro y `docs/api.md` coincide con las 33 rutas.
+- **Archivos:**
+  - backend: `contenedor.ts`, `propuestas/dominio/puertos.ts`, `casosDeUsoPropuestas.ts`, `propuesta.ts`, `mensaje.ts`, `socketIO.ts` y `prisma/semilla.ts`;
+  - frontend: `DialogoModal.vue`, `DialogoNuevoViaje.vue`, `router/index.ts`, `utiles/formularios.ts` (nuevo) y ocho vistas;
+  - pruebas: `casosDeUsoPropuestas.test.ts`, `casosDeUsoActividades.test.ts`, `propuestas.bd.test.ts`, `memoria.ts`, `DialogoModal.test.ts` (nuevo) y `formularios.test.ts` (nuevo);
+  - otros: `package-lock.json`, `PLAN.md` (D18 y RN-E5), `docs/auditoria.md` y esta entrada.
+- **Verificación:** `npm run lint` pasa; `npm test` pasa 421 pruebas, 345 del backend y 76 del frontend; `npm run e2e` pasa los seis flujos.
