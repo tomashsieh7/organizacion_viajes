@@ -164,6 +164,33 @@ describe('CU20: anotar gasto', () => {
     expect(await deudas(luis.c, 'deudor')).toEqual([['Tomás', 50]]);
   });
 
+  it('D18: gastos opuestos simultáneos entre dos personas sin deudas previas no se traban', async () => {
+    // Cada vuelta usa un viaje nuevo, así las filas de deuda del par todavía no existen y las dos
+    // transacciones tienen que crearlas a la vez (antes, en orden inverso, podían trabarse).
+    for (let vuelta = 0; vuelta < 15; vuelta++) {
+      const nuevo = (
+        await ana.c.post('/api/viajes', {
+          nombre: `Vuelta ${vuelta}`,
+          destino: 'Bariloche',
+          fechaInicio: '2026-12-10',
+          fechaFin: '2026-12-16',
+          monedaCodigo: 'ARS',
+        })
+      ).body.viaje.id as string;
+      await ana.c.post(`/api/viajes/${nuevo}/participantes`, { email: 'tomas@mail.com' });
+      const anotar = (c: Cliente, deudor: string) =>
+        c.post(`/api/viajes/${nuevo}/gastos`, {
+          titulo: 'Cena',
+          categoriaId: comida,
+          monto: 1000,
+          modoDivision: 'IGUALES',
+          deudores: [deudor],
+        });
+      const respuestas = await Promise.all([anotar(ana.c, tomas.id), anotar(tomas.c, ana.id)]);
+      expect(respuestas.map((r) => r.status)).toEqual([201, 201]);
+    }
+  });
+
   it('D18: una baja simultánea con un gasto nunca deja al dado de baja con una deuda no registrada', async () => {
     const [anotado, baja] = await Promise.all([
       gasto(tomas.c, { monto: 300, deudores: [luis.id] }),

@@ -1191,3 +1191,19 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - pruebas del frontend: 152, con 87,6 % de líneas;
   - pruebas del backend: 345, que pasaron en las corridas siguientes;
   - `npm run e2e` pasa los siete flujos.
+
+## 2026-10-14 00:35 — Merge del PR #11 y arreglo del deadlock al crear filas de deuda
+
+- **Merge del PR #11:** con la autorización del usuario ("mergealo si pasa el CI"), el PR #11 ("Mejora visual y de experiencia de uso") se mergeó a `main` en `cdc0949`, fijando la cabeza verificada `ee967ac`. Su CI pasó los tres trabajos, sin conflictos ni comentarios. Se dejó de seguir el PR y se borró su revisión programada.
+- **Deadlock, el problema:**
+  - `RepositorioDeudasPrisma.obtenerParaModificar` crea con `createMany` las filas de deuda que faltan para cada par y su opuesta;
+  - un gasto de A a B las insertaba en el orden (B→A, A→B) y uno de B a A en el orden inverso;
+  - si los dos llegaban a la vez y las filas no existían, cada transacción esperaba a la otra en el índice único y PostgreSQL abortaba una, que respondía 500;
+  - el log de PostgreSQL lo mostró en una corrida de `npm run cobertura` durante la mejora visual.
+- **El arreglo:** los pares se ordenan antes de crearlos. Después ya se bloqueaban ordenados por id.
+- **Prueba nueva en `integracion/gastos.bd.test.ts`:**
+  - 15 vueltas, cada una con un viaje nuevo, de dos gastos opuestos simultáneos;
+  - sin el arreglo falló 2 de 5 veces, con dos "deadlock detected" en el log de PostgreSQL;
+  - con el arreglo pasó 11 de 11, sin deadlocks.
+- **Documentación:** se completó D18 en el PLAN.
+- **Archivos:** `apps/api/src/modulos/gastos/infraestructura/prisma.ts`, `apps/api/test/integracion/gastos.bd.test.ts`, `PLAN.md` y esta entrada.

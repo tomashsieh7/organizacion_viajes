@@ -54,10 +54,16 @@ export class RepositorioDeudasPrisma implements RepositorioDeudas {
   ): Promise<Deuda[]> {
     if (pares.length === 0) return [];
     // Solo los ids del par: quien llama puede pasar objetos con más datos (por ejemplo, el monto).
-    const todos = pares.flatMap(({ deudorId, acreedorId }) => [
-      { deudorId, acreedorId },
-      { deudorId: acreedorId, acreedorId: deudorId },
-    ]);
+    // Ordenados: dos transacciones crean las filas que faltan en el mismo orden, así no se
+    // esperan en cruz (sin orden, un gasto de A a B y otro de B a A podían trabarse).
+    const todos = pares
+      .flatMap(({ deudorId, acreedorId }) => [
+        { deudorId, acreedorId },
+        { deudorId: acreedorId, acreedorId: deudorId },
+      ])
+      .sort(
+        (a, b) => a.deudorId.localeCompare(b.deudorId) || a.acreedorId.localeCompare(b.acreedorId),
+      );
     // Las filas que faltan se crean en cero; si otra transacción crea la misma, se espera a que termine.
     await this.db.deuda.createMany({
       data: todos.map((p) => ({ viajeId, ...p })),
