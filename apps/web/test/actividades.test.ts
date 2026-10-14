@@ -48,6 +48,7 @@ describe('fechas', () => {
       '2027-01-01',
       '2027-01-02',
     ]);
-    expect(nombreDelDia('2026-12-11')).toBe('viernes 11/12');
+    expect(nombreDelDia('2026-12-11')).toBe('viernes 11 dic');
+    expect(nombreDelDia('2027-01-03')).toBe('domingo 3 ene');
   });
 });

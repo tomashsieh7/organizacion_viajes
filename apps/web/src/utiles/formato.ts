@@ -10,7 +10,20 @@ export function formatearMonto(monto: number, moneda: Moneda): string {
   }).format(monto / 10 ** moneda.decimales);
 }
 
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+export const MESES = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+];
 
 /** "2026-12-10" → "10 dic 2026", con el mismo estilo que los rangos. */
 function formatearFecha(fecha: string): string {

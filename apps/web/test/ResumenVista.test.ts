@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ActividadVista, AlojamientoVista } from '@viajes/compartido';
 import { CLIENTE_PROPUESTAS } from '../src/clientes/propuestas';
 import { useCelebracion } from '../src/composables/useCelebracion';
@@ -57,6 +57,7 @@ function todoListo() {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   localStorage.clear();
   useCelebracion().cerrar();
 });
@@ -102,5 +103,24 @@ describe('ResumenVista', () => {
     const vista = await montar({}, 'ADMIN', true);
     expect(vista.text()).toContain('Ocurrió un error inesperado');
     expect(vista.find('[role="progressbar"]').exists()).toBe(false);
+  });
+
+  it('la cuenta regresiva cambia durante el viaje y al terminar', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-12-12T12:00:00'));
+    const durante = await montar();
+    expect(durante.find('.cuenta').text()).toContain('3');
+    expect(durante.find('.cuenta').text()).toContain('día de 7');
+    vi.setSystemTime(new Date('2026-12-20T12:00:00'));
+    const despues = await montar();
+    expect(despues.find('.cuenta').text()).toContain('Viaje terminado');
+  });
+
+  it('antes del viaje dice cuántos días faltan y cuándo empieza', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-14T12:00:00'));
+    const vista = await montar();
+    expect(vista.find('.cuenta__numero').text()).toBe('57');
+    expect(vista.find('.cuenta').text()).toContain('Empieza el jueves 10 dic');
   });
 });

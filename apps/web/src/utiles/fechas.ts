@@ -1,3 +1,5 @@
+import { MESES } from './formato';
+
 /** Fecha `YYYY-MM-DD` del dispositivo, en su zona horaria (P19, D17). */
 export function hoyDelDispositivo(ahora: Date = new Date()): string {
   const dos = (n: number) => String(n).padStart(2, '0');
@@ -17,8 +19,8 @@ export function diasEntre(desde: string, hasta: string): string[] {
 
 const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
-/** "2026-12-11" → "viernes 11/12". */
+/** "2026-12-11" → "viernes 11 dic", con el mes abreviado como el resto de las fechas. */
 export function nombreDelDia(fecha: string): string {
-  const [, m, d] = fecha.split('-');
-  return `${DIAS_SEMANA[new Date(`${fecha}T00:00:00Z`).getUTCDay()]} ${d}/${m}`;
+  const [, m, d] = fecha.split('-').map(Number) as [number, number, number];
+  return `${DIAS_SEMANA[new Date(`${fecha}T00:00:00Z`).getUTCDay()]} ${d} ${MESES[m - 1]}`;
 }

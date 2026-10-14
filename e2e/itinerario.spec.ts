@@ -22,6 +22,8 @@ test('CU13 y CU16 a CU18: confirmar una actividad y verla en el cronograma y en 
   const tarjeta = p.locator('article', { hasText: 'Cerro Catedral' });
   await tarjeta.getByRole('button', { name: 'Confirmar' }).click();
   await expect(tarjeta).toContainText('Confirmada');
+  // Confirmar se celebra con el nombre de la actividad.
+  await expect(p.getByText('¡Confirmaron Cerro Catedral!')).toBeVisible();
 
   // El grupo Itinerario abre su primera sección, el cronograma.
   await p.getByRole('link', { name: 'Itinerario' }).click();
@@ -33,13 +35,13 @@ test('CU13 y CU16 a CU18: confirmar una actividad y verla en el cronograma y en 
 
   await dia.getByRole('link', { name: 'Ver en el mapa' }).click();
   await expect(p).toHaveURL(/\/mapa\?actividad=/);
-  await expect(p.locator('.selector-dia [aria-pressed="true"]')).toContainText('12/12');
+  await expect(p.locator('.selector-dia [aria-pressed="true"]')).toContainText('12 dic');
   await expect(p.locator('.marcador-actividad')).toHaveText('1');
   await expect(p.locator('.panel-actividad')).toContainText('Cerro Catedral');
   await expect(p.locator('.panel-actividad')).toContainText('Base del cerro');
 
   // Otro día sin actividades muestra el aviso.
-  await p.locator('.selector-dia button', { hasText: '13/12' }).click();
+  await p.locator('.selector-dia button', { hasText: '13 dic' }).click();
   await expect(
     p.getByRole('status').filter({ hasText: 'no tiene actividades confirmadas' }),
   ).toBeVisible();
