@@ -1291,3 +1291,10 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - la cobertura pasa 509 pruebas: 349 del backend y 160 del frontend, con 88,7 % de líneas;
   - la e2e pasa 8 de 8;
   - `knip` muestra solo sus falsos positivos conocidos.
+
+## 2026-10-14 11:58 — Selectores de aviso más precisos en las e2e
+
+- **Falla:** en el CI del PR #15 falló `e2e/gastos.spec.ts`. `getByRole('status')` encontró dos elementos a la vez: el aviso "Registraste el pago…" y el "Cargando…" de `SiluetaCarga`, mientras los saldos todavía cargaban. Depende de los tiempos de ejecución, y el mismo flujo había pasado en `main` y en local.
+- **Causa:** el selector era ambiguo, porque la página puede tener más de una región `status` a la vez.
+- **Arreglo:** las tres e2e que buscaban `getByRole('status')` (gastos, sesión e itinerario) ahora la filtran por el texto que esperan.
+- **Verificación:** lint pasa y la e2e pasa 8 de 8 en dos corridas seguidas.

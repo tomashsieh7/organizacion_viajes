@@ -40,5 +40,7 @@ test('CU13 y CU16 a CU18: confirmar una actividad y verla en el cronograma y en 
 
   // Otro día sin actividades muestra el aviso.
   await p.locator('.selector-dia button', { hasText: '13/12' }).click();
-  await expect(p.getByRole('status')).toContainText('no tiene actividades confirmadas');
+  await expect(
+    p.getByRole('status').filter({ hasText: 'no tiene actividades confirmadas' }),
+  ).toBeVisible();
 });
