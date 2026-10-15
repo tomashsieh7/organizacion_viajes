@@ -94,6 +94,12 @@ describe('useChatStore', () => {
       ['Hola', 'error'],
     ]);
     expect(chat.error).toBe('No participás');
+
+    falso.conexion.enviar.mockImplementation(async (d) =>
+      mensaje('m4', 'ana', 'Otra', d.idTemporal),
+    );
+    await chat.enviar('Otra');
+    expect(chat.error).toBe('');
   });
 
   it('carga el historial y las páginas anteriores sin repetir mensajes', async () => {

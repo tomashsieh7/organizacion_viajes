@@ -100,14 +100,9 @@ export const useChatStore = defineStore('chat', () => {
     historialCargado.value = false;
   }
 
+  /** Si falla, la vista muestra el error con la opción de reintentar. */
   async function cargarHistorial() {
-    if (historialCargado.value) return;
-    error.value = '';
-    try {
-      await cargarUltimos();
-    } catch (e) {
-      error.value = mensajeDeError(e);
-    }
+    if (!historialCargado.value) await cargarUltimos();
   }
 
   /** Carga la página anterior al mensaje más viejo que se ve. */
@@ -141,6 +136,8 @@ export const useChatStore = defineStore('chat', () => {
       incorporar(
         await conexion.enviar({ viajeId: viajeId.value, contenido, idTemporal: temporal }),
       );
+      // Un envío que sale borra el aviso de uno anterior que falló, como el de esperar unos segundos.
+      error.value = '';
     } catch (e) {
       const m = mensajes.value.find((x) => x.idTemporal === temporal && x.estado === 'pendiente');
       if (m) m.estado = 'error';

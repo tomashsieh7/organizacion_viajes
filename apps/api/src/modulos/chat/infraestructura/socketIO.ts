@@ -45,6 +45,23 @@ export interface DependenciasGatewayChat {
   enviar: EnviarMensaje;
 }
 
+/** Ritmo máximo de envío por conexión: alcanza para charlar y frena a quien inunda la sala. */
+const MENSAJES_POR_VENTANA = 10;
+const VENTANA_MS = 10_000;
+
+/** Registra un envío y rechaza el que supera el ritmo máximo de los últimos `VENTANA_MS`. */
+function controlarRitmo(envios: number[], ahora = Date.now()): void {
+  while (envios.length > 0 && ahora - envios[0]! >= VENTANA_MS) envios.shift();
+  if (envios.length >= MENSAJES_POR_VENTANA) {
+    throw new ErrorDeDominio(
+      'DEMASIADOS_INTENTOS',
+      'DEMASIADOS_MENSAJES',
+      'Esperá unos segundos antes de seguir escribiendo',
+    );
+  }
+  envios.push(ahora);
+}
+
 function rechazo(error: unknown): ConfirmacionSocket {
   if (error instanceof ErrorDeDominio) {
     return { ok: false, error: { codigo: error.codigo, mensaje: error.message } };
@@ -76,6 +93,9 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
   });
 
   espacio.on('connection', (socket: SocketChat) => {
+    /** Momentos de los últimos envíos de esta conexión. */
+    const envios: number[] = [];
+
     /** Ejecuta un evento con la sesión revalidada y responde con la confirmación. */
     const manejar =
       <D, R extends object>(accion: (usuarioId: string, datos: D) => Promise<R>) =>
@@ -116,6 +136,7 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
     socket.on(
       'chat:enviar',
       manejar(async (usuarioId, datos: unknown) => {
+        controlarRitmo(envios);
         const r = esquemaMensajeNuevo.safeParse(datos);
         if (!r.success) {
           throw new ErrorDeDominio(

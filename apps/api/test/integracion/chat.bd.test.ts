@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { io as conectarCliente, type Socket } from 'socket.io-client';
 import type { AvisoMembresiaFinalizada, MensajeVista } from '@viajes/compartido';
 import { crearApp } from '../../src/app.js';
@@ -174,6 +174,32 @@ describe('CU19 por Socket.IO', () => {
     ).toMatchObject({ ok: false, error: { codigo: 'NO_AUTENTICADO' } });
     await esperar();
     expect(a.socket.connected).toBe(false);
+  });
+
+  it('rechaza más de 10 mensajes en 10 segundos por conexión', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const a = await unido(ana);
+      const enviar = (socket: Socket, i: number) =>
+        socket.emitWithAck('chat:enviar', { viajeId, contenido: `m${i}`, idTemporal: `t${i}` });
+      for (let i = 0; i < 10; i++) expect(await enviar(a.socket, i)).toMatchObject({ ok: true });
+      expect(await enviar(a.socket, 10)).toEqual({
+        ok: false,
+        error: {
+          codigo: 'DEMASIADOS_MENSAJES',
+          mensaje: 'Esperá unos segundos antes de seguir escribiendo',
+        },
+      });
+      // El mensaje rechazado no se guardó.
+      expect(await db.mensaje.count()).toBe(10);
+      // El límite es por conexión, y se libera cuando pasa la ventana.
+      const otra = await unido(ana);
+      expect(await enviar(otra.socket, 11)).toMatchObject({ ok: true });
+      vi.setSystemTime(Date.now() + 10_000);
+      expect(await enviar(a.socket, 12)).toMatchObject({ ok: true });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
