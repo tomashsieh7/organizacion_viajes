@@ -48,7 +48,9 @@ onErrorCaptured((error) => {
   <a class="saltar" href="#contenido" @click.prevent="irAlContenido">Saltar al contenido</a>
   <header class="barra">
     <RouterLink to="/viajes" class="marca">
-      <IconoLinea nombre="mapa" class="marca__icono" :tamano="22" />Organizador de viajes
+      <IconoLinea nombre="mapa" class="marca__icono" :tamano="22" /><span class="marca__largo"
+        >Organizador de viajes</span
+      ><span class="marca__corto">Viajes</span>
     </RouterLink>
     <div v-if="sesion.usuario" class="usuario">
       <span class="usuario__nombre">{{ sesion.usuario.nombre }}</span>
@@ -237,6 +239,23 @@ a:hover {
 }
 .usuario__nombre {
   color: var(--color-texto-secundario);
+}
+.marca,
+.usuario .boton {
+  white-space: nowrap;
+}
+.marca__corto {
+  display: none;
+}
+/* En celular el encabezado entra en una línea: marca corta y sin el nombre de quien usa la app. */
+@media (max-width: 47.99rem) {
+  .marca__largo,
+  .usuario__nombre {
+    display: none;
+  }
+  .marca__corto {
+    display: inline;
+  }
 }
 
 /* Diseño de página */

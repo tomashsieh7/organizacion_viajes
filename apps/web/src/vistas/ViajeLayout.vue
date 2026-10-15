@@ -161,12 +161,15 @@ onBeforeUnmount(() => {
     <template v-else-if="store.actual">
       <header class="viaje">
         <!-- Portada neutra: el color es de la aplicación y no sugiere nada sobre el destino. -->
-        <div class="portada">
+        <!-- Fuera del Resumen, en celular, la portada se achica al nombre y la cuenta regresiva. -->
+        <div class="portada" :class="{ 'portada--compacta': seccionActiva !== 'resumen' }">
           <RouterLink to="/viajes" class="volver">← Mis grupos</RouterLink>
-          <h1>{{ store.actual.nombre }}</h1>
-          <p v-if="cuenta" class="chip" :class="`chip--${cuenta.etapa}`">
-            <IconoLinea nombre="reloj" :tamano="18" /> {{ cuenta.texto }}
-          </p>
+          <div class="portada__titulo">
+            <h1>{{ store.actual.nombre }}</h1>
+            <p v-if="cuenta" class="chip" :class="`chip--${cuenta.etapa}`">
+              <IconoLinea nombre="reloj" :tamano="18" /> {{ cuenta.texto }}
+            </p>
+          </div>
           <p class="portada__datos texto-secundario">
             <span><IconoLinea nombre="pin" :tamano="16" /> {{ store.actual.destino }}</span>
             <span
@@ -252,6 +255,11 @@ onBeforeUnmount(() => {
 .viaje h1 {
   margin: 0 0 var(--esp-1);
   font-size: 2rem;
+}
+.portada__titulo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .portada__datos {
   display: flex;
@@ -389,6 +397,31 @@ a.portada__viajeros.activo {
   }
   .viaje h1 {
     font-size: 1.6rem;
+  }
+  .portada--compacta {
+    padding: 0 var(--esp-4) var(--esp-3);
+  }
+  .portada--compacta .volver {
+    min-height: 2.25rem;
+    font-size: 0.875rem;
+  }
+  .portada--compacta .portada__titulo {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-1) var(--esp-3);
+  }
+  .portada--compacta h1 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+  .portada--compacta .chip {
+    margin: 0;
+    padding: var(--esp-1) var(--esp-3);
+    font-size: 0.875rem;
+  }
+  .portada--compacta .portada__datos {
+    display: none;
   }
   .subsecciones {
     display: flex;
