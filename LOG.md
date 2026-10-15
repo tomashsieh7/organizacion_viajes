@@ -1561,3 +1561,29 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 
 - Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #23 ("Rediseño después de probar la app: crear grupo, Resumen, calendario y quiénes pagan") se mergeó a `main` en `35a8a9c`, fijando la cabeza verificada `839d9e3`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
 - Después del merge se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
+
+## 2026-10-14 22:02 — Merge del PR #24
+
+- Con la autorización del usuario ("Sí, mergealo si pasa el CI"), el PR #24 ("Registrar en el LOG el merge del PR #23") se mergeó a `main` en `bca8524`, fijando la cabeza verificada `e586350`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-14 22:02 — Revisión: viaje duplicado, prueba en red y vulnerabilidades de Prisma
+
+- **Pedido del usuario:** "Fijate si hay más cosas para mejorar o arreglar". De los hallazgos, eligió arreglar tres: el viaje duplicado, documentar la prueba en red y las vulnerabilidades de Prisma. Descartó que la API acepte `localhost` y la IP a la vez.
+- **Viaje duplicado:**
+  - **Problema:** en `DialogoNuevoViaje`, si el viaje se creaba pero fallaba algo posterior (recargar la lista o abrir el viaje), el diálogo quedaba en el paso 2 con el error, y "Crear viaje" creaba un segundo viaje igual.
+  - **Arreglo:** `useViajeStore.crearViaje` ya no informa como fallida la creación si solo falla recargar la lista. El diálogo recuerda el viaje creado y, al reintentar, solo vuelve a abrirlo. Con el viaje ya creado, el botón "Atrás" desaparece.
+  - **Prueba:** abrir el viaje falla una vez y reintentar no llama de nuevo a crear. Con el código anterior la prueba falla.
+- **Prueba en red:**
+  - **`npm run dev:red`** (`scripts/dev-red.js`): busca la IP de la red local, sin contar las interfaces de Docker, WSL ni máquinas virtuales, y se puede indicar a mano con `IP_RED`. La usa como `ORIGEN_WEB` y hace que Vite atienda a la red con `WEB_EN_RED`, que lee `vite.config.ts`.
+  - **README:** suma la sección "Probar desde el celular u otra compu" y la fila del script.
+  - **PLAN:** la sección 3 lo menciona, junto con la pauta de no depender de funciones que el navegador solo ofrece con HTTPS.
+  - **Verificado en este entorno:** Vite atendió en la IP, y entrando por ella (contexto no seguro, sin `crypto.randomUUID`) el inicio de sesión y el envío de un mensaje en el chat funcionaron sin errores. Sin la variable, Vite sigue atendiendo solo en `localhost`.
+- **Vulnerabilidades de Prisma:**
+  - `npm audit` marcaba 4 "high": `deepmerge-ts` < 8 y `mysql2` ≤ 3.23, dependencias internas de la herramienta de línea de comandos de Prisma, que es de desarrollo.
+  - `npm audit fix --force` proponía bajar Prisma a la 6. En lugar de eso, `overrides` en el `package.json` raíz fuerza `mysql2` ^3.24.6 y `deepmerge-ts` ^8.0.2. El lockfile solo cambia esos dos paquetes y sus dependencias.
+  - Con eso, `npm audit` da 0 vulnerabilidades, y `prisma generate`, `prisma validate` y `prisma migrate status` funcionan.
+- **Verificación:**
+  - lint pasa;
+  - la cobertura pasa 559 pruebas: 349 del backend y 210 del frontend, con 93,2 % de líneas en el frontend;
+  - la e2e pasa 8 de 8;
+  - `knip` muestra solo sus falsos positivos conocidos.

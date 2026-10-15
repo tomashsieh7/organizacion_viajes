@@ -32,7 +32,9 @@ export const useViajeStore = defineStore('viaje', () => {
 
   async function crearViaje(datos: DatosViajeNuevo): Promise<DetalleViaje> {
     const viaje = await cliente!.crear(datos);
-    await cargarViajes();
+    // El viaje ya existe: si falla recargar la lista, no se informa como si no se hubiera creado,
+    // porque reintentar crearía otro igual. La lista se vuelve a cargar al volver a "Mis grupos".
+    await cargarViajes().catch(() => undefined);
     return viaje;
   }
 

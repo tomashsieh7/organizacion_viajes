@@ -12,6 +12,7 @@
   },
   "scripts": {
     "dev": "npm run build -w packages/compartido && concurrently -k -n compartido,api,web -c gray,blue,green \"npm run dev -w packages/compartido\" \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "dev:red": "node scripts/dev-red.js",
     "build": "npm run build -w packages/compartido && npm run build -w apps/api && npm run build -w apps/web",
     "test": "npm run build -w packages/compartido && npm test --workspaces --if-present",
     "cobertura": "npm run build -w packages/compartido && npm run test:cobertura --workspaces --if-present",
@@ -34,5 +35,9 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.1",
     "vitest": "^5.0.4"
+  },
+  "overrides": {
+    "mysql2": "^3.24.6",
+    "deepmerge-ts": "^8.0.2"
   }
 }

@@ -51,7 +51,7 @@ La aplicación tiene tres piezas que corren por separado en desarrollo:
 
 El paquete `packages/compartido` contiene los esquemas de validación (Zod), los tipos que se derivan de ellos y los enumerados estables del dominio (estados de propuesta, roles, modos de división). El backend lo usa para validar y el frontend para validar formularios y tipar las respuestas, de modo que un cambio de contrato rompe la compilación de ambos lados.
 
-En desarrollo, Vite redirige `/api` y `/socket.io` al backend, así el navegador ve un único origen y la cookie de sesión funciona sin abrir CORS.
+En desarrollo, Vite redirige `/api` y `/socket.io` al backend, así el navegador ve un único origen y la cookie de sesión funciona sin abrir CORS. Para probar desde otro dispositivo de la red local, `npm run dev:red` (`scripts/dev-red.js`) usa la IP de la compu como `ORIGEN_WEB` y hace que Vite atienda a la red; el código del cliente no puede depender de funciones que el navegador solo ofrece con HTTPS o en `localhost`, como `crypto.randomUUID`.
 
 ### 2.2 Principios de diseño y patrones obligatorios
 

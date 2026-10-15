@@ -20,6 +20,8 @@ export default defineConfig({
   customLogger: registro,
   server: {
     port: 5173,
+    // `npm run dev:red`: también atiende a la red local, para probar desde el celular.
+    host: Boolean(process.env['WEB_EN_RED']),
     // En desarrollo el navegador ve un único origen: Vite redirige la API y Socket.IO.
     proxy: {
       '/api': API,
