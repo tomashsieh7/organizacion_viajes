@@ -2,9 +2,9 @@ import AxeBuilder from '@axe-core/playwright';
 import { api, expect, nuevoViajero, test, viajeCon } from './soporte/fixtures.js';
 
 /**
- * WCAG 2.2 AA con axe en las pantallas principales, con datos en cada una, en claro con ancho de
- * escritorio y en oscuro con ancho de celular. Un contraste bajo o un control sin nombre hace
- * fallar la prueba con el detalle de cada problema.
+ * WCAG 2.2 AA con axe en las pantallas principales, con datos en cada una, con ancho de escritorio
+ * y de celular. La app es solo clara, aunque el sistema esté en modo oscuro. Un contraste bajo o un
+ * control sin nombre hace fallar la prueba con el detalle de cada problema.
  */
 test('Las pantallas principales no tienen problemas de accesibilidad que detecte axe', async ({
   browser,
@@ -61,6 +61,7 @@ test('Las pantallas principales no tienen problemas de accesibilidad que detecte
     `/viajes/${v}/saldos/pagar/${ana.id}`,
   ];
   const problemas: string[] = [];
+  // El celular en modo oscuro confirma que la app se sigue viendo clara.
   for (const [esquema, ancho] of [
     ['light', 1280],
     ['dark', 360],

@@ -53,7 +53,7 @@ circle {
   stroke: var(--color-borde);
 }
 .anillo__avance {
-  stroke: var(--color-acento);
+  stroke: var(--color-destacado);
   stroke-linecap: round;
   transition: stroke-dashoffset 600ms ease-out;
 }

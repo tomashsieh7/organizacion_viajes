@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   padding: var(--esp-2) var(--esp-5) var(--esp-5);
   border: 1px solid var(--color-borde);
-  border-top: 6px solid var(--color-acento);
+  border-top: 6px solid var(--color-destacado);
   border-radius: var(--radio-grande);
   background:
     radial-gradient(circle at 1px 1px, var(--color-borde) 1.2px, transparent 0) 0 0 / 18px 18px,
@@ -297,8 +297,8 @@ a.portada__viajeros.activo {
   border-radius: 999px;
   font-size: 1.05rem;
   font-weight: 700;
-  background: var(--color-acento);
-  color: var(--color-sobre-acento);
+  background: var(--color-destacado);
+  color: var(--color-sobre-destacado);
 }
 .chip--despues {
   background: var(--color-neutro-suave);

@@ -1812,3 +1812,21 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Pruebas:** `useCarga.test.ts` (composable y botón de `AvisoMensaje`), `SaldosVista.test.ts` y `ChatVista.test.ts` (error sin datos falsos y reintento), `chatStore.test.ts` (el aviso se borra) y `chat.bd.test.ts` (límite por conexión que se libera al pasar la ventana; falla sin el límite). En el navegador se probaron Saldos, Chat y Alojamientos sin conexión y el límite del chat.
 - **Verificación:** lint, 354 pruebas de la API, 235 de la web y 13 e2e en verde; knip solo informa los falsos positivos conocidos.
 - **PLAN.md:** 5.8 (`chat:enviar`) y 7.1.1 (errores de carga).
+
+## 2026-10-15 20:15 — Merge del PR #33
+
+- Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #33 ("Errores de carga con Reintentar, límite del chat, foco en diálogos y orden de la lista") se mergeó a `main` en `a45b958`, fijando la cabeza verificada `a065ae6`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-15 20:15 — Paleta verde azulado y coral, sin modo oscuro
+
+- **Pedido del usuario:** "Hay que cambiar el diseño a uno más amigable para todo el mundo, así que tenemos que cambiar los colores y sacar el modo oscuro, porque lo que tenemos ahora es muy de personas de IT". Solo cambian los colores; tipografía, formas e íconos quedan.
+- **Cómo se eligió:**
+  - se probaron sobre la app real 19 paletas: de un color, de dos colores "viajeras" y con el contraste de Booking (barra oscura, botones de tono medio y un color brillante para los detalles);
+  - se compararon por lo que transmiten, si se distinguen de los colores de estado, cómo las ve una persona con daltonismo y el parecido con apps conocidas;
+  - el usuario pidió el estilo de contraste de Booking con otros colores y lo limpio de Wanderlog, y eligió "laguna y coral".
+- **Cambios:**
+  - `App.vue`: fondo blanco, verde azulado (`#0a6a77`) para acciones y enlaces, barra de arriba verde azulado oscuro (`#083a46`) con texto blanco y coral (`#ff8f6b`) para los detalles; variables nuevas `--color-barra`, `--color-destacado` y sus colores de texto. "Pendiente" pasa de amarillo a naranja tostado para separarse del coral. Se sacó el modo oscuro: la app se ve clara aunque el sistema esté en oscuro.
+  - En coral: la cuenta regresiva y la franja de la portada (`ViajeLayout`), la franja de las tarjetas de la lista (`ViajesVista`), el anillo de progreso (`AnilloProgreso`), el ícono de la marca y el botón flotante en celular. Nunca en montos ni en estados.
+  - En la barra oscura, "Cerrar sesión" va con borde blanco y el foco del teclado se dibuja en blanco.
+- **Divergencia con PLAN.md, aprobada por el usuario:** 7.1.1 decía que el turquesa era el único color, que ninguno debía sugerir clima y que había modo oscuro. Se reescribió con el criterio nuevo.
+- **Pruebas:** `e2e/accesibilidad.spec.ts` sigue pasando axe a 1280 px y a 360 px; en celular, con el sistema en modo oscuro, para confirmar que la app se ve clara. Lint, 235 pruebas de la web y 13 e2e en verde.

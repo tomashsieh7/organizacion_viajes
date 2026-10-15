@@ -110,7 +110,7 @@ function alCrear(viajeId: string) {
   box-shadow: var(--sombra-elevada);
 }
 .tarjeta a {
-  border-top: 4px solid var(--color-acento);
+  border-top: 4px solid var(--color-destacado);
 }
 .tarjeta__cuenta {
   margin-top: var(--esp-1);
