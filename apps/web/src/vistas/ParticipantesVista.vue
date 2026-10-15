@@ -8,6 +8,7 @@ import DialogoTraspaso from '../componentes/viajes/DialogoTraspaso.vue';
 import FormularioAgregarViajero from '../componentes/viajes/FormularioAgregarViajero.vue';
 import ListaParticipantes from '../componentes/viajes/ListaParticipantes.vue';
 import { mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useSesionStore } from '../stores/sesion';
 import { useViajeStore } from '../stores/viaje';
 
@@ -19,7 +20,8 @@ const aEliminar = ref<Participante | null>(null);
 const dialogo = ref<'traspaso' | 'salir' | null>(null);
 const miId = () => sesion.usuario?.id ?? '';
 
-onMounted(() => store.cargarParticipantes().catch((e) => (error.value = mensajeDeError(e))));
+const carga = useCarga(() => store.cargarParticipantes());
+onMounted(carga.cargar);
 
 const eliminando = ref(false);
 
@@ -44,6 +46,9 @@ async function confirmarEliminacion() {
 <template>
   <section>
     <h2>Participantes</h2>
+    <AvisoMensaje v-if="carga.error.value" tipo="error" :reintentar="carga.reintentar.value">{{
+      carga.error.value
+    }}</AvisoMensaje>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <AvisoMensaje v-if="aviso" tipo="exito">{{ aviso }}</AvisoMensaje>
     <ListaParticipantes

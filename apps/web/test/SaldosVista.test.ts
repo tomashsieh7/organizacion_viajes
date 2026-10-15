@@ -7,6 +7,7 @@ import {
   clienteAuthFalso,
   clienteGastosFalso,
   clienteViajesFalso,
+  errorDeApi,
   montaje,
 } from './soporte/clientesFalsos';
 
@@ -22,6 +23,30 @@ const deuda = (id: string, nombre: string, monto: number) => ({
 });
 
 describe('SaldosVista (CU21 y CU22)', () => {
+  it('si no cargan los saldos muestra el error con Reintentar, sin totales en cero', async () => {
+    let falla = true;
+    const opciones = montaje(clienteAuthFalso(), clienteViajesFalso(), {
+      [CLIENTE_GASTOS as symbol]: clienteGastosFalso({
+        deudas: async (_v, rol) => {
+          if (falla) throw errorDeApi('SIN_CONEXION', 'No se pudo contactar al servidor', 0);
+          return rol === 'deudor' ? [deuda('d1', 'Tomás', 150_000)] : [];
+        },
+      }),
+    });
+    await abrirViaje(opciones);
+    const vista = mount(SaldosVista, opciones);
+    await flushPromises();
+    expect(vista.get('[role="alert"]').text()).toContain('No se pudo contactar al servidor');
+    expect(vista.text()).not.toContain('$');
+    expect(vista.text()).not.toContain('No le debés nada');
+
+    falla = false;
+    await vista.get('[role="alert"] button').trigger('click');
+    await flushPromises();
+    expect(vista.find('[role="alert"]').exists()).toBe(false);
+    expect(vista.findAll('.fila-saldo').map((f) => f.find('span').text())).toEqual(['Tomás']);
+  });
+
   it('muestra lo que debo y lo que me deben, con sus totales', async () => {
     const opciones = montaje(clienteAuthFalso(), clienteViajesFalso(), {
       [CLIENTE_GASTOS as symbol]: clienteGastosFalso({

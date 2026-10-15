@@ -1785,3 +1785,30 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - **Crédito del mapa:** el enlace "Leaflet" tenía 2,55:1 contra el texto de alrededor, sin subrayado. Ahora va subrayado y con el color del texto, en los dos modos.
   - **Prueba de accesibilidad:** `@axe-core/playwright` como dependencia de desarrollo y `e2e/accesibilidad.spec.ts`, que recorre 13 pantallas en claro a 1280 px y en oscuro a 360 px. Falla sin estos arreglos y pasa con ellos.
 - **Documentación:** PLAN.md 7.1.1 y `docs/auditoria.md` (sección 1).
+
+## 2026-10-15 12:21 — Merge del PR #32
+
+- Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #32 ("Accesibilidad: contraste del calendario y del crédito del mapa, y e2e con axe") se mergeó a `main` en `c3768af`, fijando la cabeza verificada `6c86df5`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-15 12:21 — Foco dentro de los diálogos y viajes terminados al final de la lista
+
+- **Pedido del usuario:** "Fijate si hay más cosas para mejorar o arreglar".
+- **Revisión:** se exploraron con Playwright el teclado en los diálogos, el orden de la lista con un viaje terminado y la entrada a un viaje inexistente.
+- **Hallazgos y arreglos, elegidos por el usuario:**
+  - **Foco en los diálogos:** con Tab, al sexto intento el foco salía de "Nuevo grupo" a la página tapada ("Saltar al contenido", "Cerrar sesión"). Ahora `DialogoModal` hace que Tab y Mayús + Tab den la vuelta dentro del diálogo y devuelve el foco si quedó afuera, según el patrón de diálogo modal de WAI-ARIA. Recorrido en el navegador: con diez Tab y diez Mayús + Tab, el foco no sale del diálogo.
+  - **Orden de la lista:** un viaje terminado en marzo de 2025 quedaba arriba del que se está organizando. Ahora van primero los viajes en curso y los próximos, por fecha de inicio, y al final los terminados, del más reciente al más viejo. Solo cambia la web.
+- **Lo que quedó como está:** entrar a un viaje inexistente dice "No participás de este viaje", porque la API responde igual que para un viaje ajeno y así no revela qué viajes existen.
+- **Pruebas:** `DialogoModal.test.ts` (Tab y Mayús + Tab, también con el foco afuera) y `ViajesVista.test.ts` (orden con viajes terminados, en curso y próximos).
+- **PLAN.md:** se actualizaron 7.1.1 (teclado) y la ruta `/viajes` de 7.3.
+
+## 2026-10-15 12:43 — Errores de carga con "Reintentar" y límite de mensajes en el chat
+
+- **Pedido del usuario:** "Seguí buscando cosas para arreglar o mejorar, así hacemos commits más significativos". Estos arreglos van en el mismo PR que los del foco en los diálogos y el orden de la lista.
+- **Revisión:** con Playwright se cortaron los pedidos a la API de cada pantalla y se probó enviar muchos mensajes seguidos en el chat.
+- **Hallazgos y arreglos, elegidos por el usuario:**
+  - **Datos falsos al fallar:** sin conexión, Saldos mostraba "$ 0,00" y "No le debés nada a nadie", y el Chat "Todavía no hay mensajes". Ahora las dos pantallas muestran solo el error hasta que los datos llegan.
+  - **Botón "Reintentar":** los errores de carga de la lista de viajes, el viaje, Resumen, Participantes, Alojamientos, Actividades, Cronograma, Mapa, Chat, Gastos y Saldos ofrecen "Reintentar" cuando falló la conexión o el servidor. Ante un rechazo de la API, como "No participás de este viaje", no se ofrece porque daría lo mismo. La lógica quedó en el composable `useCarga`, y `AvisoMensaje` recibe la prop `reintentar`.
+  - **Límite del chat:** cada conexión puede enviar hasta 10 mensajes cada 10 segundos. El siguiente se rechaza con `DEMASIADOS_MENSAJES` y no se guarda; en la web queda marcado "No se pudo enviar" y aparece "Esperá unos segundos antes de seguir escribiendo", que se borra con el próximo envío que sale bien.
+- **Pruebas:** `useCarga.test.ts` (composable y botón de `AvisoMensaje`), `SaldosVista.test.ts` y `ChatVista.test.ts` (error sin datos falsos y reintento), `chatStore.test.ts` (el aviso se borra) y `chat.bd.test.ts` (límite por conexión que se libera al pasar la ventana; falla sin el límite). En el navegador se probaron Saldos, Chat y Alojamientos sin conexión y el límite del chat.
+- **Verificación:** lint, 354 pruebas de la API, 235 de la web y 13 e2e en verde; knip solo informa los falsos positivos conocidos.
+- **PLAN.md:** 5.8 (`chat:enviar`) y 7.1.1 (errores de carga).

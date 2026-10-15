@@ -65,6 +65,11 @@ export async function pedir<T>(metodo: string, url: string, cuerpo?: unknown): P
 }
 
 /** Mensaje para mostrar de cualquier error. */
+/** Vale la pena reintentar si falló la conexión o el servidor; no ante un rechazo de la API. */
+export function sePuedeReintentar(error: unknown): boolean {
+  return !(error instanceof ErrorDeApi) || error.estado === 0 || error.estado >= 500;
+}
+
 export function mensajeDeError(error: unknown): string {
   return error instanceof Error ? error.message : 'Ocurrió un error inesperado';
 }

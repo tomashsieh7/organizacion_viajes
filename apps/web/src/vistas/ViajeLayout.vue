@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import IconoLinea, { type NombreIcono } from '../componentes/base/IconoLinea.vue';
-import { mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useChatStore } from '../stores/chat';
 import { useViajeStore } from '../stores/viaje';
 import { hoyDelDispositivo } from '../utiles/fechas';
@@ -14,7 +14,6 @@ const store = useViajeStore();
 const chat = useChatStore();
 const route = useRoute();
 const router = useRouter();
-const error = ref('');
 
 interface Seccion {
   nombre: string;
@@ -105,23 +104,20 @@ async function exigirSeccionPermitida() {
   }
 }
 
-watch(
-  () => route.params['viajeId'],
-  async (id) => {
-    if (typeof id !== 'string') return;
-    error.value = '';
-    try {
-      await store.abrir(id);
-      await exigirSeccionPermitida();
-      // La conexión en tiempo real acompaña al viaje abierto, en cualquier sección; quien solo
-      // ve los saldos ya no está en el chat.
-      if (!soloSaldos.value) await chat.entrar(id);
-    } catch (e) {
-      error.value = mensajeDeError(e);
-    }
-  },
-  { immediate: true },
-);
+const {
+  error,
+  cargar: abrirViaje,
+  reintentar,
+} = useCarga(async () => {
+  const id = route.params['viajeId'];
+  if (typeof id !== 'string') return;
+  await store.abrir(id);
+  await exigirSeccionPermitida();
+  // La conexión en tiempo real acompaña al viaje abierto, en cualquier sección; quien solo ve los
+  // saldos ya no está en el chat.
+  if (!soloSaldos.value) await chat.entrar(id);
+});
+watch(() => route.params['viajeId'], abrirViaje, { immediate: true });
 watch(() => route.path, exigirSeccionPermitida);
 
 /**
@@ -158,7 +154,7 @@ onBeforeUnmount(() => {
 <template>
   <main class="pagina" :class="{ 'con-barra-inferior': grupos.length }">
     <template v-if="error">
-      <AvisoMensaje tipo="error">{{ error }}</AvisoMensaje>
+      <AvisoMensaje tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
       <RouterLink to="/viajes" class="volver">← Volver a mis grupos</RouterLink>
     </template>
     <template v-else-if="store.actual">

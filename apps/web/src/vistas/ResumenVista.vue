@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted } from 'vue';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import IconoLinea, { type NombreIcono } from '../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import AnilloProgreso from '../componentes/viaje/AnilloProgreso.vue';
 import ListaHitos from '../componentes/viaje/ListaHitos.vue';
-import { mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useCelebracion } from '../composables/useCelebracion';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
@@ -15,8 +15,6 @@ import { calcularProgreso, type ClaveHito } from '../utiles/progreso';
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
 const { celebrar } = useCelebracion();
-const cargado = ref(false);
-const error = ref('');
 const actual = viaje.actual!;
 const ruta = (seccion: string) => `/viajes/${actual.id}/${seccion}`;
 
@@ -131,24 +129,19 @@ function celebrarSiTermino() {
   celebrar(`¡${actual.nombre} está listo para viajar!`);
 }
 
-onMounted(async () => {
-  try {
-    await propuestas.cargarTodo();
-    celebrarSiTermino();
-  } catch (e) {
-    error.value = mensajeDeError(e);
-  } finally {
-    cargado.value = true;
-  }
+const { cargado, error, cargar, reintentar } = useCarga(async () => {
+  await propuestas.cargarTodo();
+  celebrarSiTermino();
 });
+onMounted(cargar);
 </script>
 
 <template>
   <section>
     <h2 class="solo-lectores">Resumen</h2>
-    <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <SiluetaCarga v-if="!cargado" :cantidad="2" />
-    <div v-else-if="!error" class="columna">
+    <AvisoMensaje v-else-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
+    <div v-else class="columna">
       <!-- Una sola acción destacada por pantalla; el detalle se despliega al tocar. -->
       <section class="panel" aria-labelledby="titulo-proximo">
         <h3 id="titulo-proximo">Lo próximo</h3>

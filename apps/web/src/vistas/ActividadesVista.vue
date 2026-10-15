@@ -9,6 +9,7 @@ import AvisoSuperposicion from '../componentes/actividades/AvisoSuperposicion.vu
 import ListaAlternativas from '../componentes/actividades/ListaAlternativas.vue';
 import TarjetaActividad from '../componentes/actividades/TarjetaActividad.vue';
 import { ErrorDeApi, mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useCelebracion } from '../composables/useCelebracion';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
@@ -21,7 +22,12 @@ const error = ref('');
 const conflictos = ref<ConflictoHorario[]>([]);
 const grupos = computed(() => agruparOpciones(propuestas.actividades));
 /** Hasta la primera carga no se muestra la lista vacía. */
-const cargado = ref(false);
+const {
+  cargado,
+  error: errorDeCarga,
+  cargar,
+  reintentar,
+} = useCarga(() => propuestas.cargarActividades());
 
 /** Hay un voto o una resolución en curso: un segundo clic no manda otro pedido. */
 const ocupado = ref(false);
@@ -43,8 +49,6 @@ async function intentar(accion: () => Promise<void>) {
   }
 }
 
-const cargar = () =>
-  intentar(() => propuestas.cargarActividades()).finally(() => (cargado.value = true));
 const votar = (id: string, valor: ValorVoto) => intentar(() => propuestas.votar(id, valor));
 const desvotar = (id: string) => intentar(() => propuestas.desvotar(id));
 const { celebrar } = useCelebracion();
@@ -89,6 +93,9 @@ onMounted(cargar);
       Para confirmarla, primero hay que cancelar la actividad que ocupa ese horario.
     </AvisoSuperposicion>
     <SiluetaCarga v-if="!cargado" />
+    <AvisoMensaje v-else-if="errorDeCarga" tipo="error" :reintentar="reintentar">{{
+      errorDeCarga
+    }}</AvisoMensaje>
     <template v-else-if="!error && !grupos.length">
       <EstadoVacio
         v-if="propuestas.filtroActividades"

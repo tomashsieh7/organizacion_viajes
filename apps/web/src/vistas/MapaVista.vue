@@ -27,6 +27,9 @@ const parametro = (nombre: string) => {
   return typeof valor === 'string' ? valor : undefined;
 };
 
+/** Si el mapa no llegó a cargar, se puede volver a pedir el mismo día. */
+const reintentar = computed(() => (mapa.value ? undefined : () => cargar(parametro('dia'))));
+
 function cerrarDetalle() {
   elegida.value = null;
 }
@@ -53,7 +56,7 @@ onMounted(async () => {
 <template>
   <section>
     <h2>Mapa del día</h2>
-    <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
+    <AvisoMensaje v-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
     <template v-if="mapa">
       <CalendarioViaje
         :inicio="actual.fechaInicio"

@@ -7,7 +7,7 @@ import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import CalendarioViaje from '../componentes/itinerario/CalendarioViaje.vue';
 import DiaCronograma from '../componentes/itinerario/DiaCronograma.vue';
 import { CLIENTE_ITINERARIO } from '../clientes/itinerario';
-import { mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useViajeStore } from '../stores/viaje';
 import { diaInicial, hoyDelDispositivo } from '../utiles/fechas';
 
@@ -18,7 +18,6 @@ const route = useRoute();
 const router = useRouter();
 const actual = viaje.actual!;
 const cronograma = ref<Cronograma | null>(null);
-const error = ref('');
 const hoy = hoyDelDispositivo();
 
 const diasConActividad = computed(
@@ -40,21 +39,18 @@ async function elegir(fecha: string) {
   await router.replace({ query: { dia: fecha } });
 }
 
-onMounted(async () => {
-  try {
-    cronograma.value = await cliente.cronograma(actual.id);
-    // El día que se abrió también va a la dirección, para conservarlo al pasar al mapa.
-    if (elegido.value && route.query['dia'] !== elegido.value) await elegir(elegido.value);
-  } catch (e) {
-    error.value = mensajeDeError(e);
-  }
+const { error, cargar, reintentar } = useCarga(async () => {
+  cronograma.value = await cliente.cronograma(actual.id);
+  // El día que se abrió también va a la dirección, para conservarlo al pasar al mapa.
+  if (elegido.value && route.query['dia'] !== elegido.value) await elegir(elegido.value);
 });
+onMounted(cargar);
 </script>
 
 <template>
   <section>
     <h2>Cronograma</h2>
-    <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
+    <AvisoMensaje v-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
     <template v-else-if="cronograma">
       <CalendarioViaje
         :inicio="actual.fechaInicio"
