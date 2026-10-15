@@ -2199,8 +2199,8 @@
         <mxCell id="xZNIfwamf_zNV6Y1D581-88" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;fontSize=11;align=center;verticalAlign=middle;" value="Viajero comparte las actividades de su viaje en una comunidad pública" vertex="1">
           <mxGeometry height="70" width="180" x="1230" y="4208.0" as="geometry" />
         </mxCell>
-        <mxCell id="xZNIfwamf_zNV6Y1D581-89" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;fontSize=11;align=center;verticalAlign=middle;" value="Viajero ve el progreso del viaje, los próximos pasos y la cuenta regresiva" vertex="1">
-          <mxGeometry height="70" width="180" x="430" y="4128.0" as="geometry" />
+        <mxCell id="xZNIfwamf_zNV6Y1D581-89" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=center;verticalAlign=middle;" value="Viajero ve el progreso del viaje, los próximos pasos y la cuenta regresiva" vertex="1">
+          <mxGeometry height="70" width="180" x="430" y="830" as="geometry" />
         </mxCell>
         <mxCell id="sm-1" value="Admin transfiere la administración" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry as="geometry" x="430" y="750" width="180" height="70" />
