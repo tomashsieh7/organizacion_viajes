@@ -141,6 +141,7 @@ Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exig
 | `GET /api/viajes/:viajeId/gastos` | Participante | — | `200 { gastos }`, del más reciente al más viejo | — |
 | `POST /api/viajes/:viajeId/gastos` | Participante | `{ titulo, categoriaId, monto, pagadoPorId?, deudores, modoDivision, partes? }` | `201 { gasto }` | 422 `SUMA_NO_COINCIDE` (con `detalles: { total, suma, diferencia }`), `PAGADOR_NO_PARTICIPANTE`, `DEUDOR_NO_PARTICIPANTE` (con `detalles: { usuarios }`) y `CATEGORIA_INEXISTENTE`; 400 `PARTES_NO_COINCIDEN` si las partes no son exactamente de los deudores |
 | `GET /api/viajes/:viajeId/deudas?rol=deudor\|acreedor` | Participante, o exparticipante con saldos pendientes | `rol` obligatorio | `200 { deudas: [{ id, contraparte: { id, nombre, apodo }, monto, ultimaActualizacion, pagos }] }`, solo con saldo mayor que cero | 400 si falta `rol` |
+| `GET /api/viajes/:viajeId/pagos` | Participante, o exparticipante con saldos pendientes | — | `200 { pagos: [{ id, monto, fecha, deudor, acreedor }] }`, solo los pagos donde quien consulta es deudor o acreedor, también de deudas ya saldadas, del más nuevo al más viejo | — |
 | `POST /api/viajes/:viajeId/pagos` | El deudor, participante o exparticipante con saldos pendientes | `{ acreedorId, monto }`; monto mayor que cero | `201 { pago, saldo }`, con el saldo que queda con ese acreedor | 404 `SIN_DEUDA_CON_ACREEDOR`, 422 `PAGO_EXCEDE_DEUDA` con `detalles: { saldo }` |
 
 **Cuerpo de `POST …/gastos`:**

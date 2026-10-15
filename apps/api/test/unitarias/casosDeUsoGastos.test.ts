@@ -168,6 +168,7 @@ describe('CU23: registrar pago', () => {
       unidad,
       saldos: {
         deudas: async () => [],
+        pagosDe: async () => [],
         obtenerPago: (v, id) => new ConsultaSaldosEnMemoria(unidad.confirmado).obtenerPago(v, id),
       },
       reloj: { ahora: () => new Date('2026-12-12T10:00:00Z') },

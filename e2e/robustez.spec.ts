@@ -120,10 +120,11 @@ test('la API responde 4xx, nunca 5xx, ante datos inválidos', async ({ browser }
   // Sin el encabezado Origin, se rechaza (RN-S6).
   const sinOrigen = await ana.page.request.fetch('/api/viajes', { method: 'POST', data: viaje });
   expect(sinOrigen.status()).toBe(403);
-  // Alguien ajeno al viaje no ve sus datos.
+  // Alguien ajeno al viaje no ve sus gastos ni sus pagos.
   const luis = await nuevoViajero(browser, 'Luis');
-  const ajeno = await pedir(luis, 'GET', `/viajes/${v}/gastos`);
-  expect([403, 404]).toContain(ajeno.estado);
+  for (const ruta of [`/viajes/${v}/gastos`, `/viajes/${v}/pagos`]) {
+    expect([403, 404]).toContain((await pedir(luis, 'GET', ruta)).estado);
+  }
 });
 
 test('RN-P3: pagos simultáneos no superan la deuda', async ({ browser }) => {

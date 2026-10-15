@@ -1683,3 +1683,27 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - la cobertura pasa 573 pruebas: 349 del backend y 224 del frontend, con 94 % de líneas en el frontend;
   - la e2e pasa 11 de 11;
   - las capturas a 360 px en claro y oscuro y a 1280 px, del chat, Gastos, anotar gasto, el pago con su comprobante, Participantes y Actividades, no muestran errores en la consola.
+
+## 2026-10-15 02:33 — Merge del PR #28
+
+- Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #28 ("Diseño inspirado en WhatsApp, Mercado Pago y Discord: chat, billetera, comprobante, participantes y botón flotante") se mergeó a `main` en `697804c`, fijando la cabeza verificada `178a819`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-15 02:33 — Pagos en la Actividad, arreglo del gateway del chat y Release 5 guardado aparte
+
+- **Pedido del usuario:** se implementó el plan de los puntos con backend (3, 11 y 12) y de los pagos en la Actividad.
+  - Al terminar, el usuario pidió que en el MVP quede solo lo que el story map tiene en el MVP, para no cambiar ni probar más cosas.
+  - Pidió guardar lo demás para no rehacerlo cuando llegue su release, y eligió una rama en GitHub.
+- **Release 5 guardado:** la lista de grupos como chats (novedades y mensajes sin leer), las reacciones y "escribiendo…", con su migración, pruebas y documentación, quedaron en la rama `claude/release-5-mensajeria` (commit `d980a34`), sin PR. La sección 9 de PLAN.md lo indica en la fila del R5.
+- **Pagos en la Actividad (MVP, CU23 y RN-P6):**
+  - `GET /api/viajes/:viajeId/pagos` devuelve los pagos donde quien consulta es deudor o acreedor, incluidos los de deudas saldadas (`ConsultaSaldos.pagosDe`, con la guarda de saldos);
+  - `GastosVista` los mezcla con los gastos por fecha, con la fila nueva `FilaPago` ("Tomás te pagó", "Le pagaste a Tomás");
+  - RN-P6 suma que el pago aparece en la Actividad de los dos y que nadie más lo ve.
+- **Error del gateway del chat:** en `manejar`, `confirmar?.({ ...(await accion()) })` no ejecutaba la acción cuando el evento llegaba sin confirmación, porque el encadenamiento opcional no evalúa el argumento.
+  - En el MVP esto afectaba a `chat:salir`, que el navegador manda sin confirmación: la conexión nunca salía de la sala del viaje anterior.
+  - Se separó la llamada. La prueba nueva de integración falla sin el arreglo y pasa con él.
+- **Pruebas:**
+  - contratos de `pagosDe` en memoria y Prisma, incluidas las deudas saldadas;
+  - `GET /pagos` con privacidad en `pagos.bd.test.ts`;
+  - `chat:salir` sin confirmación en `chat.bd.test.ts`;
+  - pagos en `GastosVista.test.ts`;
+  - en las E2E, el pago aparece en la Actividad de los dos (`gastos.spec.ts`) y `GET /pagos` no es accesible para alguien ajeno al viaje (`robustez.spec.ts`).

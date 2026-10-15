@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { GastoVista } from '@viajes/compartido';
+import type { GastoVista, PagoDeActividad } from '@viajes/compartido';
 import { CLIENTE_GASTOS } from '../src/clientes/gastos';
 import { useSesionStore } from '../src/stores/sesion';
 import GastosVista from '../src/vistas/GastosVista.vue';
@@ -33,10 +33,16 @@ const deuda = (monto: number) => ({
   pagos: [],
 });
 
-async function montar(debo: number, meDeben: number, gastos: GastoVista[] = []) {
+async function montar(
+  debo: number,
+  meDeben: number,
+  gastos: GastoVista[] = [],
+  pagos: PagoDeActividad[] = [],
+) {
   const opciones = montaje(clienteAuthFalso(), clienteViajesFalso(), {
     [CLIENTE_GASTOS as symbol]: clienteGastosFalso({
       listar: async () => gastos,
+      pagos: async () => pagos,
       deudas: async (_v, rol) =>
         rol === 'deudor' ? (debo ? [deuda(debo)] : []) : meDeben ? [deuda(meDeben)] : [],
     }),
@@ -79,5 +85,36 @@ describe('GastosVista como billetera', () => {
     ]);
     expect(vista.findAll('.dia__titulo').map((d) => d.text())).toEqual(['Hoy', '24 sep']);
     expect(vista.findAll('.dia')[0]!.findAll('.gasto')).toHaveLength(2);
+  });
+
+  it('mezcla los pagos propios con los gastos, por fecha', async () => {
+    vi.useFakeTimers({ now: new Date(2026, 9, 15, 12, 0), toFake: ['Date'] });
+    const tomas = { id: 'tomas', nombre: 'Tomás', apodo: null };
+    const pago = (id: string, fecha: Date, deudor: typeof ana, acreedor: typeof ana) => ({
+      id,
+      monto: 40_000,
+      fecha: fecha.toISOString(),
+      deudor,
+      acreedor,
+    });
+    const vista = await montar(
+      0,
+      0,
+      [gasto('g1', new Date(2026, 9, 15, 10, 0))],
+      [
+        pago('p1', new Date(2026, 9, 15, 11, 0), tomas, ana),
+        pago('p2', new Date(2026, 8, 24, 9, 0), ana, tomas),
+      ],
+    );
+    const hoy = vista.findAll('.dia')[0]!;
+    expect(hoy.findAll('.pago, .gasto').map((m) => m.classes()[0])).toEqual(['pago', 'gasto']);
+    expect(hoy.find('.pago').text()).toMatch(/^Tomás te pagóPago · 11:00\+ \$\s400,00$/);
+    expect(hoy.find('.pago .monto').classes()).toContain('monto--recibido');
+    const antes = vista.findAll('.dia')[1]!;
+    expect(antes.find('.dia__titulo').text()).toBe('24 sep');
+    expect(antes.find('.pago__titulo').text()).toBe('Le pagaste a Tomás');
+    // Con pagos y sin gastos, la actividad no está vacía.
+    const soloPagos = await montar(0, 0, [], [pago('p3', new Date(), ana, tomas)]);
+    expect(soloPagos.text()).not.toContain('Todavía no hay gastos anotados.');
   });
 });

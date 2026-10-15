@@ -52,4 +52,12 @@ test('CU20, CU21 y CU23: anotar un gasto con división arbitraria y pagar parte 
   await expect(deTomas).toContainText('$ 350,00');
   await deTomas.getByText('Pagos (1)').click();
   await expect(deTomas).toContainText('$ 250,00 · registrado por Tomás');
+
+  // El pago aparece en la Actividad de los dos, junto al gasto.
+  await p.goto(`/viajes/${viajeId}/gastos`);
+  await expect(p.locator('.pago')).toContainText('Tomás te pagó');
+  await expect(p.locator('.pago')).toContainText('$ 250,00');
+  await t.goto(`/viajes/${viajeId}/gastos`);
+  await expect(t.locator('.pago')).toContainText('Le pagaste a Ana');
+  await expect(t.locator('.gasto')).toContainText('Alquiler de auto');
 });
