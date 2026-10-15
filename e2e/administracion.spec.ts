@@ -11,7 +11,10 @@ test('CU24 y CU04: transferir la administración y salir del grupo', async ({ br
   await p.selectOption('#sucesor', { label: 'Tomás' });
   await p.getByRole('dialog').getByRole('button', { name: 'Transferir' }).click();
   await expect(p.getByRole('button', { name: 'Transferir la administración' })).toHaveCount(0);
-  await expect(p.locator('li', { hasText: 'Tomás' })).toContainText('Admin');
+  // Tomás pasa al grupo "Admin" de la lista de participantes.
+  await expect(
+    p.locator('.grupo-rol', { has: p.getByRole('heading', { name: 'Admin', exact: true }) }),
+  ).toContainText('Tomás');
 
   // Tomás, en el viaje abierto, pasa a ver las acciones de Admin.
   await tomas.page.goto(`/viajes/${viajeId}/participantes`);
