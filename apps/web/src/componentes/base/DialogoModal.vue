@@ -4,19 +4,30 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 defineProps<{ titulo: string }>();
 const emit = defineEmits<{ cerrar: [] }>();
 
-// Al abrirse, el foco pasa al diálogo (así Escape lo cierra sin hacer clic antes) y, al
-// cerrarse, vuelve al elemento que lo abrió.
+// Al abrirse, el foco pasa al diálogo y, al cerrarse, vuelve al elemento que lo abrió.
 const dialogo = ref<HTMLElement | null>(null);
 let focoAnterior: HTMLElement | null = null;
+
+/**
+ * Escape se escucha en todo el documento: si un botón del diálogo se deshabilita mientras espera
+ * una respuesta, el navegador le saca el foco y lo deja fuera del diálogo.
+ */
+function alApretar(evento: KeyboardEvent) {
+  if (evento.key === 'Escape') emit('cerrar');
+}
 onMounted(() => {
   focoAnterior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   dialogo.value?.focus();
+  document.addEventListener('keydown', alApretar);
 });
-onBeforeUnmount(() => focoAnterior?.focus());
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', alApretar);
+  focoAnterior?.focus();
+});
 </script>
 
 <template>
-  <div class="fondo" @click.self="emit('cerrar')" @keydown.esc="emit('cerrar')">
+  <div class="fondo" @click.self="emit('cerrar')">
     <section
       ref="dialogo"
       class="dialogo"

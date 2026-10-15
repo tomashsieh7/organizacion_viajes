@@ -79,6 +79,25 @@ describe('ParticipantesVista', () => {
     expect(useViajeStore().aviso).toContain('Podés seguir viendo tus saldos');
   });
 
+  it('quien sale sin saldos vuelve a la lista con el aviso de que salió', async () => {
+    const vista = await montarComo('VIAJERO', 'tomas', {
+      salir: async () => ({ bajaConDeuda: false }),
+      listar: async () => [],
+    });
+    push.mockClear();
+    await vista
+      .findAll('button')
+      .find((b) => b.text() === 'Salir del grupo')!
+      .trigger('click');
+    await vista
+      .findAll('[role="dialog"] button')
+      .find((b) => b.text() === 'Salir del grupo')!
+      .trigger('click');
+    await flushPromises();
+    expect(push).toHaveBeenCalledWith('/viajes');
+    expect(useViajeStore().avisoLista).toBe('Saliste de «Bariloche».');
+  });
+
   it('al eliminar a un participante, un doble clic manda un solo pedido', async () => {
     let terminar!: () => void;
     const eliminarParticipante = vi.fn(

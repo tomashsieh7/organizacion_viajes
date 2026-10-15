@@ -32,8 +32,10 @@ describe('SaldosVista (CU21 y CU22)', () => {
     const vista = mount(SaldosVista, opciones);
     await flushPromises();
     const [debo, meDeben] = vista.findAll('[role="tab"]');
-    expect(debo!.text()).toMatch(/Debo · \$\s?1\.500,00/);
-    expect(meDeben!.text()).toMatch(/Me deben · \$\s?500,00/);
+    // Los dos puntos son solo para lectores de pantalla: separan el rótulo del monto.
+    expect(debo!.text()).toMatch(/^Debo:\s*\$\s?1\.500,00$/);
+    expect(meDeben!.text()).toMatch(/^Me deben:\s*\$\s?500,00$/);
+    expect(debo!.find('.pestana__total--cero').exists()).toBe(false);
     expect(vista.findAll('.fila-saldo').map((f) => f.find('span').text())).toEqual(['Tomás']);
     await meDeben!.trigger('click');
     expect(vista.findAll('.fila-saldo').map((f) => f.find('span').text())).toEqual([
@@ -70,5 +72,19 @@ describe('SaldosVista (CU21 y CU22)', () => {
     expect(fila.find('.pagos li').text()).toMatch(/\$\s?500,00 · registrado por Tomás \(Tomi\)/);
     await vista.findAll('[role="tab"]')[1]!.trigger('click');
     expect(vista.find('.fila-saldo a').exists()).toBe(false);
+  });
+
+  it('un total en cero se muestra en gris, sin el color de deuda ni de crédito', async () => {
+    const opciones = montaje(clienteAuthFalso(), clienteViajesFalso(), {
+      [CLIENTE_GASTOS as symbol]: clienteGastosFalso({
+        deudas: async (_v, rol) => (rol === 'deudor' ? [] : [deuda('d2', 'Luis', 30_000)]),
+      }),
+    });
+    await abrirViaje(opciones);
+    const vista = mount(SaldosVista, opciones);
+    await flushPromises();
+    const [debo, meDeben] = vista.findAll('[role="tab"]');
+    expect(debo!.find('.pestana__total').classes()).toContain('pestana__total--cero');
+    expect(meDeben!.find('.pestana__total').classes()).not.toContain('pestana__total--cero');
   });
 });

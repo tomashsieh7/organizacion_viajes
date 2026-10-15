@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch } from 'vue';
 import type { MensajeEnPantalla } from '../../stores/chat';
-import { nombreVisible } from '../../utiles/formato';
+import { formatearMomento, nombreVisible } from '../../utiles/formato';
 
 const props = defineProps<{ mensajes: MensajeEnPantalla[]; miId: string; hayMas: boolean }>();
 const emit = defineEmits<{ anteriores: [] }>();
 const lista = ref<HTMLElement | null>(null);
-
-const hora = (iso: string) =>
-  new Date(iso).toLocaleString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 
 function alFinal() {
   const el = lista.value;
@@ -70,7 +62,7 @@ onMounted(async () => {
     >
       <header>
         <strong>{{ m.autor.id === miId ? 'Vos' : nombreVisible(m.autor) }}</strong>
-        <time :datetime="m.enviadoEn">{{ hora(m.enviadoEn) }}</time>
+        <time :datetime="m.enviadoEn">{{ formatearMomento(m.enviadoEn) }}</time>
       </header>
       <p>{{ m.contenido }}</p>
       <small v-if="m.estado === 'pendiente'">Enviando…</small>
@@ -132,6 +124,13 @@ header {
 }
 time {
   color: var(--color-texto-secundario);
+  white-space: nowrap;
+}
+/* En celular también se resta la barra de navegación fija de abajo. */
+@media (max-width: 47.99rem) {
+  .lista-mensajes {
+    height: clamp(12rem, calc(100dvh - 24rem - var(--alto-barra-inferior)), 32rem);
+  }
 }
 .mensaje p {
   margin: 0.2rem 0 0;

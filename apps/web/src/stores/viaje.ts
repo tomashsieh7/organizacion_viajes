@@ -18,8 +18,13 @@ export const useViajeStore = defineStore('viaje', () => {
   const monedas = ref<Moneda[]>([]);
   const actual = ref<DetalleViaje | null>(null);
   const participantes = ref<Participante[]>([]);
-  /** Aviso para mostrar en la lista de viajes, por ejemplo cuando a alguien lo quitan de uno. */
+  /** Aviso para mostrar dentro del viaje abierto, por ejemplo al quedar con acceso solo a saldos. */
   const aviso = ref('');
+  /**
+   * Aviso para la lista de viajes, por ejemplo al salir de uno o cuando el Admin te quita. Es
+   * aparte del anterior porque el viaje borra el suyo al cerrarse, justo cuando se abre la lista.
+   */
+  const avisoLista = ref('');
   const soyAdmin = computed(() => actual.value?.miRol === 'ADMIN');
 
   async function cargarViajes() {
@@ -84,13 +89,14 @@ export const useViajeStore = defineStore('viaje', () => {
   async function cerrarPorBaja(mensaje: string) {
     actual.value = null;
     participantes.value = [];
-    aviso.value = mensaje;
+    avisoLista.value = mensaje;
     await cargarViajes();
   }
 
   return {
     viajes,
     aviso,
+    avisoLista,
     monedas,
     actual,
     participantes,

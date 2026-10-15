@@ -157,7 +157,10 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="pagina" :class="{ 'con-barra-inferior': grupos.length }">
-    <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
+    <template v-if="error">
+      <AvisoMensaje tipo="error">{{ error }}</AvisoMensaje>
+      <RouterLink to="/viajes" class="volver">← Volver a mis grupos</RouterLink>
+    </template>
     <template v-else-if="store.actual">
       <header class="viaje">
         <!-- Portada neutra: el color es de la aplicación y no sugiere nada sobre el destino. -->

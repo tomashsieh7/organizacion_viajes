@@ -27,7 +27,7 @@ onMounted(() =>
     .finally(() => (cargado.value = true)),
 );
 // El aviso se muestra una sola vez.
-onBeforeUnmount(() => (store.aviso = ''));
+onBeforeUnmount(() => (store.avisoLista = ''));
 
 function alCrear(viajeId: string) {
   creando.value = false;
@@ -41,7 +41,7 @@ function alCrear(viajeId: string) {
       <h1>Mis grupos de viaje</h1>
       <button class="boton boton--principal" @click="creando = true">Nuevo grupo</button>
     </div>
-    <AvisoMensaje v-if="store.aviso" tipo="info">{{ store.aviso }}</AvisoMensaje>
+    <AvisoMensaje v-if="store.avisoLista" tipo="info">{{ store.avisoLista }}</AvisoMensaje>
     <SiluetaCarga v-if="!cargado" :cantidad="2" />
     <AvisoMensaje v-else-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <EstadoVacio

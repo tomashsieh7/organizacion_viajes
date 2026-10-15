@@ -54,11 +54,11 @@ describe('ViajesVista', () => {
 
   it('muestra el aviso pendiente una sola vez', async () => {
     const vista = await montar([viaje('v1')]);
-    useViajeStore().aviso = 'Saliste de «Mendoza».';
+    useViajeStore().avisoLista = 'Saliste de «Mendoza».';
     await flushPromises();
     expect(vista.text()).toContain('Saliste de «Mendoza».');
     vista.unmount();
-    expect(useViajeStore().aviso).toBe('');
+    expect(useViajeStore().avisoLista).toBe('');
   });
 
   it('sin viajes invita a crear el primero y, al crearlo, abre el viaje nuevo', async () => {

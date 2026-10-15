@@ -22,8 +22,35 @@ test('CU24 y CU04: transferir la administración y salir del grupo', async ({ br
   await p.getByRole('button', { name: 'Salir del grupo' }).click();
   await p.getByRole('dialog').getByRole('button', { name: 'Salir del grupo' }).click();
   await expect(p).toHaveURL(/\/viajes$/);
+  await expect(p.getByText('Saliste de «Bariloche 2026».')).toBeVisible();
   await expect(p.getByText('Todavía no participás de ningún viaje.')).toBeVisible();
 
   await tomas.page.reload();
   await expect(tomas.page.locator('li', { hasText: 'Ana' })).toHaveCount(0);
+});
+
+test('RN-E4: a quien el Admin quita con el viaje abierto vuelve a la lista con un aviso', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const tomas = await nuevoViajero(browser, 'Tomás');
+  const viajeId = await viajeCon(ana, tomas);
+
+  await tomas.page.goto(`/viajes/${viajeId}/chat`);
+  await expect(tomas.page.getByRole('heading', { name: 'Chat del grupo' })).toBeVisible();
+
+  await ana.page.goto(`/viajes/${viajeId}/participantes`);
+  await ana.page
+    .locator('li', { hasText: 'Tomás' })
+    .getByRole('button', { name: 'Eliminar' })
+    .click();
+  await ana.page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click();
+
+  await expect(tomas.page).toHaveURL(/\/viajes$/);
+  await expect(tomas.page.getByText('El Admin te quitó de «Bariloche 2026».')).toBeVisible();
+
+  // Un viaje del que ya no participa muestra el error con un enlace para volver.
+  await tomas.page.goto(`/viajes/${viajeId}/resumen`);
+  await tomas.page.getByRole('link', { name: '← Volver a mis grupos' }).click();
+  await expect(tomas.page).toHaveURL(/\/viajes$/);
 });

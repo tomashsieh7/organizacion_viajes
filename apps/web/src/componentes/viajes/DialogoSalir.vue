@@ -35,6 +35,7 @@ async function salir() {
       store.aviso = `Saliste de «${nombre}». Podés seguir viendo tus saldos hasta que queden en cero.`;
       await router.push(`/viajes/${id}/saldos`);
     } else {
+      store.avisoLista = `Saliste de «${nombre}».`;
       await router.push('/viajes');
     }
   } catch (e) {

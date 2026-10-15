@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import DialogoModal from '../src/componentes/base/DialogoModal.vue';
 
 describe('DialogoModal', () => {
@@ -20,5 +20,23 @@ describe('DialogoModal', () => {
     dialogo.unmount();
     expect(document.activeElement).toBe(boton);
     boton.remove();
+  });
+
+  it('Escape lo cierra aunque el foco haya quedado fuera del diálogo', () => {
+    const cerrar = vi.fn();
+    const dialogo = mount(DialogoModal, {
+      props: { titulo: 'Nuevo grupo', onCerrar: cerrar },
+      attachTo: document.body,
+    });
+    // Como cuando un botón del diálogo se deshabilita y el navegador le saca el foco.
+    (document.activeElement as HTMLElement).blur();
+    const escape = () =>
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    escape();
+    expect(cerrar).toHaveBeenCalledTimes(1);
+    dialogo.unmount();
+    // Cerrado, Escape ya no hace nada.
+    escape();
+    expect(cerrar).toHaveBeenCalledTimes(1);
   });
 });
