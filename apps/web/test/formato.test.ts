@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   aUnidadMinima,
   formatearDia,
-  formatearMomento,
+  etiquetaDelDia,
+  formatearHora,
   formatearMonto,
   formatearRango,
+  simboloMoneda,
 } from '../src/utiles/formato';
 
 describe('aUnidadMinima', () => {
@@ -47,9 +49,27 @@ describe('formatearDia', () => {
   });
 });
 
-describe('formatearMomento', () => {
-  it('usa el mes abreviado y la hora de 24 horas del dispositivo', () => {
-    expect(formatearMomento(new Date(2026, 8, 24, 21, 26).toISOString())).toBe('24 sep, 21:26');
-    expect(formatearMomento(new Date(2026, 11, 3, 9, 5).toISOString())).toBe('3 dic, 09:05');
+describe('formatearHora y etiquetaDelDia', () => {
+  const ahora = new Date(2026, 9, 15, 10, 0);
+  const en = (dia: number, mes: number, anio = 2026) =>
+    new Date(anio, mes, dia, 21, 26).toISOString();
+
+  it('la hora va con 24 horas', () => {
+    expect(formatearHora(en(24, 8))).toBe('21:26');
+    expect(formatearHora(new Date(2026, 11, 3, 9, 5).toISOString())).toBe('09:05');
+  });
+
+  it('el día dice Hoy, Ayer, la fecha corta o la fecha con año', () => {
+    expect(etiquetaDelDia(en(15, 9), ahora)).toBe('Hoy');
+    expect(etiquetaDelDia(en(14, 9), ahora)).toBe('Ayer');
+    expect(etiquetaDelDia(en(24, 8), ahora)).toBe('24 sep');
+    expect(etiquetaDelDia(en(30, 11, 2025), ahora)).toBe('30 dic 2025');
+  });
+});
+
+describe('simboloMoneda', () => {
+  it('usa el mismo símbolo que los montos formateados', () => {
+    expect(simboloMoneda({ codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 })).toBe('$');
+    expect(simboloMoneda({ codigo: 'USD', nombre: 'Dólar', decimales: 2 })).toBe('US$');
   });
 });

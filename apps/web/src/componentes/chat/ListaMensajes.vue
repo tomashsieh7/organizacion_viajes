@@ -1,11 +1,38 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import type { MensajeEnPantalla } from '../../stores/chat';
-import { formatearMomento, nombreVisible } from '../../utiles/formato';
+import { etiquetaDelDia, formatearHora, nombreVisible } from '../../utiles/formato';
 
 const props = defineProps<{ mensajes: MensajeEnPantalla[]; miId: string; hayMas: boolean }>();
 const emit = defineEmits<{ anteriores: [] }>();
 const lista = ref<HTMLElement | null>(null);
+
+/** Mensajes seguidos de la misma persona, a menos de 5 minutos, se muestran como un bloque. */
+const PAUSA_MS = 5 * 60_000;
+
+type Fila =
+  | { tipo: 'dia'; clave: string; etiqueta: string }
+  | { tipo: 'mensaje'; clave: string; m: MensajeEnPantalla; conNombre: boolean };
+
+/** Separadores de día ("Hoy", "Ayer", "24 sep") y mensajes agrupados por persona. */
+const filas = computed<Fila[]>(() => {
+  const resultado: Fila[] = [];
+  let diaAnterior = '';
+  let anterior: MensajeEnPantalla | undefined;
+  for (const m of props.mensajes) {
+    const dia = etiquetaDelDia(m.enviadoEn);
+    const nuevoDia = dia !== diaAnterior;
+    if (nuevoDia) resultado.push({ tipo: 'dia', clave: `dia-${m.enviadoEn}`, etiqueta: dia });
+    const seguido =
+      !nuevoDia &&
+      anterior?.autor.id === m.autor.id &&
+      Date.parse(m.enviadoEn) - Date.parse(anterior.enviadoEn) < PAUSA_MS;
+    resultado.push({ tipo: 'mensaje', clave: m.idTemporal ?? m.id, m, conNombre: !seguido });
+    diaAnterior = dia;
+    anterior = m;
+  }
+  return resultado;
+});
 
 function alFinal() {
   const el = lista.value;
@@ -53,21 +80,30 @@ onMounted(async () => {
       <span class="vacio__icono" aria-hidden="true">💬</span>
       Todavía no hay mensajes. ¡Escribí el primero!
     </p>
-    <article
-      v-for="m in mensajes"
-      :key="m.idTemporal ?? m.id"
-      class="mensaje"
-      :class="{ propio: m.autor.id === miId }"
-      :data-estado="m.estado"
-    >
-      <header>
-        <strong>{{ m.autor.id === miId ? 'Vos' : nombreVisible(m.autor) }}</strong>
-        <time :datetime="m.enviadoEn">{{ formatearMomento(m.enviadoEn) }}</time>
-      </header>
-      <p>{{ m.contenido }}</p>
-      <small v-if="m.estado === 'pendiente'">Enviando…</small>
-      <small v-else-if="m.estado === 'error'" class="fallo">No se pudo enviar</small>
-    </article>
+    <template v-for="f in filas" :key="f.clave">
+      <div v-if="f.tipo === 'dia'" class="separador" role="separator" :aria-label="f.etiqueta">
+        <span>{{ f.etiqueta }}</span>
+      </div>
+      <article
+        v-else
+        class="mensaje"
+        :class="{ propio: f.m.autor.id === miId, seguido: !f.conNombre }"
+        :data-estado="f.m.estado"
+      >
+        <!-- El nombre se ve solo al empezar un bloque; los lectores de pantalla lo leen siempre. -->
+        <strong
+          class="mensaje__autor"
+          :class="{ 'solo-lectores': f.m.autor.id === miId || !f.conNombre }"
+          >{{ f.m.autor.id === miId ? 'Vos' : nombreVisible(f.m.autor) }}</strong
+        >
+        <p>{{ f.m.contenido }}</p>
+        <footer class="mensaje__pie">
+          <small v-if="f.m.estado === 'pendiente'">Enviando…</small>
+          <small v-else-if="f.m.estado === 'error'" class="fallo">No se pudo enviar</small>
+          <time :datetime="f.m.enviadoEn">{{ formatearHora(f.m.enviadoEn) }}</time>
+        </footer>
+      </article>
+    </template>
   </div>
 </template>
 
@@ -116,15 +152,39 @@ onMounted(async () => {
 .mensaje[data-estado='pendiente'] {
   opacity: 0.7;
 }
-header {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: space-between;
+.mensaje.seguido {
+  margin-top: calc(-1 * var(--esp-1));
+}
+.mensaje__autor {
+  display: block;
   font-size: 0.85rem;
 }
-time {
+.mensaje__pie {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
   color: var(--color-texto-secundario);
+}
+time {
   white-space: nowrap;
+}
+/* Separador de día, como una etiqueta centrada sobre una línea. */
+.separador {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin: var(--esp-2) 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+.separador::before,
+.separador::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--color-borde);
 }
 /* En celular también se resta la barra de navegación fija de abajo. */
 @media (max-width: 47.99rem) {
@@ -133,7 +193,7 @@ time {
   }
 }
 .mensaje p {
-  margin: 0.2rem 0 0;
+  margin: 0.1rem 0 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
