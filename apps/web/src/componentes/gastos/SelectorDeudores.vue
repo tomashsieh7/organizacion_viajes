@@ -15,6 +15,8 @@ const todos = computed(
   () => props.participantes.length > 0 && elegidos.value.length === props.participantes.length,
 );
 
+const inicial = (p: Participante) => nombreVisible(p).charAt(0).toUpperCase();
+
 function alternarTodos() {
   elegidos.value = todos.value ? [] : props.participantes.map((p) => p.usuarioId);
 }
@@ -29,42 +31,113 @@ function alternar(usuarioId: string, marcado: boolean) {
 
 <template>
   <fieldset class="selector-deudores">
-    <legend>¿Quiénes tienen que pagar?</legend>
-    <button type="button" class="boton" @click="alternarTodos">
-      {{ todos ? 'Quitar a todos' : 'Seleccionar a todos' }}
-    </button>
-    <label v-for="p in participantes" :key="p.usuarioId" class="opcion">
-      <input
-        type="checkbox"
-        :value="p.usuarioId"
-        :checked="elegidos.includes(p.usuarioId)"
-        @change="alternar(p.usuarioId, ($event.target as HTMLInputElement).checked)"
-      />
-      {{ nombreVisible(p) }}
-    </label>
+    <legend class="solo-lectores">¿Quiénes tienen que pagar?</legend>
+    <div class="encabezado">
+      <span class="encabezado__titulo" aria-hidden="true">¿Quiénes tienen que pagar?</span>
+      <span class="encabezado__cuenta texto-secundario" aria-live="polite"
+        >{{ elegidos.length }} de {{ participantes.length }}</span
+      >
+      <button type="button" class="boton boton--chico" @click="alternarTodos">
+        {{ todos ? 'Quitar a todos' : 'Seleccionar a todos' }}
+      </button>
+    </div>
+    <ul class="personas">
+      <li v-for="p in participantes" :key="p.usuarioId">
+        <label class="persona" :class="{ elegida: elegidos.includes(p.usuarioId) }">
+          <span class="persona__inicial" aria-hidden="true">{{ inicial(p) }}</span>
+          <span class="persona__nombre">{{ nombreVisible(p) }}</span>
+          <input
+            type="checkbox"
+            class="persona__casilla"
+            :value="p.usuarioId"
+            :checked="elegidos.includes(p.usuarioId)"
+            @change="alternar(p.usuarioId, ($event.target as HTMLInputElement).checked)"
+          />
+        </label>
+      </li>
+    </ul>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
   </fieldset>
 </template>
 
 <style scoped>
 .selector-deudores {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--esp-4);
+  min-width: 0;
+}
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-1) var(--esp-3);
+  margin-bottom: var(--esp-2);
+}
+.encabezado__titulo {
+  font-weight: 600;
+}
+.encabezado__cuenta {
+  flex: 1;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.personas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--esp-2);
+}
+/* Cada persona es una fila entera que se puede tocar; la casilla real queda a la derecha. */
+.persona {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-height: 3rem;
+  padding: var(--esp-2) var(--esp-3);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio);
-  padding: 0.5rem 1rem 0.75rem;
-  margin: 0 0 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  align-items: flex-start;
+  background: var(--color-superficie);
+  cursor: pointer;
+  transition:
+    background-color var(--duracion),
+    border-color var(--duracion);
 }
-.opcion {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
+.persona:hover {
+  border-color: var(--color-borde-fuerte);
+}
+.persona.elegida {
+  border-color: var(--color-acento);
+  background: var(--color-acento-suave);
+}
+.persona__inicial {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-content: center;
+  border-radius: 999px;
+  background: var(--color-superficie-alt);
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+.persona.elegida .persona__inicial {
+  background: var(--color-acento);
+  color: var(--color-sobre-acento);
+}
+.persona__nombre {
+  flex: 1;
+  min-width: 0;
+}
+.persona__casilla {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-acento);
 }
 .error {
   color: var(--color-error);
-  font-size: 0.85rem;
-  margin: 0;
+  font-size: 0.875rem;
+  margin: var(--esp-2) 0 0;
 }
 </style>

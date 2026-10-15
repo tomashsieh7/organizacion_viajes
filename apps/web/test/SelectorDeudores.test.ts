@@ -50,4 +50,16 @@ describe('SelectorDeudores (RN-G3, P13)', () => {
     await casillas[0]!.setValue(false);
     expect(vista.props('modelValue')).toEqual(['tomas', 'luis']);
   });
+
+  it('cada persona es una fila con su inicial y un contador de cuántos pagan', async () => {
+    const vista = montar();
+    const filas = vista.findAll('.persona');
+    expect(filas.map((f) => f.find('.persona__inicial').text())).toEqual(['A', 'T', 'L']);
+    expect(filas[1]!.find('.persona__nombre').text()).toBe('Tomás (Tomi)');
+    expect(vista.find('.encabezado__cuenta').text()).toBe('0 de 3');
+    await filas[1]!.find('input').setValue(true);
+    expect(vista.find('.encabezado__cuenta').text()).toBe('1 de 3');
+    expect(vista.findAll('.persona')[1]!.classes()).toContain('elegida');
+    expect(vista.find('legend').text()).toBe('¿Quiénes tienen que pagar?');
+  });
 });
