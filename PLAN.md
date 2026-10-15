@@ -573,17 +573,17 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | RN-M4 | Las actividades se ordenan cronológicamente por horario. | Repositorio de itinerario (`ORDER BY hora_inicio, titulo`) | orden de `actividades` |
 | RN-M5 | Cada actividad se ubica como marcador numerado en el mapa. | Componente `MapaActividades` | — |
 | RN-M6 | Se traza el recorrido entre ellas según ese orden, con líneas rectas en el MVP (P20). | `recorridoEnLineaRecta` en `ConsultarMapa` y `MapaActividades` | `recorrido` |
-| RN-M7 | El viajero puede elegir otro día; el flujo vuelve a RN-M2 con ese día. | `SelectorDia` en `MapaVista` → `GET …/mapa?dia=` | — |
+| RN-M7 | El viajero puede elegir otro día; el flujo vuelve a RN-M2 con ese día. El día va en `?dia=` y se conserva al pasar al cronograma. | `CalendarioViaje` en `MapaVista` → `GET …/mapa?dia=` | — |
 | RN-M8 | Consultar una actividad en el mapa abre el día de esa actividad, centra el mapa en su marcador y muestra su detalle. | `GET …/actividades/:actividadId` y `MapaVista` con `?actividad=` | 404 si no existe |
 
 ### 6.5 Consultando cronograma
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
-| RN-C1 | Se muestran todos los días del viaje, incluidos los que no tienen actividades, con la leyenda "sin actividades confirmadas" (P21). | `ConsultarCronograma` | — |
+| RN-C1 | Se muestran todos los días del viaje, incluidos los que no tienen actividades, con la leyenda "sin actividades confirmadas" (P21). En la interfaz, el calendario muestra todos los días y el detalle se ve de a un día, el elegido. | `ConsultarCronograma`; `CalendarioViaje` y `CronogramaVista` | — |
 | RN-C2 | Cada día muestra solo actividades confirmadas, ordenadas por horario, con hora de inicio y de fin, título, ubicación y enlace "Ver en el mapa". | `ConsultarCronograma` y `CronogramaVista` | — |
 | RN-C3 | Cada día muestra el alojamiento confirmado de esa noche, es decir, el que cumple `fecha_desde <= día < fecha_hasta`; si no hay, no se muestra nada. | `RangoFechas.incluyeNoche(dia)` del alojamiento; coordina `ConsultarCronograma` | — |
-| RN-C4 | Al abrir, la vista se desplaza hasta hoy si cae dentro del viaje, con la misma regla de "hoy" que el mapa. | `CronogramaVista` | — |
+| RN-C4 | Al abrir, la vista muestra hoy si cae dentro del viaje; si no, aplica la misma regla que el mapa (RN-M1). Con `?dia=`, abre en ese día, que se conserva al pasar al mapa. | `CronogramaVista` con `diaInicial` de `utiles/fechas.ts` | — |
 
 ### 6.6 Anotando gasto
 
@@ -655,7 +655,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 
 ### 7.1 Navegación
 
-Las rutas de un viaje se anidan bajo `/viajes/:viajeId`, con un diseño común (`ViajeLayout`) que carga el viaje y el acceso de quien consulta y oculta las acciones del Admin a quien no lo es. Las nueve secciones se agrupan en cinco destinos, el máximo recomendado para una barra de navegación: Inicio (resumen y participantes), Planificar (alojamientos y actividades), Itinerario (cronograma y mapa), Chat y Cuentas (gastos y saldos). Entrar a un viaje abre el Resumen. Arriba de todas las páginas del viaje va una portada con el nombre, el destino, las fechas, la cantidad de viajeros y la cuenta regresiva. En escritorio los grupos son pestañas bajo el nombre del viaje; en celular, una barra fija abajo, al alcance del pulgar. Dentro de un grupo con más de una sección, unas pestañas eligen la sección. Las rutas no cambian. Quien conserva solo acceso a saldos (RN-E6) ve únicamente la sección de saldos, sin menú. Una guarda global manda a `/ingresar` a quien no tiene sesión, y una guarda de viaje manda a `/viajes` a quien no tiene acceso. Si la sesión vence o se cierra en otra pestaña mientras se usa la aplicación, la primera respuesta `NO_AUTENTICADO` de la API o del chat lleva a `/ingresar` con un aviso, y al volver a ingresar se regresa a la misma página. Ocultar botones es solo comodidad de interfaz, ya que el permiso real lo verifica la API. Los textos de la interfaz hablan de "grupo de viaje" (P1).
+Las rutas de un viaje se anidan bajo `/viajes/:viajeId`, con un diseño común (`ViajeLayout`) que carga el viaje y el acceso de quien consulta y oculta las acciones del Admin a quien no lo es. Las nueve secciones se agrupan en cinco destinos, el máximo recomendado para una barra de navegación: Inicio (resumen; participantes se abre desde la cantidad de viajeros de la portada), Planificar (alojamientos y actividades), Itinerario (cronograma y mapa), Chat y Cuentas (gastos y saldos). Entrar a un viaje abre el Resumen. Arriba de todas las páginas del viaje va una portada con el nombre, la cuenta regresiva justo debajo, el destino, las fechas y la cantidad de viajeros, que es un botón a Participantes. En escritorio los grupos son pestañas bajo el nombre del viaje; en celular, una barra fija abajo, al alcance del pulgar. Dentro de un grupo con más de una sección, unas pestañas eligen la sección. Las rutas no cambian. Quien conserva solo acceso a saldos (RN-E6) ve únicamente la sección de saldos, sin menú. Una guarda global manda a `/ingresar` a quien no tiene sesión, y una guarda de viaje manda a `/viajes` a quien no tiene acceso. Si la sesión vence o se cierra en otra pestaña mientras se usa la aplicación, la primera respuesta `NO_AUTENTICADO` de la API o del chat lleva a `/ingresar` con un aviso, y al volver a ingresar se regresa a la misma página. Ocultar botones es solo comodidad de interfaz, ya que el permiso real lo verifica la API. Los textos de la interfaz hablan de "grupo de viaje" (P1).
 
 ### 7.1.1 Pautas de interfaz
 
@@ -675,7 +675,7 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
   - el voto propio se marca con borde y tilde;
   - los saldos dicen "Le debés" o "Te debe".
 - **Listas:** mientras cargan muestran siluetas (`SiluetaCarga`). Vacías, explican por qué y ofrecen la acción para empezar (`EstadoVacio`).
-- **Formularios:** validan cada campo al salir de él con el mismo esquema que la API (`useValidacion`). El error aparece debajo del campo, enlazado con `aria-describedby`, y desaparece al corregirlo.
+- **Formularios:** validan cada campo al salir de él con el mismo esquema que la API (`useValidacion`). El error aparece debajo del campo, enlazado con `aria-describedby`, y desaparece al corregirlo. `CampoFormulario` acepta un texto de ayuda (`ayuda`), que también se enlaza con `aria-describedby`. Los formularios largos se dividen en pasos cortos con indicador ("Paso 1 de 3"), como el de crear un grupo.
 - **Acciones en curso:** mientras se espera la respuesta de un envío, un voto, una resolución, una baja, una salida o un traspaso, su botón queda deshabilitado, así un doble clic no manda dos pedidos.
 - **Teclado y lectores de pantalla:** el enlace "Saltar al contenido" lleva el foco más allá del encabezado y los menús (WCAG 2.4.1), y al cambiar de página una región `aria-live` anuncia el título nuevo sin mover el foco.
 - **Errores inesperados:** si un componente falla sin manejar el error, `App.vue` lo captura (`onErrorCaptured`), lo registra en la consola y muestra un aviso para recargar, que se quita al cambiar de página.
@@ -683,8 +683,8 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
 - **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026", "jueves 10 dic"), con `formatearRango`, `formatearDia` y `formatearHorario` de `utiles/formato.ts` y `nombreDelDia` de `utiles/fechas.ts`.
 - **Gamificación:** acompaña la planificación sin presionar, y se calcula solo en el frontend con los datos que ya devuelve la API (`utiles/progreso.ts`):
   - **progreso del viaje:** un anillo con el porcentaje y seis hitos, cada uno con un enlace a donde se resuelve: se sumó el grupo, alojamiento para todas las noches, actividades en cada día, propuestas resueltas, votaste todas y tus cuentas al día;
-  - **próximos pasos:** los hitos pendientes más importantes, cada uno con su acción;
-  - **cuenta regresiva:** según la fecha del dispositivo;
+  - **próximos pasos:** los hitos pendientes más importantes, cada uno con su acción. El Resumen destaca uno solo y pliega el resto, igual que los hitos, para mostrar lo justo y dejar el detalle a un toque (revelación progresiva);
+  - **cuenta regresiva:** según la fecha del dispositivo, en la portada, justo debajo del nombre del viaje;
   - **celebraciones:** al confirmar una propuesta, al saldar una deuda y al llegar al 100 %, este último una sola vez por viaje en cada dispositivo. Son un mensaje breve con una lluvia de emojis; con reducir movimiento se muestra solo el mensaje.
   - No hay puntos, rankings ni comparaciones entre personas, para no generar presión con la plata ni con la participación. Guardar logros en el backend queda para cuando sea un requerimiento.
   - En el story map figura en el Release 10, "Ideas exploratorias".
@@ -708,19 +708,19 @@ El cronograma y el mapa no usan store propio porque son vistas de solo lectura; 
 | Ruta | Vista | Componentes principales | Estado | CU |
 |---|---|---|---|---|
 | `/ingresar`, `/registrarse` | `IngresoVista`, `RegistroVista` | Formulario dentro de cada vista con `CampoFormulario`; el registro muestra los requisitos de contraseña | `useSesionStore` | Soporte (P3) |
-| `/viajes` | `ViajesVista` | Tarjetas de viaje dentro de la vista (marcan los viajes con acceso solo a saldos y los llevan directo a saldos), `DialogoNuevoViaje` (con selector de moneda) | `useViajeStore` | CU01 |
-| `/viajes/:viajeId/resumen` | `ResumenVista` | `AnilloProgreso`, `ListaHitos`, próximos pasos y cuenta regresiva, calculados con `calcularProgreso` y `cuentaRegresiva` | `useViajeStore`, `usePropuestasStore` | Soporte (gamificación) |
+| `/viajes` | `ViajesVista` | Tarjetas de viaje dentro de la vista (marcan los viajes con acceso solo a saldos y los llevan directo a saldos), `DialogoNuevoViaje` en tres pasos: nombre, ciudad y país (el destino se guarda como "Ciudad, País"); fechas y moneda, que crea el viaje; y sumar viajeros con `FormularioAgregarViajero` | `useViajeStore` | CU01, CU02 |
+| `/viajes/:viajeId/resumen` | `ResumenVista` | En una columna: "Lo próximo" (el paso más importante destacado y los demás en un desplegable) y el progreso compacto (`AnilloProgreso` con "Ver los hitos", que despliega `ListaHitos`), calculados con `calcularProgreso` | `useViajeStore`, `usePropuestasStore` | Soporte (gamificación) |
 | `/viajes/:viajeId/participantes` | `ParticipantesVista` | `ListaParticipantes`; para el Admin, `FormularioAgregarViajero`, el diálogo de confirmación de eliminación (avisa que se conserva el historial) y `DialogoTraspaso`; botón "Salir del grupo", que abre `DialogoSalir`: muestra la deuda propia y, si quien sale es el Admin, pide el sucesor con `SelectorSucesor` | `useViajeStore` | CU02–CU04, CU24 |
 | `/viajes/:viajeId/alojamientos` | `AlojamientosVista` | `TarjetaPropuesta` (conteo, botones de voto y de desvoto, acciones del Admin según estado), filtro por estado | `usePropuestasStore` | CU06–CU09, CU25 |
 | `/viajes/:viajeId/alojamientos/nuevo` | `AlojamientoFormularioVista` | `CampoUbicacion` (buscador y clic en el mapa), campos de entrada y salida limitados a las fechas del viaje | `usePropuestasStore` | CU05 |
 | `/viajes/:viajeId/actividades` | `ActividadesVista` | `TarjetaPropuesta` con `ListaAlternativas` anidada, botón "Proponer alternativa" en actividades pendientes | `usePropuestasStore` | CU12–CU15, CU26 |
 | `/viajes/:viajeId/actividades/nueva` | `ActividadFormularioVista` | `CampoUbicacion`, `CampoFechaHora` (limitado al viaje), `AvisoSuperposicion` (lista los conflictos y deja el formulario listo para ajustar el horario) | `usePropuestasStore` | CU10 |
 | `/viajes/:viajeId/actividades/:actividadId/alternativa` | `ActividadFormularioVista` en modo alternativa | Resumen de la actividad original y los mismos campos que CU10 | `usePropuestasStore` | CU11 |
-| `/viajes/:viajeId/cronograma` | `CronogramaVista` | `DiaCronograma` con actividades, alojamiento de la noche y enlace "Ver en el mapa" | Local | CU16 |
-| `/viajes/:viajeId/mapa?dia=&actividad=` | `MapaVista` | `SelectorDia` (resalta días con actividades), `MapaActividades` (Leaflet, marcadores numerados y recorrido), `AvisoSinActividades`, `PanelActividad` | `useMapaDelDia` | CU17, CU18 |
+| `/viajes/:viajeId/cronograma?dia=` | `CronogramaVista` | `CalendarioViaje` (mes con los días del viaje, punto en los que tienen actividades) y `DiaCronograma` del día elegido, con actividades, alojamiento de la noche y enlace "Ver en el mapa" | Local | CU16 |
+| `/viajes/:viajeId/mapa?dia=&actividad=` | `MapaVista` | `CalendarioViaje` (el mismo del cronograma), `MapaActividades` (Leaflet, marcadores numerados y recorrido), `AvisoSinActividades`, `PanelActividad` | `useMapaDelDia` | CU17, CU18 |
 | `/viajes/:viajeId/chat` | `ChatVista` | `ListaMensajes` (carga hacia atrás al subir), `CampoMensaje` | `useChatStore` | CU19 |
 | `/viajes/:viajeId/gastos` | `GastosVista` | `TarjetaGasto` con el detalle de partes | `useGastosStore` | CU20 |
-| `/viajes/:viajeId/gastos/nuevo` | `GastoFormularioVista` | `SelectorPagador` (por defecto, quien anota), `SelectorDeudores` (nadie marcado al inicio y botón que alterna entre "Seleccionar a todos" y "Quitar a todos"), `SelectorModoDivision`, `TablaPartes` (en arbitraria muestra la suma y la diferencia con el total mientras se escribe) | `useGastosStore` | CU20 |
+| `/viajes/:viajeId/gastos/nuevo` | `GastoFormularioVista` | `SelectorPagador` (por defecto, quien anota), `SelectorDeudores` (una fila por persona con su inicial y la casilla, contador "2 de 4", nadie marcado al inicio y botón que alterna entre "Seleccionar a todos" y "Quitar a todos"), `SelectorModoDivision`, `TablaPartes` (en arbitraria muestra la suma y la diferencia con el total mientras se escribe) | `useGastosStore` | CU20 |
 | `/viajes/:viajeId/saldos` | `SaldosVista` | Pestañas "Debo" y "Me deben", `FilaSaldo` con historial de pagos y botón "Pagar" en las deudas propias | `useGastosStore` | CU21, CU22 |
 | `/viajes/:viajeId/saldos/pagar/:acreedorId` | `PagoVista` | Saldo pendiente con ese viajero, campo de monto (se convierte con `aUnidadMinima` de `utiles/formato.ts`), `AvisoExcedeDeuda` | `useGastosStore` | CU23 |
 
