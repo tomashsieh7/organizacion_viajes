@@ -71,31 +71,37 @@ onErrorCaptured((error) => {
 
 <style>
 /*
- * Base visual: variables de diseño (colores, espaciado, tipografía) y estilos comunes. Los neutros
- * son grises sin tinte, para no sugerir clima, y el turquesa es el único color de la aplicación;
- * verde, ámbar y rojo quedan para los estados. El modo oscuro sigue al sistema y repite los
- * contrastes del claro, con las tarjetas apenas más claras que el fondo. Todo cumple AA.
+ * Base visual: variables de diseño (colores, espaciado, tipografía) y estilos comunes. Fondo
+ * blanco con grises suaves; el verde azulado es el color de las acciones y los enlaces, su versión
+ * oscura va en la barra de arriba, y el coral se reserva para los detalles que acompañan el viaje
+ * (cuenta regresiva, progreso, franjas y el botón flotante), nunca para dinero ni estados. Verde,
+ * naranja tostado y rojo quedan para los estados. Solo hay modo claro. Todo cumple AA.
  */
 :root {
-  color-scheme: light dark;
-  --color-texto: #282828;
-  --color-texto-secundario: #5e5e5e;
-  --color-fondo: #f8f8f8;
+  color-scheme: light;
+  --color-texto: #1c2230;
+  --color-texto-secundario: #59606e;
+  --color-fondo: #ffffff;
   --color-superficie: #ffffff;
-  --color-superficie-alt: #f2f2f2;
-  --color-borde: #e5e5e5;
-  --color-borde-fuerte: #858585;
-  --color-acento: #0f766e;
+  --color-superficie-alt: #f3f4f7;
+  --color-borde: #e3e5ea;
+  --color-borde-fuerte: #8b909b;
+  --color-acento: #0a6a77;
   --color-sobre-acento: #ffffff;
-  --color-acento-suave: #e0f2ef;
+  --color-acento-suave: #dff1f2;
+  --color-barra: #083a46;
+  --color-sobre-barra: #ffffff;
+  --color-sobre-barra-secundario: #cfe3e7;
+  --color-destacado: #ff8f6b;
+  --color-sobre-destacado: #2e0f05;
   --color-exito: #15803d;
   --color-exito-suave: #dcfce7;
   --color-error: #b91c1c;
   --color-error-suave: #fee2e2;
-  --color-aviso: #a16207;
-  --color-aviso-suave: #fef9c3;
-  --color-neutro: #5e5e5e;
-  --color-neutro-suave: #f2f2f2;
+  --color-aviso: #9a4a00;
+  --color-aviso-suave: #ffedd8;
+  --color-neutro: #59606e;
+  --color-neutro-suave: #f3f4f7;
   --sombra: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 14px rgb(0 0 0 / 0.06);
   --sombra-elevada: 0 10px 30px rgb(0 0 0 / 0.18);
   --fondo-modal: rgb(0 0 0 / 0.5);
@@ -124,31 +130,6 @@ onErrorCaptured((error) => {
   color: var(--color-texto);
   background: var(--color-fondo);
   -webkit-text-size-adjust: 100%;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-texto: #e8e8e8;
-    --color-texto-secundario: #9b9b9b;
-    --color-fondo: #1c1c1c;
-    --color-superficie: #222222;
-    --color-superficie-alt: #2b2b2b;
-    --color-borde: #333333;
-    --color-borde-fuerte: #717171;
-    --color-acento: #2dd4bf;
-    --color-sobre-acento: #0b1f1d;
-    --color-acento-suave: #12322f;
-    --color-exito: #4ade80;
-    --color-exito-suave: #12301f;
-    --color-error: #f87171;
-    --color-error-suave: #351717;
-    --color-aviso: #facc15;
-    --color-aviso-suave: #332b0c;
-    --color-neutro: #9b9b9b;
-    --color-neutro-suave: #2b2b2b;
-    --sombra: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 14px rgb(0 0 0 / 0.25);
-    --sombra-elevada: 0 10px 30px rgb(0 0 0 / 0.5);
-    --fondo-modal: rgb(0 0 0 / 0.6);
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -218,8 +199,20 @@ a:hover {
   align-items: center;
   gap: var(--esp-3);
   padding: var(--esp-2) var(--esp-4);
-  border-bottom: 1px solid var(--color-borde);
-  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-barra);
+  background: var(--color-barra);
+  color: var(--color-sobre-barra);
+}
+.barra :focus-visible {
+  outline-color: var(--color-sobre-barra);
+}
+.barra .boton {
+  background: transparent;
+  border-color: var(--color-sobre-barra);
+  color: var(--color-sobre-barra);
+}
+.barra .boton:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.12);
 }
 .marca {
   display: inline-flex;
@@ -232,7 +225,7 @@ a:hover {
   text-decoration: none;
 }
 .marca__icono {
-  color: var(--color-acento);
+  color: var(--color-destacado);
 }
 .usuario {
   display: flex;
@@ -240,7 +233,7 @@ a:hover {
   align-items: center;
 }
 .usuario__nombre {
-  color: var(--color-texto-secundario);
+  color: var(--color-sobre-barra-secundario);
 }
 .marca,
 .usuario .boton {
@@ -457,7 +450,13 @@ label {
     width: 3.5rem;
     height: 3.5rem;
     padding: 0;
+    border-color: var(--color-destacado);
+    background: var(--color-destacado);
+    color: var(--color-sobre-destacado);
     box-shadow: var(--sombra-elevada);
+  }
+  .accion-flotante:hover:not(:disabled) {
+    background: var(--color-destacado);
   }
   /* Lugar para que el último elemento de la lista no quede debajo del botón. */
   .pagina.con-barra-inferior:has(.accion-flotante) {

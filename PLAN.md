@@ -661,12 +661,13 @@ Las rutas de un viaje se anidan bajo `/viajes/:viajeId`, con un diseño común (
 ### 7.1.1 Pautas de interfaz
 
 Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegación de Material 3:
-- **Variables de diseño:** `App.vue` define colores semánticos en modo claro y oscuro, con contraste AA verificado en ambos; el oscuro sigue la preferencia del sistema. También define el espaciado en múltiplos de 4 px y una tipografía de 16 px con interlineado de 1,5; los títulos usan la fuente redondeada del sistema.
-- **Pocos colores y ninguno que sugiera clima:**
-  - los neutros son grises sin tinte, y el modo oscuro repite los contrastes del claro, con las tarjetas apenas más claras que el fondo;
-  - el turquesa es el único color de la aplicación: acción principal, enlaces, pestaña activa, progreso y cuenta regresiva;
-  - verde, ámbar y rojo se reservan para los estados (propuestas, saldos y errores);
-  - la portada del viaje es neutra, porque un color por destino sugeriría calor o frío;
+- **Variables de diseño:** `App.vue` define colores semánticos con contraste AA verificado. La app es solo clara, aunque el sistema esté en modo oscuro. También define el espaciado en múltiplos de 4 px y una tipografía de 16 px con interlineado de 1,5; los títulos usan la fuente redondeada del sistema.
+- **Colores con el contraste de las apps de viaje:** fondo blanco, un color oscuro de base y uno brillante para los detalles.
+  - los neutros son grises suaves y las tarjetas se separan del fondo blanco con borde y sombra;
+  - el verde azulado es el color de las acciones: acción principal, enlaces y pestaña activa;
+  - su versión oscura va en la barra de arriba, con el texto en blanco;
+  - el coral acompaña el viaje y no es una señal: cuenta regresiva, anillo de progreso, franja de la portada y de las tarjetas de la lista, ícono de la marca y el botón flotante en celular. Nunca se usa en montos ni en estados, para no confundirse con el rojo de las deudas;
+  - verde, naranja tostado y rojo se reservan para los estados (propuestas, saldos y errores); "Pendiente" usa naranja tostado y no amarillo, para separarse del coral;
   - hay una sola acción principal por pantalla.
 - **Íconos:** de línea y de un solo color (`IconoLinea`, que toma el color del texto). Los emojis quedan para las celebraciones y los estados vacíos.
 - **Controles y foco:** los controles miden 44 px de alto y el foco del teclado siempre se ve.
@@ -682,7 +683,7 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
 - **Teclado y lectores de pantalla:** el enlace "Saltar al contenido" lleva el foco más allá del encabezado y los menús (WCAG 2.4.1), y al cambiar de página una región `aria-live` anuncia el título nuevo sin mover el foco. En los diálogos (`DialogoModal`), Tab y Mayús + Tab dan la vuelta dentro del diálogo y el foco no pasa a la página de atrás.
 - **Errores inesperados:** si un componente falla sin manejar el error, `App.vue` lo captura (`onErrorCaptured`), lo registra en la consola y muestra un aviso para recargar, que se quita al cambiar de página.
 - **Títulos de página:** cada ruta define su título (`meta.titulo`) y la pestaña muestra, por ejemplo, "Saldos · Organizador de viajes" (WCAG 2.4.2).
-- **Control automático:** `e2e/accesibilidad.spec.ts` pasa axe (`@axe-core/playwright`, reglas WCAG 2.2 A y AA) por las pantallas principales, en claro a ancho de escritorio y en oscuro a ancho de celular. Cualquier problema que detecte hace fallar el CI. Los días fuera del viaje en el calendario usan el gris secundario sin transparencia, y el enlace del crédito del mapa va subrayado.
+- **Control automático:** `e2e/accesibilidad.spec.ts` pasa axe (`@axe-core/playwright`, reglas WCAG 2.2 A y AA) por las pantallas principales a ancho de escritorio y de celular; en celular, con el sistema en modo oscuro, para confirmar que la app se sigue viendo clara. Cualquier problema que detecte hace fallar el CI. Los días fuera del viaje en el calendario usan el gris secundario sin transparencia, y el enlace del crédito del mapa va subrayado.
 - **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026", "jueves 10 dic"), con `formatearRango`, `formatearDia`, `formatearHorario`, `formatearHora` (siempre con 24 horas) y `etiquetaDelDia` ("Hoy", "Ayer", "24 sep") de `utiles/formato.ts` y `nombreDelDia` de `utiles/fechas.ts`.
 - **Textos y montos largos:**
   - cada campo de texto tiene el mismo largo máximo que su esquema (`LARGOS_MAXIMOS` en `packages/compartido`), con el mensaje "Puede tener hasta N caracteres";
