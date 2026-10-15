@@ -68,6 +68,21 @@ describe('useChatStore', () => {
     expect(chat.mensajes[0]).toMatchObject({ id: 'm1', estado: 'enviado', idTemporal: temporal });
   });
 
+  it('envía aunque el navegador no ofrezca crypto.randomUUID, como en http://192.168…', async () => {
+    await preparar();
+    vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) });
+    try {
+      falso.conexion.enviar.mockImplementation(async (datos) =>
+        mensaje('m1', 'ana', 'Hola', datos.idTemporal),
+      );
+      await chat.enviar('Hola');
+      expect(chat.mensajes).toMatchObject([{ id: 'm1', estado: 'enviado' }]);
+      expect(chat.mensajes[0]!.idTemporal).toMatch(/^[0-9a-f]{32}$/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('agrega los mensajes de los demás y marca los propios que fallan', async () => {
     await preparar();
     falso.servidor().mensaje(mensaje('m2', 'tomas', '¿A qué hora?'));

@@ -3,6 +3,7 @@ import { inject, ref } from 'vue';
 import type { AvisoMembresiaFinalizada, MensajeVista } from '@viajes/compartido';
 import { CLIENTE_CHAT, type ConexionChat } from '../clientes/chat';
 import { mensajeDeError } from '../clientes/http';
+import { idTemporal } from '../utiles/idTemporal';
 import { useSesionStore } from './sesion';
 import { useViajeStore } from './viaje';
 
@@ -126,7 +127,7 @@ export const useChatStore = defineStore('chat', () => {
   /** Muestra el mensaje enseguida y lo reemplaza cuando el servidor lo confirma. */
   async function enviar(contenido: string) {
     if (!viajeId.value || !conexion || !sesion.usuario) return;
-    const temporal = crypto.randomUUID();
+    const temporal = idTemporal();
     mensajes.value.push({
       id: temporal,
       idTemporal: temporal,
