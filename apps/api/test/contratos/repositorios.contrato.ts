@@ -772,6 +772,50 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       // Guardar de nuevo la misma deuda no duplica los pagos.
       await r.deudasGastos.guardar([deuda]);
       expect((await r.consultaSaldos.deudas(viaje, tomas, 'deudor'))[0]?.pagos).toHaveLength(2);
+
+      // Para la Actividad: los ven deudor y acreedor, nadie más.
+      const anaVista = { id: ana, nombre: 'Ana', apodo: null };
+      const pagos = await r.consultaSaldos.pagosDe(viaje, ana);
+      expect(pagos).toEqual([
+        {
+          id: segundo.id,
+          monto: 200,
+          fecha: '2026-12-11T20:00:01.000Z',
+          deudor: persona,
+          acreedor: anaVista,
+        },
+        {
+          id: primero.id,
+          monto: 300,
+          fecha: AHORA.toISOString(),
+          deudor: persona,
+          acreedor: anaVista,
+        },
+      ]);
+      expect(await r.consultaSaldos.pagosDe(viaje, tomas)).toEqual(pagos);
+      expect(await r.consultaSaldos.pagosDe(viaje, await e.usuario('Luis'))).toEqual([]);
+      expect(await r.consultaSaldos.pagosDe(await e.viaje(ana), ana)).toEqual([]);
+    });
+
+    it('los pagos de una deuda ya saldada siguen en la Actividad', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      await e.deuda(viaje, tomas, ana, 400);
+      const deuda = (await r.deudasGastos.obtenerParaPagar(
+        viaje,
+        { deudorId: tomas, acreedorId: ana },
+        'ARS',
+      ))!;
+      deuda.registrarPago({
+        id: crypto.randomUUID(),
+        monto: Dinero.de(400, 'ARS'),
+        registradoPorId: tomas,
+        ahora: AHORA,
+      });
+      await r.deudasGastos.guardar([deuda]);
+      expect(await r.consultaSaldos.deudas(viaje, tomas, 'deudor')).toEqual([]);
+      expect((await r.consultaSaldos.pagosDe(viaje, tomas)).map((p) => p.monto)).toEqual([400]);
     });
 
     it('ConsultaSaldos lista solo deudas con saldo, como deudor o como acreedor', async () => {

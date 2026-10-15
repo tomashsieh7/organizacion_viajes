@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import type { GastoVista } from '@viajes/compartido';
+import type { GastoVista, PagoDeActividad } from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../componentes/base/EstadoVacio.vue';
 import IconoLinea from '../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
+import FilaPago from '../componentes/gastos/FilaPago.vue';
 import TarjetaGasto from '../componentes/gastos/TarjetaGasto.vue';
 import { mensajeDeError } from '../clientes/http';
 import { useGastosStore } from '../stores/gastos';
@@ -24,20 +25,31 @@ const monto = (n: number) => formatearMonto(n, viaje.actual!.moneda);
 /** Como el saldo de una billetera: lo que te deben menos lo que debés. */
 const balance = computed(() => gastos.totalMeDeben - gastos.totalDebo);
 
-/** Los gastos como actividad de una billetera: agrupados por día, del más reciente al más viejo. */
+type Movimiento =
+  | { tipo: 'gasto'; id: string; en: string; gasto: GastoVista }
+  | { tipo: 'pago'; id: string; en: string; pago: PagoDeActividad };
+
+/**
+ * Gastos del grupo y pagos propios como actividad de una billetera: agrupados por día, del más
+ * reciente al más viejo.
+ */
 const porDia = computed(() => {
-  const grupos: { dia: string; gastos: GastoVista[] }[] = [];
-  for (const g of gastos.gastos) {
-    const dia = etiquetaDelDia(g.creadoEn);
+  const movimientos: Movimiento[] = [
+    ...gastos.gastos.map((g) => ({ tipo: 'gasto' as const, id: g.id, en: g.creadoEn, gasto: g })),
+    ...gastos.pagos.map((p) => ({ tipo: 'pago' as const, id: p.id, en: p.fecha, pago: p })),
+  ].sort((a, b) => b.en.localeCompare(a.en));
+  const grupos: { dia: string; movimientos: Movimiento[] }[] = [];
+  for (const m of movimientos) {
+    const dia = etiquetaDelDia(m.en);
     const ultimo = grupos.at(-1);
-    if (ultimo?.dia === dia) ultimo.gastos.push(g);
-    else grupos.push({ dia, gastos: [g] });
+    if (ultimo?.dia === dia) ultimo.movimientos.push(m);
+    else grupos.push({ dia, movimientos: [m] });
   }
   return grupos;
 });
 
 onMounted(() =>
-  Promise.all([gastos.cargarGastos(), gastos.cargarDeudas()])
+  Promise.all([gastos.cargarGastos(), gastos.cargarDeudas(), gastos.cargarPagos()])
     .catch((e) => (error.value = mensajeDeError(e)))
     .finally(() => (cargado.value = true)),
 );
@@ -80,7 +92,7 @@ onMounted(() =>
 
       <h3 class="actividad__titulo">Actividad</h3>
       <EstadoVacio
-        v-if="!gastos.gastos.length"
+        v-if="!porDia.length"
         icono="🧾"
         titulo="Todavía no hay gastos anotados."
         descripcion="Anotá lo que pagaste para el grupo y la app calcula quién le debe a quién."
@@ -88,13 +100,20 @@ onMounted(() =>
       <section v-for="g in porDia" :key="g.dia" class="dia" :aria-label="g.dia">
         <h4 class="dia__titulo">{{ g.dia }}</h4>
         <div class="panel lista">
-          <TarjetaGasto
-            v-for="gasto in g.gastos"
-            :key="gasto.id"
-            :gasto="gasto"
-            :moneda="viaje.actual!.moneda"
-            :mi-id="sesion.usuario?.id ?? ''"
-          />
+          <template v-for="m in g.movimientos" :key="m.id">
+            <TarjetaGasto
+              v-if="m.tipo === 'gasto'"
+              :gasto="m.gasto"
+              :moneda="viaje.actual!.moneda"
+              :mi-id="sesion.usuario?.id ?? ''"
+            />
+            <FilaPago
+              v-else
+              :pago="m.pago"
+              :moneda="viaje.actual!.moneda"
+              :mi-id="sesion.usuario?.id ?? ''"
+            />
+          </template>
         </div>
       </section>
     </template>
@@ -184,5 +203,9 @@ onMounted(() =>
 .lista {
   padding: 0;
   overflow: hidden;
+}
+/* Una línea entre movimientos, sean gastos o pagos. */
+.lista > * + * {
+  border-top: 1px solid var(--color-borde);
 }
 </style>

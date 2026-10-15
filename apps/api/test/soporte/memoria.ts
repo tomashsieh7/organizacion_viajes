@@ -8,6 +8,7 @@ import {
   type CategoriaGasto,
   type DeudaVista,
   type GastoVista,
+  type PagoDeActividad,
   type PagoRegistrado,
   type RolEnDeuda,
   type AvisoAdminCambiado,
@@ -882,6 +883,28 @@ export class ConsultaSaldosEnMemoria implements ConsultaSaldos {
       fecha: p.fecha.toISOString(),
       registradoPor: { id: p.registradoPorId, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null },
     };
+  }
+
+  async pagosDe(viajeId: string, usuarioId: string): Promise<PagoDeActividad[]> {
+    const persona = (id: string) => {
+      const u = this.base.usuarios.find((x) => x.id === id);
+      return { id, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null };
+    };
+    return this.base.pagos
+      .flatMap((p) => {
+        const d = this.base.deudas.find((x) => x.id === p.deudaId);
+        return d?.viajeId === viajeId && [d.deudorId, d.acreedorId].includes(usuarioId)
+          ? [{ p, d }]
+          : [];
+      })
+      .sort((a, b) => b.p.fecha.getTime() - a.p.fecha.getTime() || (a.p.id < b.p.id ? 1 : -1))
+      .map(({ p, d }) => ({
+        id: p.id,
+        monto: p.monto,
+        fecha: p.fecha.toISOString(),
+        deudor: persona(d.deudorId),
+        acreedor: persona(d.acreedorId),
+      }));
   }
 
   async obtenerPago(viajeId: string, pagoId: string): Promise<PagoRegistrado | null> {

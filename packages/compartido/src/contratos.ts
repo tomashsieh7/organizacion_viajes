@@ -263,6 +263,15 @@ export interface PagoRegistrado {
   registradoPor: PersonaVista;
 }
 
+/** Pago en el que participa quien consulta, para la Actividad de Cuentas. */
+export interface PagoDeActividad {
+  id: string;
+  monto: number;
+  fecha: string;
+  deudor: PersonaVista;
+  acreedor: PersonaVista;
+}
+
 /** Deuda pendiente con otro viajero (CU21 y CU22); `contraparte` es el acreedor o el deudor. */
 export interface DeudaVista {
   id: string;

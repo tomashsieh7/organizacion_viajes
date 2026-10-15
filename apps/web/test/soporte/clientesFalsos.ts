@@ -196,6 +196,7 @@ export function clienteGastosFalso(parcial: Partial<ClienteGastos> = {}): Client
     anotar: noImplementado,
     deudas: async () => [],
     pagar: noImplementado,
+    pagos: async () => [],
     ...parcial,
   };
 }

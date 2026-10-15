@@ -253,3 +253,16 @@ describe('Historial: GET …/mensajes', () => {
     expect((await luis.c.get(url(''))).status).toBe(403);
   });
 });
+
+describe('Eventos sin confirmación', () => {
+  it('chat:salir saca la conexión de la sala aunque no pida confirmación, como el navegador', async () => {
+    const a = await unido(ana);
+    const t = await unido(tomas);
+    const deTomas = recibidos<MensajeVista>(t.socket, 'chat:mensaje');
+    t.socket.emit('chat:salir', { viajeId });
+    await esperar();
+    await a.socket.emitWithAck('chat:enviar', { viajeId, contenido: 'Hola', idTemporal: 'x' });
+    await esperar();
+    expect(deTomas).toEqual([]);
+  });
+});

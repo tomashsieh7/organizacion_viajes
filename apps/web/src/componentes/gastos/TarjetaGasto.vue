@@ -57,9 +57,6 @@ const pagueYo = computed(() => props.gasto.pagadoPor.id === props.miId);
 </template>
 
 <style scoped>
-.gasto + .gasto {
-  border-top: 1px solid var(--color-borde);
-}
 summary {
   display: flex;
   align-items: center;

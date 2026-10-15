@@ -2,6 +2,7 @@ import type {
   CategoriaGasto,
   DeudaVista,
   GastoVista,
+  PagoDeActividad,
   PagoRegistrado,
   PersonaVista,
   RolEnDeuda,
@@ -231,6 +232,21 @@ export class ConsultaSaldosPrisma implements ConsultaSaldos {
       monto: Number(f.monto),
       ultimaActualizacion: f.ultimaActualizacion.toISOString(),
       pagos: f.pagos.map(aPago),
+    }));
+  }
+
+  async pagosDe(viajeId: string, usuarioId: string): Promise<PagoDeActividad[]> {
+    const filas = await this.db.pago.findMany({
+      where: { deuda: { viajeId, OR: [{ deudorId: usuarioId }, { acreedorId: usuarioId }] } },
+      include: { deuda: { include: { deudor: PERSONA, acreedor: PERSONA } } },
+      orderBy: [{ fecha: 'desc' }, { id: 'desc' }],
+    });
+    return filas.map((p) => ({
+      id: p.id,
+      monto: Number(p.monto),
+      fecha: p.fecha.toISOString(),
+      deudor: persona(p.deuda.deudor),
+      acreedor: persona(p.deuda.acreedor),
     }));
   }
 

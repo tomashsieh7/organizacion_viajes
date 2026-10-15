@@ -5,6 +5,7 @@ import type {
   DatosPagoNuevo,
   DeudaVista,
   GastoVista,
+  PagoDeActividad,
   RespuestaPago,
   RolEnDeuda,
 } from '@viajes/compartido';
@@ -16,6 +17,8 @@ export interface ClienteGastos {
   anotar(viajeId: string, datos: DatosGastoNuevo): Promise<GastoVista>;
   deudas(viajeId: string, rol: RolEnDeuda): Promise<DeudaVista[]>;
   pagar(viajeId: string, datos: DatosPagoNuevo): Promise<RespuestaPago>;
+  /** Pagos que hizo o recibió quien consulta, para la Actividad. */
+  pagos(viajeId: string): Promise<PagoDeActividad[]>;
 }
 
 export const CLIENTE_GASTOS: InjectionKey<ClienteGastos> = Symbol('ClienteGastos');
@@ -39,5 +42,8 @@ export class ClienteGastosHttp implements ClienteGastos {
   }
   pagar(viajeId: string, datos: DatosPagoNuevo) {
     return pedir<RespuestaPago>('POST', `/api/viajes/${viajeId}/pagos`, datos);
+  }
+  async pagos(viajeId: string) {
+    return (await pedir<{ pagos: PagoDeActividad[] }>('GET', `/api/viajes/${viajeId}/pagos`)).pagos;
   }
 }
