@@ -6,7 +6,10 @@ import { clienteAuthFalso, clienteViajesFalso, detalle, montaje } from './soport
 
 const ARS = { codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 };
 
-function montar(crear = vi.fn(async () => detalle('ADMIN'))) {
+function montar(
+  crear = vi.fn(async () => detalle('ADMIN')),
+  obtener = vi.fn(async () => detalle('ADMIN')),
+) {
   const agregarViajero = vi.fn(async () => ({
     usuarioId: 'tomas',
     nombre: 'Tomás',
@@ -15,7 +18,7 @@ function montar(crear = vi.fn(async () => detalle('ADMIN'))) {
   }));
   const opciones = montaje(
     clienteAuthFalso(),
-    clienteViajesFalso({ monedas: async () => [ARS], crear, agregarViajero }),
+    clienteViajesFalso({ monedas: async () => [ARS], crear, obtener, agregarViajero }),
   );
   return { dialogo: mount(DialogoNuevoViaje, opciones), crear, agregarViajero };
 }
@@ -103,6 +106,26 @@ describe('DialogoNuevoViaje (CU01)', () => {
       .trigger('click');
     expect(dialogo.text()).toContain('Paso 1 de 3');
     expect((dialogo.find('#viaje-ciudad').element as HTMLInputElement).value).toBe('Bariloche');
+  });
+
+  it('si el viaje se creó pero falló abrirlo, reintentar no crea otro igual', async () => {
+    const obtener = vi
+      .fn()
+      .mockRejectedValueOnce(new ErrorDeApi(0, 'SIN_CONEXION', 'No hay conexión'))
+      .mockResolvedValue(detalle('ADMIN'));
+    const { dialogo, crear } = montar(undefined, obtener);
+    await flushPromises();
+    await pasoUno(dialogo);
+    await pasoDos(dialogo);
+    expect(dialogo.text()).toContain('No hay conexión');
+    expect(dialogo.text()).toContain('Paso 2 de 3');
+    // Con el viaje ya creado, no se vuelve a editar el paso 1.
+    expect(dialogo.findAll('button').some((b) => b.text() === 'Atrás')).toBe(false);
+
+    await dialogo.find('form').trigger('submit');
+    await flushPromises();
+    expect(crear).toHaveBeenCalledTimes(1);
+    expect(dialogo.text()).toContain('Paso 3 de 3');
   });
 
   it('muestra junto a cada campo los errores de validación de la API', async () => {

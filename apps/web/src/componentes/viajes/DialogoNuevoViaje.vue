@@ -79,10 +79,11 @@ async function irA(nuevo: Paso) {
 async function crear() {
   enviando.value = true;
   try {
-    const viaje = await store.crearViaje(viajeNuevo.value);
-    viajeId.value = viaje.id;
+    // Si un intento anterior creó el viaje y falló después, se reintenta solo lo que faltó, así
+    // no queda un viaje duplicado.
+    viajeId.value ||= (await store.crearViaje(viajeNuevo.value)).id;
     // FormularioAgregarViajero trabaja sobre el viaje abierto.
-    await store.abrir(viaje.id);
+    await store.abrir(viajeId.value);
     await irA(3);
   } catch (e) {
     if (e instanceof ErrorDeApi && Object.keys(e.erroresPorCampo).length > 0) {
@@ -204,7 +205,8 @@ function cerrar() {
         <button v-if="paso === 1" type="button" class="boton" @click="emit('cerrar')">
           Cancelar
         </button>
-        <button v-else type="button" class="boton" @click="irA(1)">Atrás</button>
+        <!-- Con el viaje ya creado, volver a editar el paso 1 no cambiaría nada. -->
+        <button v-else-if="!viajeId" type="button" class="boton" @click="irA(1)">Atrás</button>
         <button type="submit" class="boton boton--principal" :disabled="enviando">
           {{ paso === 1 ? 'Siguiente' : 'Crear viaje' }}
         </button>
