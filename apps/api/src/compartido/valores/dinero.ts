@@ -36,10 +36,6 @@ export class Dinero {
     return Dinero.de(this.monto - otro.monto, this.moneda);
   }
 
-  esCero(): boolean {
-    return this.monto === 0;
-  }
-
   esPositivo(): boolean {
     return this.monto > 0;
   }

@@ -1830,3 +1830,22 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - En la barra oscura, "Cerrar sesión" va con borde blanco y el foco del teclado se dibuja en blanco.
 - **Divergencia con PLAN.md, aprobada por el usuario:** 7.1.1 decía que el turquesa era el único color, que ninguno debía sugerir clima y que había modo oscuro. Se reescribió con el criterio nuevo.
 - **Pruebas:** `e2e/accesibilidad.spec.ts` sigue pasando axe a 1280 px y a 360 px; en celular, con el sistema en modo oscuro, para confirmar que la app se ve clara. Lint, 235 pruebas de la web y 13 e2e en verde.
+
+## 2026-10-15 20:37 — Merge del PR #34
+
+- Con la autorización del usuario ("Si"), el PR #34 ("Paleta verde azulado y coral, sin modo oscuro") se mergeó a `main` en `14944cc`, fijando la cabeza verificada `2cb00e1`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-15 20:37 — Limpieza de código muerto
+
+- **Pedido del usuario:** "revisa si hay código muerto y sacalo", como paso previo a la reorganización de carpetas.
+- **Revisión:**
+  - knip en modo normal y en modo producción, con una configuración temporal fuera del repo que marca los puntos de entrada, para encontrar código que solo usan las pruebas;
+  - scripts para clases CSS sin uso, datos y funciones de los stores, métodos de los clientes de la web, props de los componentes, rutas de la API sin llamar, métodos del servidor, exportaciones del paquete compartido y campos de la base;
+  - búsqueda de restos del Release 5 y de código comentado.
+- **Lo que se sacó, elegido por el usuario:**
+  - `Propuesta.conteo()` y `Dinero.esCero()`, que solo usaban las pruebas (los conteos de votos salen de la consulta a la base); sus pruebas ahora verifican los votos y el monto directamente;
+  - los tipos `DatosAgregarViajero`, `DatosSalirDelViaje`, `DatosTraspaso` y `DatosVoto` del paquete compartido, que nadie usaba;
+  - `cargada` deja de exponerse desde el store de sesión y queda como dato interno.
+- **Lo que parece muerto y no lo es:** `e2e/soporte/prepararBase.ts`, `pg`, `@types/pg` y `@prisma/client` (falsos positivos de knip); la columna `verificada_en`, reservada para la verificación de email (PLAN.md, extensiones) y presente en el diagrama de clases; y las exportaciones que usa el propio código además de las pruebas.
+- **Sin hallazgos:** clases CSS, restos del Release 5, rutas de la API, métodos de los clientes, props y código comentado.
+- **Verificación:** lint, 354 pruebas de la API y 235 de la web en verde.
