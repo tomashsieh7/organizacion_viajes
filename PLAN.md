@@ -693,7 +693,7 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
   - **cuenta regresiva:** según la fecha del dispositivo, en la portada, justo debajo del nombre del viaje;
   - **celebraciones:** al confirmar una propuesta, al saldar una deuda y al llegar al 100 %, este último una sola vez por viaje en cada dispositivo. Son un mensaje breve con una lluvia de emojis; con reducir movimiento se muestra solo el mensaje.
   - No hay puntos, rankings ni comparaciones entre personas, para no generar presión con la plata ni con la participación. Guardar logros en el backend queda para cuando sea un requerimiento.
-  - En el story map figura en el Release 10, "Ideas exploratorias".
+  - En el story map figura en el MVP, en la columna "Gestionar el grupo"; estaba en el Release 10 y el usuario decidió dejarla en el MVP.
 
 ### 7.2 Stores de Pinia
 
@@ -843,7 +843,7 @@ No se planifican en detalle. La columna de la derecha indica por qué el diseño
 | R7 — Comprobantes | Registrar reservas y adjuntar comprobantes; exportar gastos a Excel (agregada por P22) | Tabla de reservas ligada a `propuesta` confirmada con los adjuntos de R6; la exportación es un caso de uso de lectura sobre gastos, partes, deudas y pagos, con una interfaz `ExportadorGastos`. |
 | R8 — Tareas colaborativas | Crear, reclamar y completar tareas | Tabla independiente ligada a `viaje` y `usuario`. |
 | R9 — Logística de equipaje | Lista de objetos compartidos, asignación y marca de llevado | Tabla independiente ligada a `viaje` y `usuario`. |
-| R10 — Ideas exploratorias | Packs de viaje prearmados, chatbot, comunidad pública, progreso del viaje con próximos pasos y cuenta regresiva | Viajes plantilla que se copian; un módulo de chatbot que consulta la API; una vista pública de actividades confirmadas. El progreso ya está adelantado en el frontend del MVP con los datos existentes (sección 7.1.1); en este release solo quedaría guardar logros en el backend, si se pidiera. |
+| R10 — Ideas exploratorias | Packs de viaje prearmados, chatbot, comunidad pública | Viajes plantilla que se copian; un módulo de chatbot que consulta la API; una vista pública de actividades confirmadas. El progreso del viaje con próximos pasos y cuenta regresiva pasó al MVP (sección 7.1.1). |
 
 La llamada grupal, que figuraba en la primera versión del story mapping, quedó descartada (P22).
 
@@ -902,6 +902,7 @@ Estas diferencias surgieron de las decisiones del usuario y ya están incorporad
 | Casos de uso | Faltan registro e inicio de sesión (actor Visitante) y cierre de sesión (Viajero). | P3 |
 | Story mapping ("Página-13") | Faltan desvotar alojamiento y actividad en el MVP. | P6 |
 | Story mapping ("Página-13") | Faltan "Admin transfiere la administración" en el MVP, preferencias de habitación en el Release 2 y exportar gastos a Excel en el Release 7. | P5, P22 |
+| Story mapping ("Página-13") | "Viajero ve el progreso del viaje, los próximos pasos y la cuenta regresiva" pasa del Release 10 al MVP, porque ya estaba implementada y el usuario decidió dejarla. | Revisión del alcance del 2026-10-15 |
 | Diagrama conceptual | Admin pasa a ser un rol por viaje; falta la relación de pertenencia (`Membresia`). | P2 |
 | Diagrama conceptual | Viajero se separa en perfil, `Credencial` y `Sesion`. | P3 |
 | Diagrama conceptual | Actividad suma hora de inicio y el vínculo "alternativa de"; Propuesta suma coordenadas; Alojamiento suma nombre. | P8, P9 |

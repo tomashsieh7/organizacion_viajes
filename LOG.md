@@ -1707,3 +1707,35 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - `chat:salir` sin confirmación en `chat.bd.test.ts`;
   - pagos en `GastosVista.test.ts`;
   - en las E2E, el pago aparece en la Actividad de los dos (`gastos.spec.ts`) y `GET /pagos` no es accesible para alguien ajeno al viaje (`robustez.spec.ts`).
+
+## 2026-10-15 03:00 — Merge del PR #29
+
+- Con la autorización del usuario ("Sí, PR y merge si pasa"), el PR #29 ("Pagos propios en la Actividad de Cuentas y arreglo de los eventos del chat sin confirmación") se mergeó a `main` en `75a4f3d`, fijando la cabeza verificada `716e803`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-15 03:00 — Revisión del alcance contra el MVP del story map
+
+- **Pedido del usuario:**
+  - revisar qué se implementó que no está en el MVP o que se metió en el MVP sin una historia propia;
+  - guardar en una rama lo que no es del MVP;
+  - listar lo que se agregó, para decidir punto por punto.
+- **Fuera del MVP en `main`:** solo "Viajero ve el progreso del viaje, los próximos pasos y la cuenta regresiva", del Release 10, implementada en el PR #19. El usuario decidió que quede en `main`.
+- **Agregados sin historia propia:** se revisaron uno por uno y todos quedan en `main`:
+  - pagos en la Actividad;
+  - billetera de Cuentas;
+  - comprobante al pagar;
+  - invitar al crear el grupo;
+  - calendario compartido;
+  - crear grupo en tres pasos;
+  - navegación en cinco grupos;
+  - modo oscuro;
+  - validación al salir de cada campo;
+  - chat estilo WhatsApp;
+  - participantes por rol;
+  - selector de quiénes pagan;
+  - monto grande;
+  - botón flotante;
+  - portada del viaje;
+  - paleta e íconos de línea.
+- **Release 5:** las reacciones, "escribiendo…" y la lista de grupos con novedades y mensajes sin leer siguen guardadas en `claude/release-5-mensajeria`.
+- **Story map** (`docs/diagramas.drawio`, Página-13): la tarjeta del progreso pasó del Release 10 al MVP, en la columna "Gestionar el grupo" (x=430, y=830), con los colores del MVP.
+- **PLAN.md:** se actualizaron la sección 7.1.1, la fila del R10 en la sección 9 y la tabla de 10.2.
