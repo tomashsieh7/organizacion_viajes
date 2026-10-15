@@ -631,8 +631,44 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
         autor: { id: ana, nombre: 'Ana', apodo: null },
         contenido: 'Hola',
         enviadoEn: '2026-09-24T12:00:00.123Z',
+        reacciones: [],
       });
       expect(await r.consultaMensajes.obtener(await e.viaje(ana), m.id)).toBeNull();
+    });
+
+    it('una reacción por persona: poner otra la reemplaza y quitar la borra', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      const m = Mensaje.escribir({
+        id: crypto.randomUUID(),
+        viajeId: viaje,
+        autorId: ana,
+        contenido: 'Llegamos',
+        ahora: new Date('2026-09-24T12:00:00Z'),
+      });
+      await r.mensajes.guardar(m);
+      await r.reacciones.poner(m.id, ana, '👍', new Date('2026-09-24T12:01:00Z'));
+      await r.reacciones.poner(m.id, tomas, '❤️', new Date('2026-09-24T12:02:00Z'));
+      await r.reacciones.poner(m.id, tomas, '👍', new Date('2026-09-24T12:03:00Z'));
+      const reacciones = async () => (await r.consultaMensajes.obtener(viaje, m.id))?.reacciones;
+      expect(await reacciones()).toEqual([
+        {
+          emoji: '👍',
+          usuarios: [
+            { id: ana, nombre: 'Ana', apodo: null },
+            { id: tomas, nombre: 'Tomás', apodo: null },
+          ],
+        },
+      ]);
+      await r.reacciones.quitar(m.id, ana);
+      await r.reacciones.quitar(m.id, ana);
+      expect(await reacciones()).toEqual([
+        { emoji: '👍', usuarios: [{ id: tomas, nombre: 'Tomás', apodo: null }] },
+      ]);
+      expect(
+        (await r.consultaMensajes.pagina(viaje, undefined, 10))!.mensajes[0]!.reacciones,
+      ).toEqual(await reacciones());
     });
 
     it('pagina hacia atrás sin repetir ni perder mensajes, aunque compartan el instante', async () => {
@@ -772,6 +808,50 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       // Guardar de nuevo la misma deuda no duplica los pagos.
       await r.deudasGastos.guardar([deuda]);
       expect((await r.consultaSaldos.deudas(viaje, tomas, 'deudor'))[0]?.pagos).toHaveLength(2);
+
+      // Para la Actividad: los ven deudor y acreedor, nadie más.
+      const anaVista = { id: ana, nombre: 'Ana', apodo: null };
+      const pagos = await r.consultaSaldos.pagosDe(viaje, ana);
+      expect(pagos).toEqual([
+        {
+          id: segundo.id,
+          monto: 200,
+          fecha: '2026-12-11T20:00:01.000Z',
+          deudor: persona,
+          acreedor: anaVista,
+        },
+        {
+          id: primero.id,
+          monto: 300,
+          fecha: AHORA.toISOString(),
+          deudor: persona,
+          acreedor: anaVista,
+        },
+      ]);
+      expect(await r.consultaSaldos.pagosDe(viaje, tomas)).toEqual(pagos);
+      expect(await r.consultaSaldos.pagosDe(viaje, await e.usuario('Luis'))).toEqual([]);
+      expect(await r.consultaSaldos.pagosDe(await e.viaje(ana), ana)).toEqual([]);
+    });
+
+    it('los pagos de una deuda ya saldada siguen en la Actividad', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const viaje = await e.viaje(ana);
+      await e.deuda(viaje, tomas, ana, 400);
+      const deuda = (await r.deudasGastos.obtenerParaPagar(
+        viaje,
+        { deudorId: tomas, acreedorId: ana },
+        'ARS',
+      ))!;
+      deuda.registrarPago({
+        id: crypto.randomUUID(),
+        monto: Dinero.de(400, 'ARS'),
+        registradoPorId: tomas,
+        ahora: AHORA,
+      });
+      await r.deudasGastos.guardar([deuda]);
+      expect(await r.consultaSaldos.deudas(viaje, tomas, 'deudor')).toEqual([]);
+      expect((await r.consultaSaldos.pagosDe(viaje, tomas)).map((p) => p.monto)).toEqual([400]);
     });
 
     it('ConsultaSaldos lista solo deudas con saldo, como deudor o como acreedor', async () => {

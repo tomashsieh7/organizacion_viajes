@@ -1,11 +1,54 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { EMOJIS_REACCION, type ReaccionVista } from '@viajes/compartido';
+import IconoLinea from '../base/IconoLinea.vue';
 import type { MensajeEnPantalla } from '../../stores/chat';
 import { etiquetaDelDia, formatearHora, nombreVisible } from '../../utiles/formato';
 
 const props = defineProps<{ mensajes: MensajeEnPantalla[]; miId: string; hayMas: boolean }>();
-const emit = defineEmits<{ anteriores: [] }>();
+const emit = defineEmits<{
+  anteriores: [];
+  reaccionar: [mensajeId: string, emoji: string | null];
+}>();
 const lista = ref<HTMLElement | null>(null);
+/** Mensaje con el selector de reacciones abierto. */
+const eligiendo = ref<string | null>(null);
+
+const esMia = (r: ReaccionVista) => r.usuarios.some((u) => u.id === props.miId);
+const miReaccion = (m: MensajeEnPantalla) => m.reacciones.find(esMia)?.emoji ?? null;
+
+/** "Ana", "Ana y vos" o "Ana, Tomás y vos": quién reaccionó, para el título y el lector. */
+function quienes(r: ReaccionVista) {
+  const nombres = r.usuarios.map((u) => (u.id === props.miId ? 'vos' : u.nombre));
+  return nombres.length > 1
+    ? `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}`
+    : (nombres[0] ?? '');
+}
+
+/** Una reacción por persona: tocar la propia la quita y elegir otra la reemplaza. */
+function reaccionar(m: MensajeEnPantalla, emoji: string) {
+  emit('reaccionar', m.id, miReaccion(m) === emoji ? null : emoji);
+}
+
+async function abrirSelector(mensajeId: string) {
+  if (eligiendo.value === mensajeId) return cerrarSelector();
+  eligiendo.value = mensajeId;
+  await nextTick();
+  lista.value?.querySelector<HTMLButtonElement>('.selector button')?.focus();
+}
+
+/** Cierra el selector y devuelve el foco al botón que lo abrió. */
+async function cerrarSelector() {
+  const id = eligiendo.value;
+  eligiendo.value = null;
+  await nextTick();
+  lista.value?.querySelector<HTMLButtonElement>(`[data-reaccionar="${id}"]`)?.focus();
+}
+
+function elegir(m: MensajeEnPantalla, emoji: string) {
+  reaccionar(m, emoji);
+  void cerrarSelector();
+}
 
 /** Mensajes seguidos de la misma persona, a menos de 5 minutos, se muestran como un bloque. */
 const PAUSA_MS = 5 * 60_000;
@@ -100,8 +143,52 @@ onMounted(async () => {
         <footer class="mensaje__pie">
           <small v-if="f.m.estado === 'pendiente'">Enviando…</small>
           <small v-else-if="f.m.estado === 'error'" class="fallo">No se pudo enviar</small>
+          <button
+            v-else
+            type="button"
+            class="reaccionar"
+            aria-label="Reaccionar"
+            :aria-expanded="eligiendo === f.m.id"
+            :data-reaccionar="f.m.id"
+            @click="abrirSelector(f.m.id)"
+          >
+            <IconoLinea nombre="reaccionar" :tamano="16" />
+          </button>
           <time :datetime="f.m.enviadoEn">{{ formatearHora(f.m.enviadoEn) }}</time>
         </footer>
+        <div
+          v-if="eligiendo === f.m.id"
+          class="selector"
+          role="group"
+          aria-label="Elegí una reacción"
+          @keydown.esc.stop="cerrarSelector"
+        >
+          <button
+            v-for="e in EMOJIS_REACCION"
+            :key="e"
+            type="button"
+            :aria-label="`Reaccionar con ${e}`"
+            :aria-pressed="miReaccion(f.m) === e"
+            @click="elegir(f.m, e)"
+          >
+            {{ e }}
+          </button>
+        </div>
+        <div v-if="f.m.reacciones.length" class="reacciones">
+          <button
+            v-for="r in f.m.reacciones"
+            :key="r.emoji"
+            type="button"
+            class="reaccion"
+            :aria-pressed="esMia(r)"
+            :aria-label="`${r.emoji} de ${quienes(r)}`"
+            :title="quienes(r)"
+            @click="reaccionar(f.m, r.emoji)"
+          >
+            <span aria-hidden="true">{{ r.emoji }}</span>
+            <span aria-hidden="true">{{ r.usuarios.length }}</span>
+          </button>
+        </div>
       </article>
     </template>
   </div>
@@ -199,5 +286,70 @@ time {
 }
 .fallo {
   color: var(--color-error);
+}
+/* Botón chico al lado de la hora; el área táctil es mayor que el ícono. */
+.reaccionar {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  margin: -0.25rem 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.reaccionar:hover {
+  color: var(--color-texto);
+}
+.selector {
+  display: flex;
+  gap: 0.1rem;
+  width: fit-content;
+  margin-top: var(--esp-1);
+  padding: 0.15rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 999px;
+  box-shadow: var(--sombra-elevada);
+}
+.selector button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+.selector button:hover,
+.selector button[aria-pressed='true'] {
+  background: var(--color-acento-suave);
+}
+.reacciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+  margin-top: var(--esp-1);
+}
+.reaccion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 1.75rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 999px;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.reaccion[aria-pressed='true'] {
+  border-color: var(--color-acento);
+  background: var(--color-acento-suave);
 }
 </style>

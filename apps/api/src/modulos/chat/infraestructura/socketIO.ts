@@ -1,19 +1,29 @@
 import type { Namespace, Socket } from 'socket.io';
+import type { z } from 'zod';
 import {
+  esquemaEscribiendo,
   esquemaMensajeNuevo,
+  esquemaReaccion,
   type AvisoAdminCambiado,
   type AvisoMembresiaFinalizada,
   type ConfirmacionSocket,
   type EventosClienteChat,
   type EventosServidorChat,
+  type PersonaVista,
 } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../../compartido/errores.js';
-import type { EnviarMensaje, UnirseAlChat } from '../casos-de-uso/casosDeUsoChat.js';
+import type {
+  EnviarMensaje,
+  ReaccionarAMensaje,
+  UnirseAlChat,
+} from '../casos-de-uso/casosDeUsoChat.js';
 import type { NotificadorViaje } from '../dominio/puertos.js';
 
 interface DatosSocket {
   usuarioId: string;
   token: string;
+  /** Para avisar quién escribe sin consultar la base en cada tecla. */
+  persona: PersonaVista;
 }
 
 export type EspacioChat = Namespace<EventosClienteChat, EventosServidorChat, object, DatosSocket>;
@@ -41,8 +51,23 @@ export interface DependenciasGatewayChat {
   origenPermitido: string;
   nombreCookie: string;
   usuarioDeSesion: (token: string | undefined) => Promise<string>;
+  personaDeUsuario: (usuarioId: string) => Promise<PersonaVista>;
   unirse: UnirseAlChat;
   enviar: EnviarMensaje;
+  reaccionar: ReaccionarAMensaje;
+}
+
+/** Los datos de un evento llegan sin pasar por las rutas: se validan con el mismo esquema. */
+function validarDatos<S extends z.ZodType>(esquema: S, datos: unknown): z.output<S> {
+  const r = esquema.safeParse(datos);
+  if (!r.success) {
+    throw new ErrorDeDominio(
+      'VALIDACION',
+      'VALIDACION',
+      r.error.issues[0]?.message ?? 'Datos inválidos',
+    );
+  }
+  return r.data;
 }
 
 function rechazo(error: unknown): ConfirmacionSocket {
@@ -67,6 +92,7 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
       const token = leerCookie(socket.handshake.headers.cookie, deps.nombreCookie);
       socket.data.usuarioId = await deps.usuarioDeSesion(token);
       socket.data.token = token ?? '';
+      socket.data.persona = await deps.personaDeUsuario(socket.data.usuarioId);
       await socket.join(salaDelUsuario(socket.data.usuarioId));
       next();
     } catch (error) {
@@ -83,7 +109,9 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
         try {
           const usuarioId = await deps.usuarioDeSesion(socket.data.token);
           if (usuarioId !== socket.data.usuarioId) throw new Error('La sesión cambió de usuario');
-          confirmar?.({ ok: true, ...(await accion(usuarioId, datos)) });
+          // La acción corre aunque el evento no pida confirmación, como `chat:escribiendo`.
+          const resultado = await accion(usuarioId, datos);
+          confirmar?.({ ok: true, ...resultado });
         } catch (error) {
           confirmar?.(rechazo(error) as ConfirmacionSocket<R>);
           // Con la sesión cerrada o vencida se corta la conexión, después de responder.
@@ -114,20 +142,44 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
     socket.on(
       'chat:enviar',
       manejar(async (usuarioId, datos: unknown) => {
-        const r = esquemaMensajeNuevo.safeParse(datos);
-        if (!r.success) {
-          throw new ErrorDeDominio(
-            'VALIDACION',
-            'VALIDACION',
-            r.error.issues[0]?.message ?? 'Datos inválidos',
-          );
-        }
-        const mensaje = await deps.enviar.ejecutar(r.data.viajeId, usuarioId, r.data.contenido);
+        const d = validarDatos(esquemaMensajeNuevo, datos);
+        const mensaje = await deps.enviar.ejecutar(d.viajeId, usuarioId, d.contenido);
         // Se emite a toda la sala, incluido quien lo envió, con su identificador temporal.
         espacio
-          .to(salaDelViaje(r.data.viajeId))
-          .emit('chat:mensaje', { ...mensaje, idTemporal: r.data.idTemporal });
-        return { mensaje: { ...mensaje, idTemporal: r.data.idTemporal } };
+          .to(salaDelViaje(d.viajeId))
+          .emit('chat:mensaje', { ...mensaje, idTemporal: d.idTemporal });
+        return { mensaje: { ...mensaje, idTemporal: d.idTemporal } };
+      }),
+    );
+
+    socket.on(
+      'chat:reaccionar',
+      manejar(async (usuarioId, datos: unknown) => {
+        const d = validarDatos(esquemaReaccion, datos);
+        const reacciones = await deps.reaccionar.ejecutar(
+          d.viajeId,
+          usuarioId,
+          d.mensajeId,
+          d.emoji,
+        );
+        espacio
+          .to(salaDelViaje(d.viajeId))
+          .emit('chat:reacciones', { viajeId: d.viajeId, mensajeId: d.mensajeId, reacciones });
+        return { reacciones };
+      }),
+    );
+
+    // Sin persistencia: se reenvía al resto de la sala. Solo se llega a la sala con
+    // `chat:unirse`, que exige participar (RN-X1), y una baja la vacía (RN-E4).
+    socket.on(
+      'chat:escribiendo',
+      manejar(async (_usuarioId, datos: unknown) => {
+        const { viajeId } = validarDatos(esquemaEscribiendo, datos);
+        const sala = salaDelViaje(viajeId);
+        if (socket.rooms.has(sala)) {
+          socket.to(sala).emit('chat:escribiendo', { viajeId, usuario: socket.data.persona });
+        }
+        return {};
       }),
     );
   });

@@ -1,16 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import type { MensajeVista, PaginaDeMensajes } from '@viajes/compartido';
+import type { MensajeVista, PaginaDeMensajes, ReaccionVista } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../../compartido/errores.js';
 import type { BusDeEventos } from '../../../compartido/eventos.js';
 import type { Reloj } from '../../../compartido/reloj.js';
 import type { AdministracionTransferida, MiembroDadoDeBaja } from '../../viajes/dominio/eventos.js';
 import type { ConsultaSaldosPendientes } from '../../viajes/dominio/puertos.js';
-import { Mensaje } from '../dominio/mensaje.js';
+import { emojiDeReaccion, Mensaje } from '../dominio/mensaje.js';
 import type {
   ConsultaMensajes,
   ConsultaParticipacion,
   NotificadorViaje,
+  RegistroDeLectura,
   RepositorioMensajes,
+  RepositorioReacciones,
 } from '../dominio/puertos.js';
 
 async function exigirParticipante(
@@ -22,6 +24,9 @@ async function exigirParticipante(
     throw new ErrorDeDominio('PROHIBIDO', 'NO_PARTICIPANTE', 'No participás de este viaje');
   }
 }
+
+const mensajeInexistente = () =>
+  new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El mensaje no existe');
 
 /** `chat:unirse`: solo los participantes activos entran a la sala del viaje (RN-X1). */
 export class UnirseAlChat {
@@ -57,6 +62,46 @@ export class EnviarMensaje {
   }
 }
 
+/**
+ * Reacción a un mensaje: con un emoji la pone o reemplaza la propia, con `null` la quita.
+ * Devuelve cómo quedaron las reacciones del mensaje.
+ */
+export class ReaccionarAMensaje {
+  constructor(
+    private readonly participacion: ConsultaParticipacion,
+    private readonly reacciones: RepositorioReacciones,
+    private readonly consultas: ConsultaMensajes,
+    private readonly reloj: Reloj,
+  ) {}
+
+  async ejecutar(
+    viajeId: string,
+    usuarioId: string,
+    mensajeId: string,
+    emoji: string | null,
+  ): Promise<ReaccionVista[]> {
+    await exigirParticipante(this.participacion, viajeId, usuarioId);
+    if (!(await this.consultas.obtener(viajeId, mensajeId))) throw mensajeInexistente();
+    if (emoji === null) await this.reacciones.quitar(mensajeId, usuarioId);
+    else {
+      await this.reacciones.poner(mensajeId, usuarioId, emojiDeReaccion(emoji), this.reloj.ahora());
+    }
+    return (await this.consultas.obtener(viajeId, mensajeId))?.reacciones ?? [];
+  }
+}
+
+/** Al abrir o dejar el chat: lo que llegó hasta ahora deja de contar como sin leer. */
+export class MarcarChatLeido {
+  constructor(
+    private readonly lecturas: RegistroDeLectura,
+    private readonly reloj: Reloj,
+  ) {}
+
+  ejecutar(viajeId: string, usuarioId: string): Promise<void> {
+    return this.lecturas.marcar(viajeId, usuarioId, this.reloj.ahora());
+  }
+}
+
 /** CU19: historial del chat, paginado hacia atrás. */
 export class ConsultarMensajes {
   constructor(private readonly consultas: ConsultaMensajes) {}
@@ -67,7 +112,7 @@ export class ConsultarMensajes {
     limite: number,
   ): Promise<PaginaDeMensajes> {
     const pagina = await this.consultas.pagina(viajeId, antesDe, limite);
-    if (!pagina) throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'El mensaje no existe');
+    if (!pagina) throw mensajeInexistente();
     return pagina;
   }
 }

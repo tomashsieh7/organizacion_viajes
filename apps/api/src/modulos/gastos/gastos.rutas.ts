@@ -64,6 +64,10 @@ export function rutasDeSaldos(
     });
   });
 
+  router.get('/pagos', ...guarda, async (req, res) => {
+    res.json({ pagos: await deps.deudas.pagos(viajeId(req), req.usuarioId ?? '') });
+  });
+
   // P17: quien llama es siempre el deudor; el pago se aplica sin confirmación del acreedor.
   router.post('/pagos', ...guarda, validar(esquemaPagoNuevo), async (req, res) => {
     res.status(201).json(await deps.pagar.ejecutar(viajeId(req), req.usuarioId ?? '', req.body));

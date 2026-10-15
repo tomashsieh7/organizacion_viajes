@@ -2,7 +2,7 @@
 import { computed, nextTick, ref } from 'vue';
 import IconoLinea from '../base/IconoLinea.vue';
 
-const emit = defineEmits<{ enviar: [contenido: string] }>();
+const emit = defineEmits<{ enviar: [contenido: string]; escribiendo: [] }>();
 defineProps<{ deshabilitado?: boolean }>();
 const MAXIMO = 2000;
 const texto = ref('');
@@ -25,6 +25,12 @@ async function enviar() {
   ajustarAlto();
 }
 
+/** Al escribir, el campo crece y se avisa al grupo (el store limita cada cuánto). */
+function alEscribir() {
+  ajustarAlto();
+  if (texto.value.trim()) emit('escribiendo');
+}
+
 /** Enter envía y Mayús + Enter agrega un salto de línea. */
 function alTeclear(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -45,7 +51,7 @@ function alTeclear(e: KeyboardEvent) {
       :maxlength="MAXIMO"
       placeholder="Escribí un mensaje"
       @keydown="alTeclear"
-      @input="ajustarAlto"
+      @input="alEscribir"
     ></textarea>
     <button
       type="submit"
@@ -62,7 +68,7 @@ function alTeclear(e: KeyboardEvent) {
 .campo-mensaje {
   display: flex;
   gap: var(--esp-2);
-  margin-top: var(--esp-3);
+  margin-top: var(--esp-1);
   align-items: flex-end;
 }
 textarea {

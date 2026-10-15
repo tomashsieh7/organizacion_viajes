@@ -6,7 +6,10 @@ import {
   formatearHora,
   formatearMonto,
   formatearRango,
+  monedaSegunCodigo,
   simboloMoneda,
+  textoEscribiendo,
+  textoNovedad,
 } from '../src/utiles/formato';
 
 describe('aUnidadMinima', () => {
@@ -71,5 +74,57 @@ describe('simboloMoneda', () => {
   it('usa el mismo símbolo que los montos formateados', () => {
     expect(simboloMoneda({ codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 })).toBe('$');
     expect(simboloMoneda({ codigo: 'USD', nombre: 'Dólar', decimales: 2 })).toBe('US$');
+  });
+});
+
+describe('textoNovedad', () => {
+  const ana = { id: 'ana', nombre: 'Ana', apodo: 'Ani' };
+  const tomas = { id: 'tomas', nombre: 'Tomás', apodo: null };
+  const base = { texto: '', monto: null, contraparte: null, en: '2026-10-14T12:00:00Z' };
+  const texto = (n: Partial<Parameters<typeof textoNovedad>[0]>, miId = 'ana') =>
+    textoNovedad({ tipo: 'MENSAJE', autor: tomas, ...base, ...n }, miId, 'ARS').replace(/\s/g, ' ');
+
+  it('arma la línea según el tipo, en segunda persona si lo hizo quien mira', () => {
+    expect(texto({ texto: 'Hola' })).toBe('Tomás: Hola');
+    expect(texto({ autor: ana, texto: 'Dale' })).toBe('Vos: Dale');
+    expect(texto({ tipo: 'PROPUESTA', texto: 'Kayak' })).toBe('Tomás propuso «Kayak»');
+    expect(texto({ tipo: 'PROPUESTA', autor: ana, texto: 'Kayak' })).toBe('Propusiste «Kayak»');
+    expect(texto({ tipo: 'CONFIRMACION', autor: ana, texto: 'Kayak' })).toBe('Confirmaste «Kayak»');
+    expect(texto({ tipo: 'CONFIRMACION', texto: 'Kayak' })).toBe('Tomás confirmó «Kayak»');
+    expect(texto({ tipo: 'CONFIRMACION', autor: null, texto: 'Kayak' })).toBe(
+      'Se confirmó «Kayak»',
+    );
+    expect(texto({ tipo: 'GASTO', texto: 'Cena', monto: 1_200_000 })).toBe(
+      'Tomás anotó «Cena» · $ 12.000,00',
+    );
+    expect(texto({ tipo: 'GASTO', autor: ana, texto: 'Cena', monto: 50 })).toBe(
+      'Anotaste «Cena» · $ 0,50',
+    );
+  });
+
+  it('un pago dice quién le pagó a quién', () => {
+    const pago = { tipo: 'PAGO' as const, monto: 40_000 };
+    expect(texto({ ...pago, autor: tomas, contraparte: ana })).toBe('Tomás te pagó $ 400,00');
+    expect(texto({ ...pago, autor: ana, contraparte: tomas })).toBe('Le pagaste $ 400,00 a Tomás');
+  });
+});
+
+describe('monedaSegunCodigo', () => {
+  it('usa los decimales de cada moneda', () => {
+    expect(monedaSegunCodigo('ARS').decimales).toBe(2);
+    expect(monedaSegunCodigo('CLP').decimales).toBe(0);
+  });
+});
+
+describe('textoEscribiendo', () => {
+  const p = (nombre: string) => ({ id: nombre, nombre, apodo: null });
+
+  it('nombra hasta dos personas y después resume', () => {
+    expect(textoEscribiendo([])).toBe('');
+    expect(textoEscribiendo([p('Tomás')])).toBe('Tomás está escribiendo…');
+    expect(textoEscribiendo([p('Tomás'), p('Ana')])).toBe('Tomás y Ana están escribiendo…');
+    expect(textoEscribiendo([p('Tomás'), p('Ana'), p('Luis')])).toBe(
+      'Varias personas están escribiendo…',
+    );
   });
 });

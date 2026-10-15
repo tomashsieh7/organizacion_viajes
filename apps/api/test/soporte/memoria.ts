@@ -8,7 +8,11 @@ import {
   type CategoriaGasto,
   type DeudaVista,
   type GastoVista,
+  type EmojiReaccion,
+  type PagoDeActividad,
   type PagoRegistrado,
+  type PersonaVista,
+  type ReaccionVista,
   type RolEnDeuda,
   type AvisoAdminCambiado,
   type AvisoMembresiaFinalizada,
@@ -22,7 +26,6 @@ import {
   type Moneda,
   type Participante,
   type PropuestaVista,
-  type ResumenViaje,
 } from '@viajes/compartido';
 import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
 import { Intervalo } from '../../src/compartido/valores/intervalo.js';
@@ -42,6 +45,7 @@ import type {
   ConsultaMensajes,
   NotificadorViaje,
   RepositorioMensajes,
+  RepositorioReacciones,
 } from '../../src/modulos/chat/dominio/puertos.js';
 import type {
   AlojamientoConfirmado,
@@ -87,6 +91,7 @@ import type {
   LectorDeViajes,
   ReposViajes,
   RepositorioViajes,
+  ResumenSinNovedades,
   RetiroDeVotos,
 } from '../../src/modulos/viajes/dominio/puertos.js';
 import { tipoDeAcceso, Viaje, type DatosViaje } from '../../src/modulos/viajes/dominio/viaje.js';
@@ -114,6 +119,7 @@ export interface BaseEnMemoria {
     ultimaActualizacion?: Date;
   }[];
   mensajes: DatosMensaje[];
+  reacciones: { mensajeId: string; usuarioId: string; emoji: string; creadaEn: Date }[];
   /** Propuestas con sus votos y, según el tipo, los datos propios del alojamiento o la actividad. */
   propuestas: {
     datos: DatosPropuesta;
@@ -137,6 +143,7 @@ export function baseVacia(): BaseEnMemoria {
     pagos: [],
     deudas: [],
     mensajes: [],
+    reacciones: [],
     propuestas: [],
   };
 }
@@ -275,7 +282,7 @@ export class ConsultaViajesEnMemoria implements ConsultaViajes {
     );
   }
 
-  async listarDeUsuario(usuarioId: string): Promise<ResumenViaje[]> {
+  async listarDeUsuario(usuarioId: string): Promise<ResumenSinNovedades[]> {
     return this.base.viajes
       .flatMap((v) => {
         const m = v.membresias.find((x) => x.usuarioId === usuarioId);
@@ -664,6 +671,21 @@ export class RepositorioMensajesEnMemoria implements RepositorioMensajes {
 const cronologico = (a: DatosMensaje, b: DatosMensaje) =>
   a.enviadoEn.getTime() - b.enviadoEn.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
+export class RepositorioReaccionesEnMemoria implements RepositorioReacciones {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async poner(mensajeId: string, usuarioId: string, emoji: EmojiReaccion, ahora: Date) {
+    await this.quitar(mensajeId, usuarioId);
+    this.base.reacciones.push({ mensajeId, usuarioId, emoji, creadaEn: ahora });
+  }
+
+  async quitar(mensajeId: string, usuarioId: string) {
+    this.base.reacciones = this.base.reacciones.filter(
+      (r) => r.mensajeId !== mensajeId || r.usuarioId !== usuarioId,
+    );
+  }
+}
+
 export class ConsultaMensajesEnMemoria implements ConsultaMensajes {
   constructor(private readonly base: BaseEnMemoria) {}
 
@@ -695,7 +717,20 @@ export class ConsultaMensajesEnMemoria implements ConsultaMensajes {
       autor: { id: m.autorId, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null },
       contenido: m.contenido,
       enviadoEn: m.enviadoEn.toISOString(),
+      reacciones: this.reacciones(m.id),
     };
+  }
+
+  private reacciones(mensajeId: string): ReaccionVista[] {
+    const grupos = new Map<string, PersonaVista[]>();
+    for (const r of this.base.reacciones
+      .filter((x) => x.mensajeId === mensajeId)
+      .sort((a, b) => a.creadaEn.getTime() - b.creadaEn.getTime())) {
+      const u = this.base.usuarios.find((x) => x.id === r.usuarioId);
+      const persona = { id: r.usuarioId, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null };
+      grupos.set(r.emoji, [...(grupos.get(r.emoji) ?? []), persona]);
+    }
+    return [...grupos].map(([emoji, usuarios]) => ({ emoji, usuarios }));
   }
 }
 
@@ -882,6 +917,28 @@ export class ConsultaSaldosEnMemoria implements ConsultaSaldos {
       fecha: p.fecha.toISOString(),
       registradoPor: { id: p.registradoPorId, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null },
     };
+  }
+
+  async pagosDe(viajeId: string, usuarioId: string): Promise<PagoDeActividad[]> {
+    const persona = (id: string) => {
+      const u = this.base.usuarios.find((x) => x.id === id);
+      return { id, nombre: u?.nombre ?? '', apodo: u?.apodo ?? null };
+    };
+    return this.base.pagos
+      .flatMap((p) => {
+        const d = this.base.deudas.find((x) => x.id === p.deudaId);
+        return d?.viajeId === viajeId && [d.deudorId, d.acreedorId].includes(usuarioId)
+          ? [{ p, d }]
+          : [];
+      })
+      .sort((a, b) => b.p.fecha.getTime() - a.p.fecha.getTime() || (a.p.id < b.p.id ? 1 : -1))
+      .map(({ p, d }) => ({
+        id: p.id,
+        monto: p.monto,
+        fecha: p.fecha.toISOString(),
+        deudor: persona(d.deudorId),
+        acreedor: persona(d.acreedorId),
+      }));
   }
 
   async obtenerPago(viajeId: string, pagoId: string): Promise<PagoRegistrado | null> {

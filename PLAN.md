@@ -259,6 +259,8 @@ erDiagram
     USUARIO ||--o{ VOTO : "emite"
     VIAJE ||--o{ MENSAJE : "tiene"
     USUARIO ||--o{ MENSAJE : "autor"
+    MENSAJE ||--o{ REACCION : "recibe"
+    USUARIO ||--o{ REACCION : "reacciona"
     VIAJE ||--o{ GASTO : "tiene"
     USUARIO ||--o{ GASTO : "pagado por"
     CATEGORIA_GASTO ||--o{ GASTO : "clasifica"
@@ -315,6 +317,7 @@ erDiagram
         boolean baja_con_deuda
         timestamptz alta_en
         timestamptz baja_en
+        timestamptz chat_leido_hasta
     }
     PROPUESTA {
         uuid id PK
@@ -357,6 +360,12 @@ erDiagram
         uuid autor_id FK
         text contenido
         timestamptz enviado_en
+    }
+    REACCION {
+        uuid mensaje_id PK,FK
+        uuid usuario_id PK,FK
+        text emoji
+        timestamptz creada_en
     }
     CATEGORIA_GASTO {
         uuid id PK
@@ -411,6 +420,7 @@ Todos los montos (`precio`, `gasto.monto`, `gasto_parte.monto`, `deuda.monto`, `
 | `actividad` | `CHECK (duracion_min > 0)`; FK `alternativa_de_id → actividad.propuesta_id` | Duración positiva y vínculo con la actividad original (P9). |
 | `alojamiento` | `CHECK (fecha_desde <= fecha_hasta)` | Rango válido. |
 | `voto` | PK `(propuesta_id, usuario_id)` | Un viajero tiene como mucho un voto por propuesta. |
+| `reaccion` | PK `(mensaje_id, usuario_id)`; `CHECK (emoji IN ('👍', '❤️', '😂', '😮', '😢', '🎉'))` | Una reacción por persona y mensaje, con un emoji del conjunto fijo (`EMOJIS_REACCION` en `packages/compartido`). Se agregó en la migración `mensajeria`. |
 | `gasto` | `CHECK (monto > 0)`; FK a `categoria_gasto` | Monto positivo y categoría existente. |
 | `gasto_parte` | `CHECK (monto >= 0)`; la suma por gasto se valida en el caso de uso dentro de la transacción | La suma debe coincidir con el total del gasto (RN-G4). |
 | `deuda` | `UNIQUE (viaje_id, deudor_id, acreedor_id)`; `CHECK (deudor_id <> acreedor_id)`; `CHECK (monto >= 0)` | Una fila acumulada por par y sentido, nadie se debe a sí mismo y un pago nunca deja saldo negativo. Por la compensación de P15, entre dos viajeros solo una de las dos filas posibles tiene monto mayor que cero. |
@@ -463,7 +473,7 @@ Ninguna tabla borra filas de `usuario` ni de `membresia`: las bajas son lógicas
 |---|---|---|---|---|
 | CU01 | `POST /api/viajes` | Cualquier usuario con sesión; queda como Admin | `nombre` y `destino` obligatorios, `fecha_inicio <= fecha_fin`, `moneda_codigo` existente | 400 `RANGO_FECHAS_INVALIDO`, 422 `MONEDA_INEXISTENTE` |
 | — | `GET /api/monedas` | Con sesión | Lista de monedas disponibles | — |
-| — | `GET /api/viajes` | Con sesión | Viajes con membresía activa; desde F7 suma los viajes con acceso solo a saldos, marcados como tales | — |
+| — | `GET /api/viajes` | Con sesión | Viajes con membresía activa; desde F7 suma los viajes con acceso solo a saldos, marcados como tales. Cada viaje trae `mensajesSinLeer` y `ultimaNovedad` (mensaje, propuesta, confirmación, gasto o un pago propio), y la lista se ordena por la novedad más reciente; los viajes sin novedades van al final, por fecha de inicio | — |
 | — | `GET /api/viajes/:viajeId` | Participante (desde F7, `accesoSaldos`) | Datos del viaje con su moneda, rol de quien consulta, su deuda pendiente (para el aviso de RN-E7) y la cantidad de participantes | — |
 | — | `GET /api/viajes/:viajeId/participantes` | Participante | Participantes activos con su rol | — |
 | CU02 | `POST /api/viajes/:viajeId/participantes` | Admin | `email` de un usuario registrado (P4); si tenía una membresía dada de baja, se reactiva con su historial (P18) | 404 `USUARIO_NO_REGISTRADO`, 409 `YA_ES_PARTICIPANTE` |
@@ -510,7 +520,8 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 
 | CU | Método y ruta | Quién | Validaciones | Errores específicos |
 |---|---|---|---|---|
-| CU19 | `GET /api/viajes/:viajeId/mensajes?antesDe=<id>&limite=50` | Participante | `limite` entre 1 y 100 | — |
+| CU19 | `GET /api/viajes/:viajeId/mensajes?antesDe=<id>&limite=50` | Participante | `limite` entre 1 y 100; cada mensaje trae sus `reacciones` agrupadas por emoji | — |
+| — | `PUT /api/viajes/:viajeId/mensajes/leidos` | Participante | Mueve `membresia.chat_leido_hasta` a la hora actual, sin retroceder; responde 204 | — |
 
 Eventos de Socket.IO (espacio de nombres `/chat`, solo con transporte WebSocket desde F6, porque el primer pedido del transporte de sondeo no trae `Origin`). El handshake verifica el encabezado `Origin` y la cookie de sesión; si alguno falla, la conexión se rechaza. Cada evento vuelve a validar la sesión. El historial responde `{ mensajes, hayMas }` con los mensajes en orden cronológico.
 
@@ -519,7 +530,10 @@ Eventos de Socket.IO (espacio de nombres `/chat`, solo con transporte WebSocket 
 | `chat:unirse` | cliente → servidor | `{ viajeId }` | Verifica membresía activa y une el socket a la sala `viaje:<viajeId>`. Confirmación `{ ok: true }` o `{ ok: false, error: { codigo: "NO_PARTICIPANTE" } }`. |
 | `chat:salir` | cliente → servidor | `{ viajeId }` | Saca el socket de la sala. |
 | `chat:enviar` | cliente → servidor | `{ viajeId, contenido, idTemporal }` | `contenido` de 1 a 2000 caracteres; guarda el mensaje y lo emite a la sala. Confirmación `{ ok: true, mensaje }` o `{ ok: false, error }`. |
-| `chat:mensaje` | servidor → sala | `{ id, viajeId, autor: { id, nombre, apodo }, contenido, enviadoEn, idTemporal }` | Se emite a todos los sockets de la sala, incluido el emisor, que usa `idTemporal` para reemplazar su mensaje optimista. |
+| `chat:mensaje` | servidor → sala | `{ id, viajeId, autor: { id, nombre, apodo }, contenido, enviadoEn, reacciones, idTemporal }` | Se emite a todos los sockets de la sala, incluido el emisor, que usa `idTemporal` para reemplazar su mensaje optimista. |
+| `chat:reaccionar` | cliente → servidor | `{ viajeId, mensajeId, emoji }` | `emoji` del conjunto fijo, o `null` para quitar la reacción propia; el mensaje tiene que ser del viaje. Confirmación `{ ok: true, reacciones }` o `{ ok: false, error }` con `VALIDACION`, `NO_PARTICIPANTE` o `NO_ENCONTRADO`. |
+| `chat:reacciones` | servidor → sala | `{ viajeId, mensajeId, reacciones: [{ emoji, usuarios }] }` | Se emite tras cada `chat:reaccionar` con cómo quedaron las reacciones del mensaje. |
+| `chat:escribiendo` | cliente → servidor, servidor → sala | cliente: `{ viajeId }`; servidor: `{ viajeId, usuario: { id, nombre, apodo } }` | Sin persistencia ni confirmación. Solo se reenvía si el socket está en la sala del viaje, y nunca a quien escribe. El cliente lo manda como mucho cada 3 segundos y lo muestra durante 5. |
 | `viaje:membresia-finalizada` | servidor → sockets del usuario | `{ viajeId, motivo: "ELIMINADO" \| "RETIRADO", conservaAccesoSaldos }` | Se emite al darse de baja por CU03 o CU04; el servidor lo saca de la sala y el cliente lo lleva a la lista de viajes o a la sección de saldos. |
 | `viaje:admin-cambiado` | servidor → sala | `{ viajeId, nuevoAdminId, anteriorAdminId }` | Se emite tras CU24; el cliente actualiza el rol en `useViajeStore`. |
 
@@ -532,6 +546,7 @@ Eventos de Socket.IO (espacio de nombres `/chat`, solo con transporte WebSocket 
 | — | `GET /api/viajes/:viajeId/gastos` | Participante | Gastos con sus partes (de mayor a menor monto, porque `gasto_parte` no guarda el orden de elección; ajustado en F7), pagador y categoría | — |
 | CU21 | `GET /api/viajes/:viajeId/deudas?rol=deudor` | `accesoSaldos` | Deudas con `monto > 0` donde quien llama es deudor, con acreedor, saldo, última actualización e historial de pagos | — |
 | CU22 | `GET /api/viajes/:viajeId/deudas?rol=acreedor` | `accesoSaldos` | Deudas con `monto > 0` donde quien llama es acreedor, con el mismo detalle | — |
+| — | `GET /api/viajes/:viajeId/pagos` | `accesoSaldos` | Pagos donde quien llama es deudor o acreedor, también de deudas ya saldadas, del más nuevo al más viejo, con `deudor` y `acreedor`; alimenta la Actividad de Cuentas | — |
 | CU23 | `POST /api/viajes/:viajeId/pagos` | `accesoSaldos`, solo el deudor (P17) | `acreedor_id` con deuda pendiente de quien llama, `monto > 0`, `monto <= saldo` | 404 `SIN_DEUDA_CON_ACREEDOR`, 422 `PAGO_EXCEDE_DEUDA` con `detalles: { saldo }` |
 
 ## 6. Reglas de negocio
@@ -639,6 +654,8 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | RN-X4 | La fecha de una actividad y el rango de un alojamiento caen dentro de `[fecha_inicio, fecha_fin]` del viaje; de la actividad se controla solo el día de inicio (P11). Los selectores de fecha solo ofrecen días del viaje. | `Viaje.contiene(fecha)` y `Viaje.contiene(rango)`; coordinan `ProponerActividad`, `ProponerAlternativa` y `ProponerAlojamiento` | 422 `FUERA_DEL_VIAJE` |
 | RN-X5 | Solo participantes activos envían mensajes al chat del viaje. | Caso de uso `EnviarMensaje` | confirmación con `NO_PARTICIPANTE` |
 | RN-X6 | Todos los montos de un viaje se expresan en su moneda, elegida al crearlo; no hay conversión (P16). | Objeto de valor `Dinero`, que lleva la moneda del viaje; `CrearViaje` y formateo en la interfaz | — |
+| RN-X7 | Solo participantes activos reaccionan a los mensajes del viaje; cada persona deja una reacción por mensaje, con un emoji del conjunto fijo, y elegir otra reemplaza la anterior. | Caso de uso `ReaccionarAMensaje`, `emojiDeReaccion` y la PK y el CHECK de `reaccion` | confirmación con `NO_PARTICIPANTE`, `NO_ENCONTRADO` o `VALIDACION` |
+| RN-X8 | Los mensajes sin leer son los de otros posteriores a la última lectura del chat, o al alta si nunca se abrió. Los pagos son privados entre deudor y acreedor: solo ellos los ven en la Actividad y como novedad. | `ConsultaNovedadesPrisma`, `MarcarChatLeido` y `ConsultaSaldos.pagosDe` | — |
 
 ### 6.11 Seguridad de la autenticación
 
@@ -682,8 +699,9 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
 - **Títulos de página:** cada ruta define su título (`meta.titulo`) y la pestaña muestra, por ejemplo, "Saldos · Organizador de viajes" (WCAG 2.4.2).
 - **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026", "jueves 10 dic"), con `formatearRango`, `formatearDia`, `formatearHorario`, `formatearHora` (siempre con 24 horas) y `etiquetaDelDia` ("Hoy", "Ayer", "24 sep") de `utiles/formato.ts` y `nombreDelDia` de `utiles/fechas.ts`.
 - **Patrones tomados de otras apps** (el patrón de uso, nunca su identidad visual):
-  - **Chat, como WhatsApp:** separadores de día ("Hoy", "Ayer", "24 sep"), mensajes seguidos de la misma persona agrupados (el nombre se ve solo al empezar el bloque y los lectores de pantalla lo leen siempre), la hora dentro de la burbuja, un campo que crece hasta unos cinco renglones y "Enviar" como botón redondo con ícono.
-  - **Cuentas, como una billetera (Mercado Pago):** el balance neto en grande, accesos rápidos redondos (Anotar gasto, Pagar, Me deben) y la "Actividad" con los gastos agrupados por día, con el ícono de su categoría y tu parte; el reparto se despliega al tocar. Al pagar se muestra un comprobante (monto, a quién, fecha y lo que queda) y los montos se escriben grandes y centrados (`.monto-grande`).
+  - **Chat, como WhatsApp:** separadores de día ("Hoy", "Ayer", "24 sep"), mensajes seguidos de la misma persona agrupados (el nombre se ve solo al empezar el bloque y los lectores de pantalla lo leen siempre), la hora dentro de la burbuja, un campo que crece hasta unos cinco renglones y "Enviar" como botón redondo con ícono. Al lado de la hora, un botón abre seis emojis para reaccionar (una reacción por persona, se cierra con Escape), y arriba del campo se lee quién está escribiendo, sin región viva para no repetirlo en el lector de pantalla.
+  - **Lista de grupos, como una lista de chats:** cada viaje en una fila con su inicial, la última novedad en segunda persona cuando es propia ("Propusiste «Kayak»", "Tomás te pagó $ 400"), la hora o el día y un círculo con los mensajes sin leer; arriba va el viaje con la novedad más reciente.
+  - **Cuentas, como una billetera (Mercado Pago):** el balance neto en grande, accesos rápidos redondos (Anotar gasto, Pagar, Me deben) y la "Actividad" con los gastos y los pagos propios agrupados por día, con el ícono de su categoría y tu parte; el reparto se despliega al tocar. Al pagar se muestra un comprobante (monto, a quién, fecha y lo que queda) y los montos se escriben grandes y centrados (`.monto-grande`).
   - **Participantes, como los miembros de Discord:** agrupados por rol, Admin y Viajeros, con el círculo de la inicial (`InicialPersona`, compartido con quiénes pagan).
   - **Botón flotante en celular:** la acción principal de Alojamientos y Actividades (`.accion-flotante`) flota abajo a la derecha, con el texto disponible para lectores de pantalla.
 - **Gamificación:** acompaña la planificación sin presionar, y se calcula solo en el frontend con los datos que ya devuelve la API (`utiles/progreso.ts`):
@@ -703,7 +721,7 @@ Cada store recibe por inyección la interfaz de cliente de API que usa (D13), lo
 | `useSesionStore` | usuario actual, estado de la sesión | Ingreso, registro, cierre de sesión y guardas de ruta. |
 | `useViajeStore` | lista de viajes, viaje actual, participantes, rol o tipo de acceso propio | Grupo, participantes y traspaso; escucha `viaje:admin-cambiado` y `viaje:membresia-finalizada`. |
 | `usePropuestasStore` | alojamientos y actividades del viaje actual con conteos y voto propio | Proponer, votar, desvotar, confirmar, denegar y cancelar; `cargarTodo` trae las dos listas sin filtro para el Resumen. |
-| `useChatStore` | conexión Socket.IO, mensajes cargados, mensajes pendientes de confirmación | Chat; se conecta al entrar a un viaje y se desconecta al salir. |
+| `useChatStore` | conexión Socket.IO, mensajes cargados con sus reacciones, mensajes pendientes de confirmación, quiénes están escribiendo | Chat; se conecta al entrar a un viaje y se desconecta al salir. El aviso de escribiendo sale recién cuando terminó la entrada a la sala. |
 | `useGastosStore` | gastos, categorías, deudas como deudor y como acreedor | Gastos, saldos y pagos; después de anotar un gasto o registrar un pago vuelve a pedir las deudas. |
 
 El cronograma y el mapa no usan store propio porque son vistas de solo lectura; su estado vive en el composable `useMapaDelDia` y en la propia vista. Las celebraciones tampoco: su estado compartido vive en el composable `useCelebracion`, que cualquier vista usa para celebrar y que `App.vue` muestra con `AvisoCelebracion`.
@@ -713,7 +731,7 @@ El cronograma y el mapa no usan store propio porque son vistas de solo lectura; 
 | Ruta | Vista | Componentes principales | Estado | CU |
 |---|---|---|---|---|
 | `/ingresar`, `/registrarse` | `IngresoVista`, `RegistroVista` | Formulario dentro de cada vista con `CampoFormulario`; el registro muestra los requisitos de contraseña | `useSesionStore` | Soporte (P3) |
-| `/viajes` | `ViajesVista` | Tarjetas de viaje dentro de la vista (marcan los viajes con acceso solo a saldos y los llevan directo a saldos), `DialogoNuevoViaje` en tres pasos: nombre, ciudad y país (el destino se guarda como "Ciudad, País"); fechas y moneda, que crea el viaje; y sumar viajeros con `FormularioAgregarViajero` | `useViajeStore` | CU01, CU02 |
+| `/viajes` | `ViajesVista` | Lista de grupos como lista de chats: inicial del viaje, nombre, última novedad (`textoNovedad`), cuándo fue y mensajes sin leer, con destino, fechas y cuenta regresiva abajo (marca los viajes con acceso solo a saldos y los lleva directo a saldos), `DialogoNuevoViaje` en tres pasos: nombre, ciudad y país (el destino se guarda como "Ciudad, País"); fechas y moneda, que crea el viaje; y sumar viajeros con `FormularioAgregarViajero` | `useViajeStore` | CU01, CU02 |
 | `/viajes/:viajeId/resumen` | `ResumenVista` | En una columna: "Lo próximo" (el paso más importante destacado y los demás en un desplegable) y el progreso compacto (`AnilloProgreso` con "Ver los hitos", que despliega `ListaHitos`), calculados con `calcularProgreso` | `useViajeStore`, `usePropuestasStore` | Soporte (gamificación) |
 | `/viajes/:viajeId/participantes` | `ParticipantesVista` | `ListaParticipantes`; para el Admin, `FormularioAgregarViajero`, el diálogo de confirmación de eliminación (avisa que se conserva el historial) y `DialogoTraspaso`; botón "Salir del grupo", que abre `DialogoSalir`: muestra la deuda propia y, si quien sale es el Admin, pide el sucesor con `SelectorSucesor` | `useViajeStore` | CU02–CU04, CU24 |
 | `/viajes/:viajeId/alojamientos` | `AlojamientosVista` | `TarjetaPropuesta` (conteo, botones de voto y de desvoto, acciones del Admin según estado), filtro por estado | `usePropuestasStore` | CU06–CU09, CU25 |
@@ -723,8 +741,8 @@ El cronograma y el mapa no usan store propio porque son vistas de solo lectura; 
 | `/viajes/:viajeId/actividades/:actividadId/alternativa` | `ActividadFormularioVista` en modo alternativa | Resumen de la actividad original y los mismos campos que CU10 | `usePropuestasStore` | CU11 |
 | `/viajes/:viajeId/cronograma?dia=` | `CronogramaVista` | `CalendarioViaje` (mes con los días del viaje, punto en los que tienen actividades) y `DiaCronograma` del día elegido, con actividades, alojamiento de la noche y enlace "Ver en el mapa" | Local | CU16 |
 | `/viajes/:viajeId/mapa?dia=&actividad=` | `MapaVista` | `CalendarioViaje` (el mismo del cronograma), `MapaActividades` (Leaflet, marcadores numerados y recorrido), `AvisoSinActividades`, `PanelActividad` | `useMapaDelDia` | CU17, CU18 |
-| `/viajes/:viajeId/chat` | `ChatVista` | `ListaMensajes` (carga hacia atrás al subir), `CampoMensaje` | `useChatStore` | CU19 |
-| `/viajes/:viajeId/gastos` | `GastosVista` | `TarjetaGasto` con el detalle de partes | `useGastosStore` | CU20 |
+| `/viajes/:viajeId/chat` | `ChatVista` | `ListaMensajes` (carga hacia atrás al subir, reacciones con su selector), aviso de quién escribe, `CampoMensaje`; marca el chat leído al entrar, al salir y cuando llega algo con el chat abierto | `useChatStore` | CU19 |
+| `/viajes/:viajeId/gastos` | `GastosVista` | Billetera, accesos rápidos y Actividad por día con `TarjetaGasto` (detalle de partes) y `FilaPago` (pagos propios) | `useGastosStore` | CU20 |
 | `/viajes/:viajeId/gastos/nuevo` | `GastoFormularioVista` | `SelectorPagador` (por defecto, quien anota), `SelectorDeudores` (una fila por persona con su inicial y la casilla, contador "2 de 4", nadie marcado al inicio y botón que alterna entre "Seleccionar a todos" y "Quitar a todos"), `SelectorModoDivision`, `TablaPartes` (en arbitraria muestra la suma y la diferencia con el total mientras se escribe) | `useGastosStore` | CU20 |
 | `/viajes/:viajeId/saldos` | `SaldosVista` | Pestañas "Debo" y "Me deben", `FilaSaldo` con historial de pagos y botón "Pagar" en las deudas propias | `useGastosStore` | CU21, CU22 |
 | `/viajes/:viajeId/saldos/pagar/:acreedorId` | `PagoVista` | Saldo pendiente con ese viajero, campo de monto (se convierte con `aUnidadMinima` de `utiles/formato.ts`), `AvisoExcedeDeuda` | `useGastosStore` | CU23 |
@@ -837,7 +855,7 @@ No se planifican en detalle. La columna de la derecha indica por qué el diseño
 | R2 — Preferencias, restricciones y presupuesto | Preferencias de alojamiento y actividad, preferencias de habitación (solo o compartida, agregada por P22), disponibilidad de fechas, restricciones alimentarias, presupuesto | Tablas nuevas colgadas de `membresia`; no cambian las existentes. |
 | R3 — Subgrupos | Participantes de una actividad = quienes votaron a favor; ver solo actividades propias; canal de chat por actividad; gasto preseleccionado con esos participantes | `voto.valor = A_FAVOR` ya identifica a los participantes; las salas de Socket.IO pasan a `canal:<id>` y `mensaje` suma una columna `canal_id` nula para el chat general; `gasto_parte` ya admite cualquier subconjunto. Por la reserva del usuario sobre P9 y P10, este release cambia `conflictosDeHorario` y `opcionesADenegar` para que opciones alternativas y actividades superpuestas convivan cuando no comparten participantes; si hacen falta las dos reglas a la vez, recién ahí se introduce la abstracción. |
 | R4 — Mapa | Filtros por día o categoría, rutas y tiempos estimados, ubicación en tiempo real, lugares de interés | Una interfaz para el servicio externo de trazado por calles, que reemplaza a `recorridoEnLineaRecta`; la ubicación en vivo usa la conexión Socket.IO; lugares de interés en una tabla nueva. |
-| R5 — Mensajería enriquecida | Respuestas privadas a proponentes, chat privado, respuestas en el grupo; reacciones con emoji a los mensajes, "escribiendo…" y, en la lista de grupos, la última novedad con los mensajes sin leer (agregadas a partir de las inspiraciones de WhatsApp y Discord) | Canales privados sobre el modelo de R3 y una columna `respuesta_a_id` en `mensaje`. Reacciones: una tabla `reaccion` (mensaje, usuario, emoji de un conjunto fijo). "Escribiendo…": un evento de Socket.IO sin persistencia. Sin leer: una marca de lectura del chat por membresía. |
+| R5 — Mensajería enriquecida | Respuestas privadas a proponentes, chat privado, respuestas en el grupo. Las reacciones, "escribiendo…" y la lista de grupos con la última novedad y los mensajes sin leer se adelantaron al MVP (secciones 4 y 5.8) | Canales privados sobre el modelo de R3 y una columna `respuesta_a_id` en `mensaje`. |
 | R6 — Multimedia en el chat | Subir y guardar fotos, videos y gifs; foto de perfil (agregada en la columna "Gestionar el grupo") | Tabla de adjuntos que referencia `mensaje` y almacenamiento de objetos externo. La foto de perfil usa el mismo almacenamiento y se muestra en `InicialPersona`, que hoy dibuja la inicial. |
 | R7 — Comprobantes | Registrar reservas y adjuntar comprobantes; exportar gastos a Excel (agregada por P22) | Tabla de reservas ligada a `propuesta` confirmada con los adjuntos de R6; la exportación es un caso de uso de lectura sobre gastos, partes, deudas y pagos, con una interfaz `ExportadorGastos`. |
 | R8 — Tareas colaborativas | Crear, reclamar y completar tareas | Tabla independiente ligada a `viaje` y `usuario`. |
@@ -913,3 +931,5 @@ Estas diferencias surgieron de las decisiones del usuario y ya están incorporad
 | "Anotando gasto" | Se agrega la elección del pagador; el reparto en partes iguales es entre los elegidos, no entre todos; se agrega la compensación de deudas. | P12, P13, P15 |
 | "Consultando mapa" | Se agrega el caso sin ninguna actividad confirmada. | P19 |
 | "Eliminando participantes" | El historial se conserva también sin deuda; se agregan el retiro de votos pendientes y el acceso solo a saldos. | P18 |
+| Diagrama conceptual | Falta la clase Reacción (emoji) entre Mensaje y Viajero, y Membresía no tiene la marca `chatLeidoHasta`. Pendiente de actualizar en el `.drawio` cuando el usuario lo confirme. | Lote de mensajería (reacciones, escribiendo y sin leer) |
+| Story mapping ("Página-13") | Las historias de reacciones, "escribiendo…" y mensajes sin leer figuran en el Release 5, pero se implementaron en el MVP. Pendiente de mover cuando el usuario lo confirme. | Lote de mensajería |

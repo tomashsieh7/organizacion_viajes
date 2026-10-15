@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia';
-import { inject, ref } from 'vue';
-import type { AvisoMembresiaFinalizada, MensajeVista } from '@viajes/compartido';
+import { computed, inject, ref } from 'vue';
+import type {
+  AvisoMembresiaFinalizada,
+  MensajeVista,
+  PersonaVista,
+  ReaccionVista,
+} from '@viajes/compartido';
 import { CLIENTE_CHAT, type ConexionChat } from '../clientes/chat';
 import { mensajeDeError } from '../clientes/http';
 import { idTemporal } from '../utiles/idTemporal';
@@ -11,6 +16,11 @@ export interface MensajeEnPantalla extends MensajeVista {
   /** Los propios quedan pendientes hasta que el servidor los confirma. */
   estado: 'enviado' | 'pendiente' | 'error';
 }
+
+/** Cuánto dura el aviso de "escribiendo" sin un aviso nuevo de esa persona. */
+export const DURACION_ESCRIBIENDO_MS = 5_000;
+/** Cada cuánto, como mucho, se avisa que uno está escribiendo. */
+export const INTERVALO_AVISO_MS = 3_000;
 
 /**
  * Chat del viaje abierto (CU19). La conexión se abre al entrar a un viaje y se cierra al salir,
@@ -28,7 +38,32 @@ export const useChatStore = defineStore('chat', () => {
   const historialCargado = ref(false);
   const error = ref('');
   const finalizada = ref<AvisoMembresiaFinalizada | null>(null);
+  /** Quiénes están escribiendo, con el temporizador que borra a cada uno. */
+  const escribiendo = ref<{ persona: PersonaVista; temporizador: ReturnType<typeof setTimeout> }[]>(
+    [],
+  );
+  const quienesEscriben = computed(() => escribiendo.value.map((e) => e.persona));
   let conexion: ConexionChat | null = null;
+  /** Entrada a la sala del viaje abierto; el aviso de escribiendo sale recién cuando termina. */
+  let union: Promise<void> = Promise.resolve();
+  let ultimoAviso = 0;
+
+  function dejoDeEscribir(usuarioId: string) {
+    const i = escribiendo.value.findIndex((e) => e.persona.id === usuarioId);
+    if (i < 0) return;
+    clearTimeout(escribiendo.value[i]!.temporizador);
+    escribiendo.value.splice(i, 1);
+  }
+
+  function olvidarEscribiendo() {
+    for (const e of escribiendo.value) clearTimeout(e.temporizador);
+    escribiendo.value = [];
+  }
+
+  function aplicarReacciones(mensajeId: string, reacciones: ReaccionVista[]) {
+    const m = mensajes.value.find((x) => x.id === mensajeId);
+    if (m) m.reacciones = reacciones;
+  }
 
   /** Agrega o reemplaza un mensaje; el propio optimista se reconoce por su id temporal. */
   function incorporar(m: MensajeVista) {
@@ -52,7 +87,19 @@ export const useChatStore = defineStore('chat', () => {
   function abrirConexion() {
     conexion ??= cliente!.conectar({
       mensaje: (m) => {
-        if (m.viajeId === viajeId.value) incorporar(m);
+        if (m.viajeId !== viajeId.value) return;
+        incorporar(m);
+        // Quien manda un mensaje ya no está escribiendo.
+        dejoDeEscribir(m.autor.id);
+      },
+      reacciones: (d) => {
+        if (d.viajeId === viajeId.value) aplicarReacciones(d.mensajeId, d.reacciones);
+      },
+      escribiendo: ({ viajeId: id, usuario }) => {
+        if (id !== viajeId.value) return;
+        dejoDeEscribir(usuario.id);
+        const temporizador = setTimeout(() => dejoDeEscribir(usuario.id), DURACION_ESCRIBIENDO_MS);
+        escribiendo.value.push({ persona: usuario, temporizador });
       },
       membresiaFinalizada: (aviso) => {
         if (aviso.viajeId !== viajeId.value) return;
@@ -85,8 +132,10 @@ export const useChatStore = defineStore('chat', () => {
     historialCargado.value = false;
     finalizada.value = null;
     error.value = '';
+    olvidarEscribiendo();
     try {
-      await abrirConexion().unirse(id);
+      union = abrirConexion().unirse(id);
+      await union;
     } catch (e) {
       error.value = mensajeDeError(e);
     }
@@ -98,6 +147,7 @@ export const useChatStore = defineStore('chat', () => {
     viajeId.value = null;
     mensajes.value = [];
     historialCargado.value = false;
+    olvidarEscribiendo();
   }
 
   async function cargarHistorial() {
@@ -127,6 +177,8 @@ export const useChatStore = defineStore('chat', () => {
   /** Muestra el mensaje enseguida y lo reemplaza cuando el servidor lo confirma. */
   async function enviar(contenido: string) {
     if (!viajeId.value || !conexion || !sesion.usuario) return;
+    // Al llegar el mensaje, el resto deja de ver "escribiendo": el próximo aviso sale enseguida.
+    ultimoAviso = 0;
     const temporal = idTemporal();
     mensajes.value.push({
       id: temporal,
@@ -135,6 +187,7 @@ export const useChatStore = defineStore('chat', () => {
       autor: { id: sesion.usuario.id, nombre: sesion.usuario.nombre, apodo: sesion.usuario.apodo },
       contenido: contenido.trim(),
       enviadoEn: new Date().toISOString(),
+      reacciones: [],
       estado: 'pendiente',
     });
     try {
@@ -148,9 +201,43 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /** Con `null` quita la reacción propia; una por persona, como en el servidor. */
+  async function reaccionar(mensajeId: string, emoji: string | null) {
+    if (!viajeId.value || !conexion) return;
+    try {
+      aplicarReacciones(
+        mensajeId,
+        await conexion.reaccionar({ viajeId: viajeId.value, mensajeId, emoji }),
+      );
+    } catch (e) {
+      error.value = mensajeDeError(e);
+    }
+  }
+
+  /** Avisa que uno está escribiendo, como mucho una vez cada `INTERVALO_AVISO_MS`. */
+  function avisarEscribiendo() {
+    const ahora = Date.now();
+    const id = viajeId.value;
+    const c = conexion;
+    if (!id || !c || ahora - ultimoAviso < INTERVALO_AVISO_MS) return;
+    ultimoAviso = ahora;
+    // Si se escribe apenas se abre el viaje, el servidor todavía no sumó la conexión a la sala
+    // y descartaría el aviso.
+    union.then(
+      () => viajeId.value === id && c.escribiendo(id),
+      () => undefined,
+    );
+  }
+
+  /** Si falla no se avisa: solo cambia el contador de la lista de grupos. */
+  async function marcarLeido() {
+    if (viajeId.value) await cliente!.marcarLeido(viajeId.value).catch(() => undefined);
+  }
+
   return {
     viajeId,
     mensajes,
+    quienesEscriben,
     hayMas,
     error,
     finalizada,
@@ -159,5 +246,8 @@ export const useChatStore = defineStore('chat', () => {
     cargarHistorial,
     cargarAnteriores,
     enviar,
+    reaccionar,
+    avisarEscribiendo,
+    marcarLeido,
   };
 });

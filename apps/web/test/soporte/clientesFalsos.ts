@@ -161,10 +161,13 @@ export function clienteChatFalso(historial: PaginaDeMensajes = { mensajes: [], h
     unirse: vi.fn(async () => undefined),
     salir: vi.fn(),
     enviar: vi.fn<ConexionChat['enviar']>(),
+    reaccionar: vi.fn<ConexionChat['reaccionar']>(),
+    escribiendo: vi.fn<ConexionChat['escribiendo']>(),
     cerrar: vi.fn(),
   };
   const cliente = {
     historial: vi.fn<ClienteChat['historial']>(async () => historial),
+    marcarLeido: vi.fn<ClienteChat['marcarLeido']>(async () => undefined),
     conectar: vi.fn((o: OyentesChat) => ((oyentes = o), conexion)),
   };
   return { cliente, conexion, servidor: () => oyentes! };
@@ -182,6 +185,7 @@ export function mensaje(
     autor: { id: autorId, nombre: autorId === 'ana' ? 'Ana' : 'Tomás', apodo: null },
     contenido,
     enviadoEn: '2026-09-24T12:00:00.000Z',
+    reacciones: [],
     ...(idTemporal ? { idTemporal } : {}),
   };
 }
@@ -196,6 +200,7 @@ export function clienteGastosFalso(parcial: Partial<ClienteGastos> = {}): Client
     anotar: noImplementado,
     deudas: async () => [],
     pagar: noImplementado,
+    pagos: async () => [],
     ...parcial,
   };
 }

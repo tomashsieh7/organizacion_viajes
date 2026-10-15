@@ -58,7 +58,7 @@ export function crearApp(c: Contenedor): Express {
   viaje.use(rutasDeAlojamientos(c.alojamientos));
   viaje.use(rutasDeActividades(c.actividades));
   viaje.use(rutasDeItinerario(c.itinerario));
-  viaje.use(rutasDeChat(c.chat.consultar));
+  viaje.use(rutasDeChat(c.chat));
   viaje.use(rutasDeGastos(c.gastos));
   api.use('/viajes/:viajeId', viaje);
   api.use(rutaNoEncontrada);

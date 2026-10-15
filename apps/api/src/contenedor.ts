@@ -33,6 +33,7 @@ import {
   type DependenciasViajes,
 } from './modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
 import type { ConsultaViajes, ReposViajes } from './modulos/viajes/dominio/puertos.js';
+import { ConsultaNovedadesPrisma } from './modulos/viajes/infraestructura/novedades.js';
 import {
   ConsultarCronograma,
   ConsultarMapa,
@@ -40,12 +41,16 @@ import {
 import {
   ConsultarMensajes,
   EnviarMensaje,
+  MarcarChatLeido,
+  ReaccionarAMensaje,
   ReenviarEventosDelViaje,
   UnirseAlChat,
 } from './modulos/chat/casos-de-uso/casosDeUsoChat.js';
 import {
   ConsultaMensajesPrisma,
+  RegistroDeLecturaPrisma,
   RepositorioMensajesPrisma,
+  RepositorioReaccionesPrisma,
 } from './modulos/chat/infraestructura/prisma.js';
 import { ParticipacionSegunViajes } from './modulos/chat/infraestructura/participacion.js';
 import {
@@ -172,6 +177,8 @@ export interface Contenedor {
   chat: {
     unirse: UnirseAlChat;
     enviar: EnviarMensaje;
+    reaccionar: ReaccionarAMensaje;
+    marcarLeido: MarcarChatLeido;
     consultar: ConsultarMensajes;
     /** Suscribe el notificador de Socket.IO a los eventos del viaje; se llama al abrir `/chat`. */
     conectarNotificador(espacio: EspacioChat): void;
@@ -278,7 +285,11 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       eliminarParticipante: new EliminarParticipante(depsViajes),
       salirDelViaje: new SalirDelViaje(depsViajes),
       transferirAdministracion: new TransferirAdministracion(depsViajes),
-      consultar: new ConsultarViajes(consultasViajes, new ConsultaDeudasPrisma(prisma)),
+      consultar: new ConsultarViajes(
+        consultasViajes,
+        new ConsultaDeudasPrisma(prisma),
+        new ConsultaNovedadesPrisma(prisma),
+      ),
       consultas: consultasViajes,
       consultarAcceso: new ConsultarAcceso(viajesSinBloqueo, saldosPendientes),
     },
@@ -326,6 +337,13 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
         consultaMensajes,
         reloj,
       ),
+      reaccionar: new ReaccionarAMensaje(
+        participacion,
+        new RepositorioReaccionesPrisma(prisma),
+        consultaMensajes,
+        reloj,
+      ),
+      marcarLeido: new MarcarChatLeido(new RegistroDeLecturaPrisma(prisma), reloj),
       consultar: new ConsultarMensajes(consultaMensajes),
       conectarNotificador: (espacio) =>
         new ReenviarEventosDelViaje(saldosPendientes).suscribir(

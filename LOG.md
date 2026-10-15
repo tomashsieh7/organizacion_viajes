@@ -1683,3 +1683,49 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - la cobertura pasa 573 pruebas: 349 del backend y 224 del frontend, con 94 % de líneas en el frontend;
   - la e2e pasa 11 de 11;
   - las capturas a 360 px en claro y oscuro y a 1280 px, del chat, Gastos, anotar gasto, el pago con su comprobante, Participantes y Actividades, no muestran errores en la consola.
+
+## 2026-10-15 02:23 — Merge del PR #28
+
+- Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #28 ("Diseño inspirado en WhatsApp, Mercado Pago y Discord: chat, billetera, comprobante, participantes y botón flotante") se mergeó a `main` en `697804c`, fijando la cabeza verificada `178a819`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-15 02:23 — Lista de grupos como chats, reacciones, "escribiendo…" y pagos en la Actividad
+
+- **Pedido del usuario:** armar el plan de los puntos de las inspiraciones que necesitaban backend (3, 11 y 12) y de los pagos en la Actividad de Cuentas.
+  - Decidió que cada uno vea solo los pagos que hizo o recibió, también en la novedad de la lista.
+  - Decidió una reacción por persona y mensaje.
+  - Decidió que la lista se ordene por la novedad más reciente.
+  - Aprobó el plan.
+- **Base de datos:** migración `mensajeria`, que se aplica sin borrar datos con `npm run db:migrar -w apps/api`.
+  - Suma `membresia.chat_leido_hasta`.
+  - Suma la tabla `reaccion`, con PK `(mensaje_id, usuario_id)` y un CHECK con los seis emojis de `EMOJIS_REACCION`.
+- **Reacciones (11):**
+  - caso de uso `ReaccionarAMensaje` con el puerto `RepositorioReacciones` (`null` quita la propia);
+  - eventos `chat:reaccionar` y `chat:reacciones`;
+  - los mensajes traen `reacciones` agrupadas por emoji.
+  - En la web, `ListaMensajes` muestra cada emoji con su cantidad (`aria-pressed` si es propio) y un botón al lado de la hora abre el selector, que se cierra con Escape y devuelve el foco.
+- **"Escribiendo…" (12):** evento `chat:escribiendo` sin persistencia.
+  - El servidor lo reenvía solo si el socket está en la sala y nunca a quien escribe.
+  - La web lo manda como mucho cada 3 segundos, lo muestra 5 y lo borra cuando llega el mensaje de esa persona.
+- **Lista de grupos (3):**
+  - **Sin leer:** `PUT /mensajes/leidos` (`MarcarChatLeido`, puerto `RegistroDeLectura`, que nunca retrocede la marca). `ChatVista` lo llama al entrar, al salir y, con el chat abierto, cuando llega algo de otros, como mucho cada 2 segundos.
+  - **Novedades:** `GET /api/viajes` suma `mensajesSinLeer` y `ultimaNovedad`. Las calcula `ConsultaNovedadesPrisma` con dos consultas para todos los viajes; la de la última novedad une mensajes, propuestas, confirmaciones, gastos y pagos propios.
+  - **Pantalla:** `ViajesVista` pasa de tarjetas a una lista estilo chats, con el texto de `textoNovedad` en segunda persona cuando la novedad es propia.
+- **Pagos en la Actividad:**
+  - `GET /pagos` devuelve los pagos donde quien consulta es deudor o acreedor, incluidos los de deudas saldadas (`ConsultaSaldos.pagosDe`);
+  - `GastosVista` los mezcla con los gastos por fecha, con la fila nueva `FilaPago`.
+- **Errores encontrados en el camino:**
+  - En `manejar` (gateway de Socket.IO), `confirmar?.({ ...(await accion()) })` no ejecutaba la acción cuando el evento llegaba sin confirmación, porque el encadenamiento opcional no evalúa el argumento. Se separó la llamada; la prueba de integración ahora emite sin confirmación, como el navegador.
+  - El primer aviso de escribiendo podía llegar antes de que el servidor terminara `chat:unirse` y se perdía; ahora espera esa entrada.
+  - Al enviar un mensaje se reinicia el límite del aviso, así el siguiente mensaje vuelve a mostrar "escribiendo…" enseguida.
+- **PLAN.md y docs/api.md:**
+  - DER y restricciones (4.2 y 4.3), rutas y eventos (5.3, 5.8 y 5.9), reglas nuevas RN-X7 y RN-X8 (6.10), store y pantallas (7.2 y 7.3), patrones de interfaz (7.1.1) y R5 (sección 9);
+  - en 10.2 quedan anotadas las dos diferencias con los diagramas, pendientes de confirmación.
+- **Pruebas:**
+  - **Backend:** unitarias de reacciones, lectura y orden de la lista; contratos de reacciones y `pagosDe` en memoria y Prisma; integración de reacciones y escribiendo por socket, sin leer y novedades (`novedades.bd.test.ts`), `GET /pagos` y el CHECK del emoji.
+  - **Web:** lista de grupos, textos de novedad y escribiendo, store del chat, reacciones en `ListaMensajes`, `ChatVista` y pagos en `GastosVista`.
+  - **E2E:** reacción, escribiendo y contador en `chat.spec.ts`, el pago en la Actividad en `gastos.spec.ts` y las rutas nuevas sin participar en `robustez.spec.ts`.
+- **Verificación:**
+  - lint pasa sin avisos y knip solo muestra los falsos positivos conocidos;
+  - pasan 602 pruebas: 364 del backend y 238 de la web, con 94 % de líneas en la web;
+  - la e2e pasa 12 de 12;
+  - las capturas a 360 px y 1280 px de la lista, el chat con el selector y Cuentas no muestran desborde ni errores en la consola.

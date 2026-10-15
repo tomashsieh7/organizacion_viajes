@@ -7,8 +7,11 @@ import type {
   DatosMensajeNuevo,
   EventosClienteChat,
   EventosServidorChat,
+  AvisoEscribiendo,
   MensajeVista,
   PaginaDeMensajes,
+  ReaccionesDelMensaje,
+  ReaccionVista,
 } from '@viajes/compartido';
 import { avisarSiSePerdioLaSesion, ErrorDeApi, pedir } from './http';
 
@@ -17,6 +20,8 @@ export interface OyentesChat {
   mensaje(m: MensajeVista): void;
   membresiaFinalizada(aviso: AvisoMembresiaFinalizada): void;
   adminCambiado(aviso: AvisoAdminCambiado): void;
+  reacciones(datos: ReaccionesDelMensaje): void;
+  escribiendo(aviso: AvisoEscribiendo): void;
   /** La conexión se recuperó después de cortarse; puede haber mensajes que no llegaron. */
   reconectado(): void;
 }
@@ -25,11 +30,21 @@ export interface ConexionChat {
   unirse(viajeId: string): Promise<void>;
   salir(viajeId: string): void;
   enviar(datos: DatosMensajeNuevo): Promise<MensajeVista>;
+  /** Con `emoji: null` quita la reacción propia; devuelve cómo quedaron las del mensaje. */
+  reaccionar(datos: {
+    viajeId: string;
+    mensajeId: string;
+    emoji: string | null;
+  }): Promise<ReaccionVista[]>;
+  /** Aviso sin confirmación: si se pierde, el próximo lo reemplaza. */
+  escribiendo(viajeId: string): void;
   cerrar(): void;
 }
 
 export interface ClienteChat {
   historial(viajeId: string, antesDe?: string): Promise<PaginaDeMensajes>;
+  /** Lo que llegó hasta ahora deja de contar como sin leer en la lista de grupos. */
+  marcarLeido(viajeId: string): Promise<void>;
   conectar(oyentes: OyentesChat): ConexionChat;
 }
 
@@ -69,6 +84,8 @@ class ConexionSocketIO implements ConexionChat {
       oyentes.membresiaFinalizada(a);
     });
     socket.on('viaje:admin-cambiado', (a) => oyentes.adminCambiado(a));
+    socket.on('chat:reacciones', (d) => oyentes.reacciones(d));
+    socket.on('chat:escribiendo', (a) => oyentes.escribiendo(a));
     socket.io.on('reconnect', async () => {
       for (const v of this.viajes) await this.unirse(v).catch(() => this.viajes.delete(v));
       oyentes.reconectado();
@@ -93,6 +110,18 @@ class ConexionSocketIO implements ConexionChat {
     ).mensaje;
   }
 
+  async reaccionar(datos: { viajeId: string; mensajeId: string; emoji: string | null }) {
+    return (
+      await confirmacion(
+        this.socket.timeout(ESPERA_MAXIMA_MS).emitWithAck('chat:reaccionar', datos),
+      )
+    ).reacciones;
+  }
+
+  escribiendo(viajeId: string) {
+    this.socket.emit('chat:escribiendo', { viajeId });
+  }
+
   cerrar() {
     this.socket.disconnect();
   }
@@ -102,6 +131,10 @@ export class ClienteChatSocketIO implements ClienteChat {
   async historial(viajeId: string, antesDe?: string) {
     const q = antesDe ? `?antesDe=${antesDe}` : '';
     return pedir<PaginaDeMensajes>('GET', `/api/viajes/${viajeId}/mensajes${q}`);
+  }
+
+  async marcarLeido(viajeId: string) {
+    await pedir<void>('PUT', `/api/viajes/${viajeId}/mensajes/leidos`);
   }
 
   conectar(oyentes: OyentesChat): ConexionChat {

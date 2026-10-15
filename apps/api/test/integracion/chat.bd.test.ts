@@ -2,7 +2,11 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { io as conectarCliente, type Socket } from 'socket.io-client';
-import type { AvisoMembresiaFinalizada, MensajeVista } from '@viajes/compartido';
+import type {
+  AvisoMembresiaFinalizada,
+  MensajeVista,
+  ReaccionesDelMensaje,
+} from '@viajes/compartido';
 import { crearApp } from '../../src/app.js';
 import { conectarTiempoReal } from '../../src/tiempoReal.js';
 import { vaciarBase } from '../soporte/baseDePrueba.js';
@@ -251,5 +255,66 @@ describe('Historial: GET …/mensajes', () => {
     expect((await tomas.c.get(url(`?antesDe=${crypto.randomUUID()}`))).status).toBe(404);
     const luis = await registrar('Luis', 'luis@mail.com');
     expect((await luis.c.get(url(''))).status).toBe(403);
+  });
+});
+
+describe('Reacciones y escribiendo', () => {
+  it('una reacción llega a toda la sala, queda en el historial y se puede quitar', async () => {
+    const a = await unido(ana);
+    const t = await unido(tomas);
+    const enviado = await a.socket.emitWithAck('chat:enviar', {
+      viajeId,
+      contenido: 'Llegamos',
+      idTemporal: 'tmp',
+    });
+    const mensajeId = enviado.mensaje.id as string;
+    const deAna = recibidos<ReaccionesDelMensaje>(a.socket, 'chat:reacciones');
+
+    const r = await t.socket.emitWithAck('chat:reaccionar', { viajeId, mensajeId, emoji: '🎉' });
+    const reacciones = [
+      { emoji: '🎉', usuarios: [{ id: tomas.id, nombre: 'Tomás', apodo: null }] },
+    ];
+    expect(r).toEqual({ ok: true, reacciones });
+    await esperar();
+    expect(deAna).toEqual([{ viajeId, mensajeId, reacciones }]);
+    const h = await ana.c.get(`/api/viajes/${viajeId}/mensajes`);
+    expect(h.body.mensajes[0].reacciones).toEqual(reacciones);
+
+    expect(
+      await t.socket.emitWithAck('chat:reaccionar', { viajeId, mensajeId, emoji: null }),
+    ).toEqual({ ok: true, reacciones: [] });
+    expect(
+      await t.socket.emitWithAck('chat:reaccionar', { viajeId, mensajeId, emoji: '🍕' }),
+    ).toMatchObject({ ok: false, error: { codigo: 'VALIDACION' } });
+    expect(
+      await t.socket.emitWithAck('chat:reaccionar', {
+        viajeId,
+        mensajeId: crypto.randomUUID(),
+        emoji: '👍',
+      }),
+    ).toMatchObject({ ok: false, error: { codigo: 'NO_ENCONTRADO' } });
+  });
+
+  it('"escribiendo" llega al resto de la sala, no a quien escribe ni a otro viaje', async () => {
+    const a = await unido(ana);
+    const t = await unido(tomas);
+    const luis = await registrar('Luis', 'luis@mail.com');
+    const l = await unido(luis, await crearViaje(luis));
+    const deAna = recibidos(a.socket, 'chat:escribiendo');
+    const deTomas = recibidos(t.socket, 'chat:escribiendo');
+    const deLuis = recibidos(l.socket, 'chat:escribiendo');
+
+    // Como el navegador: sin pedir confirmación.
+    a.socket.emit('chat:escribiendo', { viajeId });
+    // Luis no entró a la sala de este viaje: su aviso no llega a nadie.
+    await l.socket.emitWithAck('chat:escribiendo', { viajeId });
+    await esperar();
+    expect(deTomas).toEqual([{ viajeId, usuario: { id: ana.id, nombre: 'Ana', apodo: null } }]);
+    expect(deAna).toEqual([]);
+    expect(deLuis).toEqual([]);
+    expect(await a.socket.emitWithAck('chat:escribiendo', { viajeId: 'x' })).toMatchObject({
+      ok: false,
+      error: { codigo: 'VALIDACION' },
+    });
   });
 });

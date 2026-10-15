@@ -1,7 +1,18 @@
-import type { MensajeVista, PaginaDeMensajes } from '@viajes/compartido';
+import type {
+  EmojiReaccion,
+  MensajeVista,
+  PaginaDeMensajes,
+  PersonaVista,
+  ReaccionVista,
+} from '@viajes/compartido';
 import type { ClientePrisma } from '../../../compartido/infraestructura/prisma.js';
 import type { Mensaje } from '../dominio/mensaje.js';
-import type { ConsultaMensajes, RepositorioMensajes } from '../dominio/puertos.js';
+import type {
+  ConsultaMensajes,
+  RegistroDeLectura,
+  RepositorioMensajes,
+  RepositorioReacciones,
+} from '../dominio/puertos.js';
 
 export class RepositorioMensajesPrisma implements RepositorioMensajes {
   constructor(private readonly db: ClientePrisma) {}
@@ -11,14 +22,57 @@ export class RepositorioMensajesPrisma implements RepositorioMensajes {
   }
 }
 
-const INCLUIR = { autor: { select: { id: true, nombre: true, apodo: true } } } as const;
+export class RepositorioReaccionesPrisma implements RepositorioReacciones {
+  constructor(private readonly db: ClientePrisma) {}
+
+  async poner(mensajeId: string, usuarioId: string, emoji: EmojiReaccion, ahora: Date) {
+    await this.db.reaccion.upsert({
+      where: { mensajeId_usuarioId: { mensajeId, usuarioId } },
+      create: { mensajeId, usuarioId, emoji, creadaEn: ahora },
+      update: { emoji, creadaEn: ahora },
+    });
+  }
+
+  async quitar(mensajeId: string, usuarioId: string) {
+    await this.db.reaccion.deleteMany({ where: { mensajeId, usuarioId } });
+  }
+}
+
+/** Escribe solo la marca de lectura de la membresía; el resto lo administra el módulo de viajes. */
+export class RegistroDeLecturaPrisma implements RegistroDeLectura {
+  constructor(private readonly db: ClientePrisma) {}
+
+  async marcar(viajeId: string, usuarioId: string, hasta: Date): Promise<void> {
+    // GREATEST ignora el NULL de quien nunca abrió el chat.
+    await this.db.$executeRaw`
+      UPDATE membresia SET chat_leido_hasta = GREATEST(chat_leido_hasta, ${hasta})
+      WHERE viaje_id = ${viajeId}::uuid AND usuario_id = ${usuarioId}::uuid`;
+  }
+}
+
+const PERSONA = { select: { id: true, nombre: true, apodo: true } } as const;
+const INCLUIR = {
+  autor: PERSONA,
+  reacciones: {
+    include: { usuario: PERSONA },
+    orderBy: [{ creadaEn: 'asc' as const }, { usuarioId: 'asc' as const }],
+  },
+};
+
+/** Agrupa por emoji, en el orden en que se usó cada uno por primera vez. */
+function agrupar(reacciones: { emoji: string; usuario: PersonaVista }[]): ReaccionVista[] {
+  const grupos = new Map<string, PersonaVista[]>();
+  for (const r of reacciones) grupos.set(r.emoji, [...(grupos.get(r.emoji) ?? []), r.usuario]);
+  return [...grupos].map(([emoji, usuarios]) => ({ emoji, usuarios }));
+}
 
 function aVista(f: {
   id: string;
   viajeId: string;
   contenido: string;
   enviadoEn: Date;
-  autor: { id: string; nombre: string; apodo: string | null };
+  autor: PersonaVista;
+  reacciones: { emoji: string; usuario: PersonaVista }[];
 }): MensajeVista {
   return {
     id: f.id,
@@ -26,6 +80,7 @@ function aVista(f: {
     autor: f.autor,
     contenido: f.contenido,
     enviadoEn: f.enviadoEn.toISOString(),
+    reacciones: agrupar(f.reacciones),
   };
 }
 

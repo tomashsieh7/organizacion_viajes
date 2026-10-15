@@ -3,6 +3,8 @@ import { BusDeEventosEnMemoria } from '../../src/compartido/eventos.js';
 import {
   ConsultarMensajes,
   EnviarMensaje,
+  MarcarChatLeido,
+  ReaccionarAMensaje,
   ReenviarEventosDelViaje,
   UnirseAlChat,
 } from '../../src/modulos/chat/casos-de-uso/casosDeUsoChat.js';
@@ -27,6 +29,7 @@ import {
   ConsultaSaldosPendientesEnMemoria,
   NotificadorViajeEnMemoria,
   RepositorioMensajesEnMemoria,
+  RepositorioReaccionesEnMemoria,
   type BaseEnMemoria,
 } from '../soporte/memoria.js';
 
@@ -40,7 +43,10 @@ let enviar: EnviarMensaje;
 
 beforeEach(() => {
   base = baseVacia();
-  base.usuarios.push({ id: 'ana', nombre: 'Ana', apodo: 'Ani' });
+  base.usuarios.push(
+    { id: 'ana', nombre: 'Ana', apodo: 'Ani' },
+    { id: 'tomas', nombre: 'Tomás', apodo: null },
+  );
   enviar = new EnviarMensaje(
     participacion,
     new RepositorioMensajesEnMemoria(base),
@@ -97,6 +103,71 @@ describe('CU19: enviar y consultar mensajes', () => {
     await expect(consultar.pagina('v1', 'no-existe', 50)).rejects.toMatchObject({
       codigo: 'NO_ENCONTRADO',
     });
+  });
+});
+
+describe('Reacciones a mensajes', () => {
+  let instante = 0;
+  const reaccionar = (usuarioId: string, mensajeId: string, emoji: string | null, viaje = 'v1') =>
+    new ReaccionarAMensaje(
+      participacion,
+      new RepositorioReaccionesEnMemoria(base),
+      new ConsultaMensajesEnMemoria(base),
+      // Cada reacción un segundo después de la anterior, para que el orden sea el de uso.
+      { ahora: () => new Date(Date.UTC(2026, 8, 24, 12, 0, ++instante)) },
+    ).ejecutar(viaje, usuarioId, mensajeId, emoji);
+
+  it('RN-X7: agrupa por emoji, reemplaza la reacción propia y la quita con null', async () => {
+    const { id } = await enviar.ejecutar('v1', 'ana', 'Llegamos');
+    await reaccionar('ana', id, '👍');
+    expect(await reaccionar('tomas', id, '👍')).toEqual([
+      {
+        emoji: '👍',
+        usuarios: [
+          { id: 'ana', nombre: 'Ana', apodo: 'Ani' },
+          { id: 'tomas', nombre: 'Tomás', apodo: null },
+        ],
+      },
+    ]);
+    // Una por persona: elegir otro emoji reemplaza el anterior.
+    const conCambio = await reaccionar('tomas', id, '🎉');
+    expect(conCambio.map((r) => [r.emoji, r.usuarios.map((u) => u.id)])).toEqual([
+      ['👍', ['ana']],
+      ['🎉', ['tomas']],
+    ]);
+    expect(await reaccionar('ana', id, null)).toEqual([conCambio[1]]);
+    // El historial las trae con el mensaje.
+    const pagina = await new ConsultarMensajes(new ConsultaMensajesEnMemoria(base)).pagina(
+      'v1',
+      undefined,
+      10,
+    );
+    expect(pagina.mensajes[0]!.reacciones).toEqual([conCambio[1]]);
+  });
+
+  it('RN-X7: rechaza un emoji fuera del conjunto, a quien no participa y un mensaje de otro viaje', async () => {
+    const { id } = await enviar.ejecutar('v1', 'ana', 'Hola');
+    await expect(reaccionar('ana', id, '🍕')).rejects.toMatchObject({
+      codigo: 'REACCION_INVALIDA',
+    });
+    await expect(reaccionar('luis', id, '👍')).rejects.toMatchObject({ codigo: 'NO_PARTICIPANTE' });
+    // Un mensaje de otro viaje no se encuentra en este.
+    base.mensajes.push({ ...base.mensajes[0]!, id: 'm-otro', viajeId: 'v2' });
+    await expect(reaccionar('ana', 'm-otro', '👍')).rejects.toMatchObject({
+      codigo: 'NO_ENCONTRADO',
+    });
+    expect(base.reacciones).toEqual([]);
+  });
+});
+
+describe('Marca de lectura del chat', () => {
+  it('registra la hora del reloj para el viaje y la persona', async () => {
+    const marcas: [string, string, Date][] = [];
+    await new MarcarChatLeido({ marcar: async (...m) => void marcas.push(m) }, reloj).ejecutar(
+      'v1',
+      'ana',
+    );
+    expect(marcas).toEqual([['v1', 'ana', reloj.ahora()]]);
   });
 });
 

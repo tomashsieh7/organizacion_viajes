@@ -1,5 +1,6 @@
 import type {
   AvisoAdminCambiado,
+  EmojiReaccion,
   AvisoMembresiaFinalizada,
   MensajeVista,
   PaginaDeMensajes,
@@ -8,6 +9,18 @@ import type { Mensaje } from './mensaje.js';
 
 export interface RepositorioMensajes {
   guardar(mensaje: Mensaje): Promise<void>;
+}
+
+/** Una reacción por persona y mensaje: poner otra reemplaza la anterior. */
+export interface RepositorioReacciones {
+  poner(mensajeId: string, usuarioId: string, emoji: EmojiReaccion, ahora: Date): Promise<void>;
+  quitar(mensajeId: string, usuarioId: string): Promise<void>;
+}
+
+/** Marca hasta cuándo leyó cada participante el chat del viaje. */
+export interface RegistroDeLectura {
+  /** Nunca retrocede: una marca anterior a la guardada no cambia nada. */
+  marcar(viajeId: string, usuarioId: string, hasta: Date): Promise<void>;
 }
 
 export interface ConsultaMensajes {

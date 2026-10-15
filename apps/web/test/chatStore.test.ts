@@ -1,9 +1,9 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
 import { CLIENTE_CHAT } from '../src/clientes/chat';
 import { ErrorDeApi } from '../src/clientes/http';
-import { useChatStore } from '../src/stores/chat';
+import { DURACION_ESCRIBIENDO_MS, INTERVALO_AVISO_MS, useChatStore } from '../src/stores/chat';
 import { useSesionStore } from '../src/stores/sesion';
 import { useViajeStore } from '../src/stores/viaje';
 import {
@@ -21,8 +21,12 @@ let chat: ReturnType<typeof useChatStore>;
 let viaje: ReturnType<typeof useViajeStore>;
 const obtener = vi.fn();
 
-async function preparar(historial?: Parameters<typeof clienteChatFalso>[0]) {
+async function preparar(
+  historial?: Parameters<typeof clienteChatFalso>[0],
+  configurar?: (f: typeof falso) => void,
+) {
   falso = clienteChatFalso(historial);
+  configurar?.(falso);
   const opciones = montaje(clienteAuthFalso(), clienteViajesFalso({ obtener }), {
     [CLIENTE_CHAT as symbol]: falso.cliente,
   });
@@ -33,7 +37,7 @@ async function preparar(historial?: Parameters<typeof clienteChatFalso>[0]) {
     opciones,
   );
   useSesionStore().usuario = ANA;
-  await chat.entrar('v1');
+  return chat.entrar('v1');
 }
 
 beforeEach(() => {
@@ -142,5 +146,104 @@ describe('useChatStore', () => {
     const aviso = { viajeId: 'v1', motivo: 'ELIMINADO' as const, conservaAccesoSaldos: false };
     falso.servidor().membresiaFinalizada(aviso);
     expect(chat.finalizada).toEqual(aviso);
+  });
+
+  it('aplica las reacciones que confirma el servidor y las que llegan de otros', async () => {
+    await preparar({ mensajes: [mensaje('m1', 'tomas', 'Llegamos')], hayMas: false });
+    await chat.cargarHistorial();
+    const deAna = [{ emoji: '🎉', usuarios: [ANA] }];
+    falso.conexion.reaccionar.mockResolvedValue(deAna);
+    await chat.reaccionar('m1', '🎉');
+    expect(falso.conexion.reaccionar).toHaveBeenCalledWith({
+      viajeId: 'v1',
+      mensajeId: 'm1',
+      emoji: '🎉',
+    });
+    expect(chat.mensajes[0]!.reacciones).toEqual(deAna);
+
+    falso.servidor().reacciones({ viajeId: 'v1', mensajeId: 'm1', reacciones: [] });
+    expect(chat.mensajes[0]!.reacciones).toEqual([]);
+    // De otro viaje no se aplica.
+    falso.servidor().reacciones({ viajeId: 'v2', mensajeId: 'm1', reacciones: deAna });
+    expect(chat.mensajes[0]!.reacciones).toEqual([]);
+
+    falso.conexion.reaccionar.mockRejectedValue(new ErrorDeApi(0, 'SIN_CONEXION', 'Sin conexión'));
+    await chat.reaccionar('m1', '👍');
+    expect(chat.error).toBe('Sin conexión');
+  });
+
+  it('"escribiendo" se borra a los 5 segundos o cuando llega el mensaje de esa persona', async () => {
+    await preparar();
+    vi.useFakeTimers();
+    try {
+      const tomas = { id: 'tomas', nombre: 'Tomás', apodo: null };
+      const luis = { id: 'luis', nombre: 'Luis', apodo: null };
+      falso.servidor().escribiendo({ viajeId: 'v1', usuario: tomas });
+      falso.servidor().escribiendo({ viajeId: 'v1', usuario: luis });
+      falso.servidor().escribiendo({ viajeId: 'v1', usuario: tomas });
+      falso.servidor().escribiendo({ viajeId: 'v2', usuario: { ...luis, id: 'eva' } });
+      expect(chat.quienesEscriben).toEqual([luis, tomas]);
+
+      falso.servidor().mensaje(mensaje('m1', 'tomas', 'Ya está'));
+      expect(chat.quienesEscriben).toEqual([luis]);
+      vi.advanceTimersByTime(DURACION_ESCRIBIENDO_MS);
+      expect(chat.quienesEscriben).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('avisa que uno escribe como mucho cada 3 segundos', async () => {
+    await preparar();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      chat.avisarEscribiendo();
+      chat.avisarEscribiendo();
+      await flushPromises();
+      expect(falso.conexion.escribiendo).toHaveBeenCalledTimes(1);
+      expect(falso.conexion.escribiendo).toHaveBeenCalledWith('v1');
+      vi.advanceTimersByTime(INTERVALO_AVISO_MS);
+      chat.avisarEscribiendo();
+      await flushPromises();
+      expect(falso.conexion.escribiendo).toHaveBeenCalledTimes(2);
+      // Después de enviar un mensaje, el próximo aviso no espera.
+      falso.conexion.enviar.mockResolvedValue(mensaje('m1', 'ana', 'Hola'));
+      await chat.enviar('Hola');
+      chat.avisarEscribiendo();
+      await flushPromises();
+      expect(falso.conexion.escribiendo).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('el aviso de escribiendo espera a que termine la entrada a la sala', async () => {
+    let unido!: () => void;
+    const entrada = preparar(undefined, (f) =>
+      f.conexion.unirse.mockImplementation(
+        () => new Promise<undefined>((r) => (unido = () => r(undefined))),
+      ),
+    );
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      chat.avisarEscribiendo();
+      await flushPromises();
+      expect(falso.conexion.escribiendo).not.toHaveBeenCalled();
+      unido();
+      await entrada;
+      await flushPromises();
+      expect(falso.conexion.escribiendo).toHaveBeenCalledWith('v1');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('marca el chat como leído y no falla si el pedido falla', async () => {
+    await preparar();
+    await chat.marcarLeido();
+    expect(falso.cliente.marcarLeido).toHaveBeenCalledWith('v1');
+    falso.cliente.marcarLeido.mockRejectedValueOnce(new ErrorDeApi(0, 'SIN_CONEXION', 'x'));
+    await expect(chat.marcarLeido()).resolves.toBeUndefined();
+    expect(chat.error).toBe('');
   });
 });

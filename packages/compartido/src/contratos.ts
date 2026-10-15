@@ -42,9 +42,35 @@ export interface ResumenViaje {
   miRol: Rol;
   /** RN-E6: con `SOLO_SALDOS` solo se puede entrar a la sección de saldos. */
   miAcceso: TipoAcceso;
+  /** Mensajes de otros desde la última vez que se abrió el chat; 0 con `SOLO_SALDOS`. */
+  mensajesSinLeer: number;
+  /** Lo último que pasó en el viaje; null si no pasó nada o con `SOLO_SALDOS`. */
+  ultimaNovedad: NovedadViaje | null;
 }
 
-export interface DetalleViaje extends Omit<ResumenViaje, 'monedaCodigo'> {
+export type TipoNovedad = 'MENSAJE' | 'PROPUESTA' | 'CONFIRMACION' | 'GASTO' | 'PAGO';
+
+/**
+ * Última novedad del viaje para la lista de grupos. Los pagos cuentan solo si quien consulta es
+ * el deudor o el acreedor; el texto para mostrar se arma en la web.
+ */
+export interface NovedadViaje {
+  tipo: TipoNovedad;
+  /** Quién escribió, propuso, confirmó, anotó o pagó; null si la propuesta se resolvió sola. */
+  autor: PersonaVista | null;
+  /** Contenido del mensaje, o título de la propuesta o del gasto; vacío en un pago. */
+  texto: string;
+  /** Monto del gasto o del pago, en la unidad mínima de la moneda. */
+  monto: number | null;
+  /** En un pago, quien lo recibió. */
+  contraparte: PersonaVista | null;
+  en: string;
+}
+
+export interface DetalleViaje extends Omit<
+  ResumenViaje,
+  'monedaCodigo' | 'mensajesSinLeer' | 'ultimaNovedad'
+> {
   moneda: Moneda;
   /** Total que quien consulta debe al resto del grupo, en la unidad mínima de la moneda. */
   miDeudaPendiente: number;
@@ -176,8 +202,28 @@ export interface MensajeVista {
   autor: { id: string; nombre: string; apodo: string | null };
   contenido: string;
   enviadoEn: string;
+  /** Agrupadas por emoji, en el orden en que se usó cada uno por primera vez. */
+  reacciones: ReaccionVista[];
   /** Identificador que puso el cliente al enviarlo, para reemplazar su versión optimista. */
   idTemporal?: string;
+}
+
+export interface ReaccionVista {
+  emoji: string;
+  usuarios: PersonaVista[];
+}
+
+/** Carga del evento `chat:reacciones`: las reacciones actuales de un mensaje. */
+export interface ReaccionesDelMensaje {
+  viajeId: string;
+  mensajeId: string;
+  reacciones: ReaccionVista[];
+}
+
+/** Carga del evento `chat:escribiendo`. */
+export interface AvisoEscribiendo {
+  viajeId: string;
+  usuario: PersonaVista;
 }
 
 export interface PaginaDeMensajes {
@@ -209,6 +255,8 @@ export interface EventosServidorChat {
   'chat:mensaje': (mensaje: MensajeVista) => void;
   'viaje:membresia-finalizada': (aviso: AvisoMembresiaFinalizada) => void;
   'viaje:admin-cambiado': (aviso: AvisoAdminCambiado) => void;
+  'chat:reacciones': (datos: ReaccionesDelMensaje) => void;
+  'chat:escribiendo': (aviso: AvisoEscribiendo) => void;
 }
 
 /** Eventos que el cliente emite en el espacio de nombres `/chat`, con su confirmación. */
@@ -219,6 +267,11 @@ export interface EventosClienteChat {
     datos: { viajeId: string; contenido: string; idTemporal: string },
     confirmar: (r: ConfirmacionSocket<{ mensaje: MensajeVista }>) => void,
   ) => void;
+  'chat:reaccionar': (
+    datos: { viajeId: string; mensajeId: string; emoji: string | null },
+    confirmar: (r: ConfirmacionSocket<{ reacciones: ReaccionVista[] }>) => void,
+  ) => void;
+  'chat:escribiendo': (datos: { viajeId: string }) => void;
 }
 
 /**
@@ -261,6 +314,15 @@ export interface PagoRegistrado {
   monto: number;
   fecha: string;
   registradoPor: PersonaVista;
+}
+
+/** Pago en el que participa quien consulta, para la Actividad de Cuentas. */
+export interface PagoDeActividad {
+  id: string;
+  monto: number;
+  fecha: string;
+  deudor: PersonaVista;
+  acreedor: PersonaVista;
 }
 
 /** Deuda pendiente con otro viajero (CU21 y CU22); `contraparte` es el acreedor o el deudor. */

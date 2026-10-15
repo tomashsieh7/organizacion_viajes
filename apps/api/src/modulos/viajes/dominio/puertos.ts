@@ -40,9 +40,19 @@ export interface Acceso {
 }
 
 /** Lecturas para mostrar viajes y participantes, y para los middlewares de acceso. */
+/** Resumen del viaje sin lo que completa `ConsultaNovedades`. */
+export type ResumenSinNovedades = Omit<ResumenViaje, 'mensajesSinLeer' | 'ultimaNovedad'>;
+
+export type NovedadesDelViaje = Pick<ResumenViaje, 'mensajesSinLeer' | 'ultimaNovedad'>;
+
+/** Mensajes sin leer y última novedad de varios viajes a la vez, para la lista de grupos. */
+export interface ConsultaNovedades {
+  deViajes(usuarioId: string, viajeIds: string[]): Promise<Map<string, NovedadesDelViaje>>;
+}
+
 export interface ConsultaViajes {
   obtenerAcceso(viajeId: string, usuarioId: string): Promise<Acceso | null>;
-  listarDeUsuario(usuarioId: string): Promise<ResumenViaje[]>;
+  listarDeUsuario(usuarioId: string): Promise<ResumenSinNovedades[]>;
   obtenerDetalle(
     viajeId: string,
     usuarioId: string,

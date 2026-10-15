@@ -21,10 +21,12 @@ import {
 import type {
   ConsultaMensajes,
   RepositorioMensajes,
+  RepositorioReacciones,
 } from '../../src/modulos/chat/dominio/puertos.js';
 import {
   ConsultaMensajesPrisma,
   RepositorioMensajesPrisma,
+  RepositorioReaccionesPrisma,
 } from '../../src/modulos/chat/infraestructura/prisma.js';
 import { ConsultaItinerarioPrisma } from '../../src/modulos/itinerario/infraestructura/prisma.js';
 import type {
@@ -90,6 +92,7 @@ import {
   ConsultaMensajesEnMemoria,
   ConsultaSaldosPendientesEnMemoria,
   RepositorioMensajesEnMemoria,
+  RepositorioReaccionesEnMemoria,
   ConsultaItinerarioEnMemoria,
   ConsultaActividadesEnMemoria,
   RepositorioActividadesEnMemoria,
@@ -133,6 +136,7 @@ export interface Repos {
   consultaActividades: ConsultaActividades;
   itinerario: ConsultaItinerario;
   mensajes: RepositorioMensajes;
+  reacciones: RepositorioReacciones;
   consultaMensajes: ConsultaMensajes;
   saldosPendientes: ConsultaSaldosPendientes;
   gastos: RepositorioGastos;
@@ -250,6 +254,7 @@ export const implementacionEnMemoria: Implementacion = {
         consultaActividades: new ConsultaActividadesEnMemoria(base),
         itinerario: new ConsultaItinerarioEnMemoria(base),
         mensajes: new RepositorioMensajesEnMemoria(base),
+        reacciones: new RepositorioReaccionesEnMemoria(base),
         consultaMensajes: new ConsultaMensajesEnMemoria(base),
         saldosPendientes: new ConsultaSaldosPendientesEnMemoria(base),
         gastos: new RepositorioGastosEnMemoria(base),
@@ -373,6 +378,7 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
           consultaActividades: new ConsultaActividadesPrisma(prisma),
           itinerario: new ConsultaItinerarioPrisma(prisma),
           mensajes: new RepositorioMensajesPrisma(prisma),
+          reacciones: new RepositorioReaccionesPrisma(prisma),
           consultaMensajes: new ConsultaMensajesPrisma(prisma),
           saldosPendientes: new ConsultaSaldosPendientesPrisma(prisma),
           gastos: new RepositorioGastosPrisma(prisma),

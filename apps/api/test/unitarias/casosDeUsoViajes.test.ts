@@ -9,7 +9,12 @@ import {
   TransferirAdministracion,
   type DependenciasViajes,
 } from '../../src/modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
-import type { ReposViajes } from '../../src/modulos/viajes/dominio/puertos.js';
+import type {
+  ConsultaViajes,
+  NovedadesDelViaje,
+  ReposViajes,
+  ResumenSinNovedades,
+} from '../../src/modulos/viajes/dominio/puertos.js';
 import { UnidadDeTrabajoEnMemoria } from '../soporte/unidadDeTrabajoEnMemoria.js';
 import {
   baseVacia,
@@ -156,6 +161,7 @@ describe('Casos de uso de viajes', () => {
     const detalle = await new ConsultarViajes(
       new ConsultaViajesEnMemoria(base),
       new ConsultaDeudasEnMemoria(base),
+      { deViajes: async () => new Map() },
     ).detalle(viajeId, ana);
     expect(detalle).toMatchObject({
       miDeudaPendiente: 1234,
@@ -170,5 +176,55 @@ describe('Casos de uso de viajes', () => {
     ).rejects.toMatchObject({
       codigo: 'NO_ENCONTRADO',
     });
+  });
+});
+
+describe('ConsultarViajes: lista de grupos', () => {
+  const resumen = (id: string, miAcceso: 'COMPLETO' | 'SOLO_SALDOS' = 'COMPLETO') =>
+    ({
+      id,
+      nombre: id,
+      destino: 'Bariloche',
+      fechaInicio: '2026-12-10',
+      fechaFin: '2026-12-16',
+      monedaCodigo: 'ARS',
+      miRol: 'VIAJERO',
+      miAcceso,
+    }) satisfies ResumenSinNovedades;
+  const novedad = (en: string, mensajesSinLeer = 0): NovedadesDelViaje => ({
+    mensajesSinLeer,
+    ultimaNovedad: {
+      tipo: 'MENSAJE',
+      autor: null,
+      texto: 'hola',
+      monto: null,
+      contraparte: null,
+      en,
+    },
+  });
+
+  it('ordena por la novedad más reciente y deja al final los viajes sin novedades', async () => {
+    // La consulta los devuelve por fecha de inicio: a, b, c y d.
+    const viajes = [resumen('a'), resumen('b'), resumen('c'), resumen('d', 'SOLO_SALDOS')];
+    const pedidos: string[][] = [];
+    const lista = await new ConsultarViajes(
+      { listarDeUsuario: async () => viajes } as unknown as ConsultaViajes,
+      new ConsultaDeudasEnMemoria(baseVacia()),
+      {
+        deViajes: async (_usuarioId, ids) => {
+          pedidos.push(ids);
+          return new Map([
+            ['b', novedad('2026-10-01T10:00:00.000Z', 2)],
+            ['c', novedad('2026-10-02T10:00:00.000Z')],
+          ]);
+        },
+      },
+    ).listarMisViajes(ana);
+
+    expect(lista.map((v) => v.id)).toEqual(['c', 'b', 'a', 'd']);
+    expect(lista[1]).toMatchObject({ mensajesSinLeer: 2 });
+    // Con acceso solo a saldos no se piden novedades: no ve el chat ni el resto del viaje.
+    expect(pedidos).toEqual([['a', 'b', 'c']]);
+    expect(lista[3]).toMatchObject({ mensajesSinLeer: 0, ultimaNovedad: null });
   });
 });

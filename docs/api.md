@@ -50,7 +50,7 @@ Todas requieren sesión. Las rutas bajo `/api/viajes/:viajeId` requieren además
 |---|---|---|---|---|
 | `GET /api/monedas` | Con sesión | — | `200 { monedas: [{ codigo, nombre, decimales }] }` | — |
 | `POST /api/viajes` | Con sesión (queda como Admin) | `{ nombre, destino, fechaInicio, fechaFin, monedaCodigo }` | `201 { viaje }` (detalle) | 400 si `fechaInicio > fechaFin`, 422 `MONEDA_INEXISTENTE` |
-| `GET /api/viajes` | Con sesión | — | `200 { viajes: [{ id, nombre, destino, fechaInicio, fechaFin, monedaCodigo, miRol, miAcceso }] }`; incluye los viajes de los que se fue con saldos pendientes, con `miAcceso: "SOLO_SALDOS"` | — |
+| `GET /api/viajes` | Con sesión | — | `200 { viajes: [{ id, nombre, destino, fechaInicio, fechaFin, monedaCodigo, miRol, miAcceso, mensajesSinLeer, ultimaNovedad }] }`; incluye los viajes de los que se fue con saldos pendientes, con `miAcceso: "SOLO_SALDOS"`. Primero va el viaje con la novedad más reciente; los que no tienen novedades van al final, por fecha de inicio | — |
 | `GET /api/viajes/:viajeId` | Participante, o exparticipante con saldos pendientes | — | `200 { viaje: { id, nombre, destino, fechaInicio, fechaFin, moneda, miRol, miAcceso, miDeudaPendiente, cantidadParticipantes } }` | — |
 | `GET /api/viajes/:viajeId/participantes` | Participante | — | `200 { participantes: [{ usuarioId, nombre, apodo, rol }] }`, Admin primero | — |
 | `POST /api/viajes/:viajeId/participantes` | Admin | `{ email }` de un usuario registrado | `201 { participante }`; si se había ido, reactiva su membresía | 404 `USUARIO_NO_REGISTRADO`, 409 `YA_ES_PARTICIPANTE` |
@@ -112,13 +112,19 @@ Votar, desvotar, confirmar, denegar y cancelar una actividad usan los endpoints 
 - **`aviso`:** vale `"SIN_ACTIVIDADES_CONFIRMADAS"` cuando el día no tiene actividades, y `null` en otro caso.
 - **Ver una actividad en el mapa (CU18):** se usa `GET …/actividades/:actividadId` para conocer su día y después se pide el mapa de ese día.
 
+**Novedades de la lista:**
+- **`mensajesSinLeer`:** mensajes de otros posteriores a la última vez que se marcó leído el chat, o al alta si nunca se abrió.
+- **`ultimaNovedad`:** `{ tipo, autor, texto, monto, contraparte, en }` o `null`. `tipo` es `MENSAJE` (texto: los primeros 140 caracteres), `PROPUESTA` o `CONFIRMACION` (texto: título de la actividad o nombre del alojamiento), `GASTO` (texto: título, con su monto) o `PAGO` (autor: el deudor, contraparte: el acreedor, con su monto).
+- **Privacidad:** un pago cuenta solo para el deudor y el acreedor. Con `miAcceso: "SOLO_SALDOS"`, `mensajesSinLeer` es 0 y `ultimaNovedad` es `null`.
+
 ## Chat
 
 | Método y ruta | Quién | Parámetros | Respuesta | Errores específicos |
 |---|---|---|---|---|
 | `GET /api/viajes/:viajeId/mensajes?antesDe=&limite=` | Participante | `limite` de 1 a 100 (por defecto 50); `antesDe`, id del mensaje más viejo que ya se tiene | `200 { mensajes, hayMas }`, con los mensajes en orden cronológico | 400 `VALIDACION`, 404 si `antesDe` no es un mensaje del viaje |
+| `PUT /api/viajes/:viajeId/mensajes/leidos` | Participante | — | `204`; lo que llegó hasta ahora deja de contar como sin leer. La marca nunca retrocede | — |
 
-Cada mensaje es `{ id, viajeId, autor: { id, nombre, apodo }, contenido, enviadoEn }`. La paginación usa `(enviadoEn, id)` como cursor, así dos mensajes del mismo instante no se repiten ni se pierden.
+Cada mensaje es `{ id, viajeId, autor: { id, nombre, apodo }, contenido, enviadoEn, reacciones }`, con `reacciones: [{ emoji, usuarios: [{ id, nombre, apodo }] }]` agrupadas por emoji, en el orden en que se usó cada uno. La paginación usa `(enviadoEn, id)` como cursor, así dos mensajes del mismo instante no se repiten ni se pierden.
 
 ### Socket.IO
 
@@ -130,6 +136,9 @@ Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exig
 | `chat:salir` | cliente → servidor | `{ viajeId }` | `{ ok: true }` |
 | `chat:enviar` | cliente → servidor | `{ viajeId, contenido, idTemporal }`; contenido de 1 a 2000 caracteres, sin contar los espacios de los extremos | `{ ok: true, mensaje }`, o `{ ok: false, error }` con `VALIDACION` o `NO_PARTICIPANTE` |
 | `chat:mensaje` | servidor → sala del viaje | el mensaje con el `idTemporal` de quien lo envió | Llega a todos los que están en la sala, incluido quien lo envió |
+| `chat:reaccionar` | cliente → servidor | `{ viajeId, mensajeId, emoji }`; `emoji` es uno de 👍 ❤️ 😂 😮 😢 🎉, o `null` para quitar la propia | `{ ok: true, reacciones }`, o `{ ok: false, error }` con `VALIDACION`, `NO_PARTICIPANTE` o `NO_ENCONTRADO`. Una reacción por persona: otra reemplaza la anterior |
+| `chat:reacciones` | servidor → sala del viaje | `{ viajeId, mensajeId, reacciones }` | Se emite tras cada `chat:reaccionar` |
+| `chat:escribiendo` | cliente → servidor | `{ viajeId }` | Sin confirmación ni persistencia. Si la conexión está en la sala del viaje, el servidor emite `chat:escribiendo { viajeId, usuario: { id, nombre, apodo } }` al resto de la sala |
 | `viaje:membresia-finalizada` | servidor → conexiones del usuario | `{ viajeId, motivo: "ELIMINADO" \| "RETIRADO", conservaAccesoSaldos }` | Se emite tras una baja; el servidor saca esas conexiones de la sala. `conservaAccesoSaldos` es verdadero si tiene saldos pendientes a favor o en contra |
 | `viaje:admin-cambiado` | servidor → sala del viaje | `{ viajeId, nuevoAdminId, anteriorAdminId }` | Se emite tras un traspaso |
 
@@ -141,6 +150,7 @@ Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exig
 | `GET /api/viajes/:viajeId/gastos` | Participante | — | `200 { gastos }`, del más reciente al más viejo | — |
 | `POST /api/viajes/:viajeId/gastos` | Participante | `{ titulo, categoriaId, monto, pagadoPorId?, deudores, modoDivision, partes? }` | `201 { gasto }` | 422 `SUMA_NO_COINCIDE` (con `detalles: { total, suma, diferencia }`), `PAGADOR_NO_PARTICIPANTE`, `DEUDOR_NO_PARTICIPANTE` (con `detalles: { usuarios }`) y `CATEGORIA_INEXISTENTE`; 400 `PARTES_NO_COINCIDEN` si las partes no son exactamente de los deudores |
 | `GET /api/viajes/:viajeId/deudas?rol=deudor\|acreedor` | Participante, o exparticipante con saldos pendientes | `rol` obligatorio | `200 { deudas: [{ id, contraparte: { id, nombre, apodo }, monto, ultimaActualizacion, pagos }] }`, solo con saldo mayor que cero | 400 si falta `rol` |
+| `GET /api/viajes/:viajeId/pagos` | Participante, o exparticipante con saldos pendientes | — | `200 { pagos: [{ id, monto, fecha, deudor, acreedor }] }`, solo los pagos donde quien consulta es deudor o acreedor, también de deudas ya saldadas, del más nuevo al más viejo | — |
 | `POST /api/viajes/:viajeId/pagos` | El deudor, participante o exparticipante con saldos pendientes | `{ acreedorId, monto }`; monto mayor que cero | `201 { pago, saldo }`, con el saldo que queda con ese acreedor | 404 `SIN_DEUDA_CON_ACREEDOR`, 422 `PAGO_EXCEDE_DEUDA` con `detalles: { saldo }` |
 
 **Cuerpo de `POST …/gastos`:**

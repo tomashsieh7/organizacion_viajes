@@ -6,6 +6,7 @@ import type {
   DatosPagoNuevo,
   DeudaVista,
   GastoVista,
+  PagoDeActividad,
 } from '@viajes/compartido';
 import { CLIENTE_GASTOS } from '../clientes/gastos';
 import { useViajeStore } from './viaje';
@@ -24,11 +25,16 @@ export const useGastosStore = defineStore('gastos', () => {
   const categorias = ref<CategoriaGasto[]>([]);
   const debo = ref<DeudaVista[]>([]);
   const meDeben = ref<DeudaVista[]>([]);
+  const pagos = ref<PagoDeActividad[]>([]);
   const totalDebo = computed(() => debo.value.reduce((t, d) => t + d.monto, 0));
   const totalMeDeben = computed(() => meDeben.value.reduce((t, d) => t + d.monto, 0));
 
   async function cargarGastos() {
     gastos.value = await cliente!.listar(viajeId());
+  }
+
+  async function cargarPagos() {
+    pagos.value = await cliente!.pagos(viajeId());
   }
 
   async function cargarCategorias() {
@@ -61,12 +67,14 @@ export const useGastosStore = defineStore('gastos', () => {
   return {
     pagar,
     gastos,
+    pagos,
     categorias,
     debo,
     meDeben,
     totalDebo,
     totalMeDeben,
     cargarGastos,
+    cargarPagos,
     cargarCategorias,
     cargarDeudas,
     anotar,

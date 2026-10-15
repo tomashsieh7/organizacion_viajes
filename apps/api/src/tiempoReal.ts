@@ -20,8 +20,13 @@ export function conectarTiempoReal(servidor: ServidorHttp, c: Contenedor): Serve
     origenPermitido: c.config.ORIGEN_WEB,
     nombreCookie: NOMBRE_COOKIE_SESION,
     usuarioDeSesion: (token) => c.auth.obtenerUsuarioDeSesion.ejecutar(token),
+    personaDeUsuario: async (usuarioId) => {
+      const { nombre, apodo } = await c.auth.obtenerPerfil.ejecutar(usuarioId);
+      return { id: usuarioId, nombre, apodo };
+    },
     unirse: c.chat.unirse,
     enviar: c.chat.enviar,
+    reaccionar: c.chat.reaccionar,
   });
   c.chat.conectarNotificador(espacio);
   return io;

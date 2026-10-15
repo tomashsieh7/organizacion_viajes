@@ -84,6 +84,20 @@ export const esquemaMensajeNuevo = z.object({
 });
 export type DatosMensajeNuevo = z.input<typeof esquemaMensajeNuevo>;
 
+/** Emojis con los que se puede reaccionar a un mensaje; la base los valida con un CHECK. */
+export const EMOJIS_REACCION = ['👍', '❤️', '😂', '😮', '😢', '🎉'] as const;
+export type EmojiReaccion = (typeof EMOJIS_REACCION)[number];
+
+/** Reacción a un mensaje del chat: `null` la quita (una por persona y mensaje). */
+export const esquemaReaccion = z.object({
+  viajeId: z.uuid('Viaje inválido'),
+  mensajeId: z.uuid('Mensaje inválido'),
+  emoji: z.enum(EMOJIS_REACCION, 'Elegí una de las reacciones disponibles').nullable(),
+});
+
+/** Aviso de que alguien está escribiendo en el chat del viaje. */
+export const esquemaEscribiendo = z.object({ viajeId: z.uuid('Viaje inválido') });
+
 /** CU19: página del historial, hacia atrás desde `antesDe`. */
 export const esquemaConsultaMensajes = z.object({
   antesDe: z.uuid().optional(),

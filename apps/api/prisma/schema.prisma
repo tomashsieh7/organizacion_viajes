@@ -79,6 +79,7 @@ model Usuario {
   propuestasResueltas Propuesta[]  @relation("PropuestaResolutor")
   votos               Voto[]
   mensajes            Mensaje[]
+  reacciones          Reaccion[]
   gastosPagados       Gasto[]      @relation("GastoPagador")
   gastosRegistrados   Gasto[]      @relation("GastoRegistrador")
   partes              GastoParte[]
@@ -151,13 +152,15 @@ model Viaje {
 }
 
 model Membresia {
-  viajeId      String          @map("viaje_id") @db.Uuid
-  usuarioId    String          @map("usuario_id") @db.Uuid
-  rol          RolMembresia
-  estado       EstadoMembresia @default(ACTIVA)
-  bajaConDeuda Boolean         @default(false) @map("baja_con_deuda")
-  altaEn       DateTime        @default(now()) @map("alta_en") @db.Timestamptz(3)
-  bajaEn       DateTime?       @map("baja_en") @db.Timestamptz(3)
+  viajeId        String          @map("viaje_id") @db.Uuid
+  usuarioId      String          @map("usuario_id") @db.Uuid
+  rol            RolMembresia
+  estado         EstadoMembresia @default(ACTIVA)
+  bajaConDeuda   Boolean         @default(false) @map("baja_con_deuda")
+  altaEn         DateTime        @default(now()) @map("alta_en") @db.Timestamptz(3)
+  bajaEn         DateTime?       @map("baja_en") @db.Timestamptz(3)
+  /// Hasta cuándo leyó el chat del viaje; sin marca, cuenta desde el alta.
+  chatLeidoHasta DateTime?       @map("chat_leido_hasta") @db.Timestamptz(3)
 
   viaje   Viaje   @relation(fields: [viajeId], references: [id])
   usuario Usuario @relation(fields: [usuarioId], references: [id])
@@ -241,11 +244,27 @@ model Mensaje {
   contenido String
   enviadoEn DateTime @default(now()) @map("enviado_en") @db.Timestamptz(3)
 
-  viaje Viaje   @relation(fields: [viajeId], references: [id])
-  autor Usuario @relation(fields: [autorId], references: [id])
+  viaje      Viaje      @relation(fields: [viajeId], references: [id])
+  autor      Usuario    @relation(fields: [autorId], references: [id])
+  reacciones Reaccion[]
 
   @@index([viajeId, enviadoEn])
   @@map("mensaje")
+}
+
+/// Una reacción por persona y mensaje, con un emoji del conjunto fijo (CHECK en la migración).
+model Reaccion {
+  mensajeId String   @map("mensaje_id") @db.Uuid
+  usuarioId String   @map("usuario_id") @db.Uuid
+  emoji     String   @db.VarChar(16)
+  creadaEn  DateTime @default(now()) @map("creada_en") @db.Timestamptz(3)
+
+  mensaje Mensaje @relation(fields: [mensajeId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@id([mensajeId, usuarioId])
+  @@index([usuarioId])
+  @@map("reaccion")
 }
 
 model CategoriaGasto {

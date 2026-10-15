@@ -74,6 +74,27 @@ describe('CU23: registrar pago', () => {
     expect(await db.pago.count()).toBe(2);
   });
 
+  it('RN-X8: GET /pagos: deudor y acreedor ven sus pagos, también de deudas saldadas; nadie más', async () => {
+    const primero = (await pagar(tomas.c, ana.id, 300)).body.pago;
+    const segundo = (await pagar(tomas.c, ana.id, 700)).body.pago;
+    const persona = (v: { id: string }, nombre: string) => ({ id: v.id, nombre, apodo: null });
+    const esperados = [segundo, primero].map((p) => ({
+      id: p.id,
+      monto: p.monto,
+      fecha: p.fecha,
+      deudor: persona(tomas, 'Tomás'),
+      acreedor: persona(ana, 'Ana'),
+    }));
+    expect((await tomas.c.get(url('/pagos'))).body).toEqual({ pagos: esperados });
+    expect((await ana.c.get(url('/pagos'))).body).toEqual({ pagos: esperados });
+
+    const luis = await registrar(app, 'Luis', 'luis@mail.com');
+    await ana.c.post(url('/participantes'), { email: 'luis@mail.com' });
+    expect((await luis.c.get(url('/pagos'))).body).toEqual({ pagos: [] });
+    const ajeno = await registrar(app, 'Eva', 'eva@mail.com');
+    expect((await ajeno.c.get(url('/pagos'))).status).toBe(403);
+  });
+
   it('RN-P4: un pago mayor que la deuda responde 422 sin cambios en la base', async () => {
     const r = await pagar(tomas.c, ana.id, 1_001);
     expect([r.status, r.body.error.codigo, r.body.error.detalles]).toEqual([

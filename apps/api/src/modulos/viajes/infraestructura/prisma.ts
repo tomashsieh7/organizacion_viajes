@@ -1,4 +1,4 @@
-import type { DetalleViaje, Moneda, Participante, ResumenViaje } from '@viajes/compartido';
+import type { DetalleViaje, Moneda, Participante } from '@viajes/compartido';
 import type { ClientePrisma } from '../../../compartido/infraestructura/prisma.js';
 import { aFecha, aMonto, deFecha } from '../../../compartido/infraestructura/conversiones.js';
 import type {
@@ -8,6 +8,7 @@ import type {
   ConsultaViajes,
   LectorDeViajes,
   RepositorioViajes,
+  ResumenSinNovedades,
   RetiroDeVotos,
 } from '../dominio/puertos.js';
 import { tipoDeAcceso, Viaje } from '../dominio/viaje.js';
@@ -147,7 +148,7 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
     return new Set(filas.map((f) => f.viajeId));
   }
 
-  async listarDeUsuario(usuarioId: string): Promise<ResumenViaje[]> {
+  async listarDeUsuario(usuarioId: string): Promise<ResumenSinNovedades[]> {
     const membresias = await this.db.membresia.findMany({
       where: { usuarioId },
       include: { viaje: true },

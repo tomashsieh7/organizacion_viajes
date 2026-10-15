@@ -19,6 +19,8 @@ const oyentes = {
   mensaje: vi.fn(),
   membresiaFinalizada: vi.fn(),
   adminCambiado: vi.fn(),
+  reacciones: vi.fn(),
+  escribiendo: vi.fn(),
   reconectado: vi.fn(),
 };
 

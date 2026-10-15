@@ -3,6 +3,7 @@ import type {
   DatosGastoNuevo,
   DeudaVista,
   GastoVista,
+  PagoDeActividad,
   PagoRegistrado,
   RolEnDeuda,
 } from '@viajes/compartido';
@@ -59,6 +60,8 @@ export interface ConsultaSaldos {
   /** CU21 y CU22: deudas con saldo pendiente donde el usuario es deudor o acreedor. */
   deudas(viajeId: string, usuarioId: string, rol: RolEnDeuda): Promise<DeudaVista[]>;
   obtenerPago(viajeId: string, pagoId: string): Promise<PagoRegistrado | null>;
+  /** Pagos donde el usuario es deudor o acreedor, también de deudas saldadas; el más nuevo primero. */
+  pagosDe(viajeId: string, usuarioId: string): Promise<PagoDeActividad[]>;
 }
 
 /** Elige la estrategia según el modo pedido; se arma en el punto de composición. */

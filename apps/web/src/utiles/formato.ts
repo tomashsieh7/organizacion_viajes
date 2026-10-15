@@ -1,4 +1,10 @@
-import { pasaLaMedianoche, sumarMinutos, type Moneda } from '@viajes/compartido';
+import {
+  pasaLaMedianoche,
+  sumarMinutos,
+  type Moneda,
+  type NovedadViaje,
+  type PersonaVista,
+} from '@viajes/compartido';
 
 /** Formatea un monto en la unidad mínima de la moneda (D16), por ejemplo 150000 ARS → "$ 1.500,00". */
 export function formatearMonto(monto: number, moneda: Moneda): string {
@@ -79,6 +85,52 @@ export function etiquetaDelDia(instante: string, ahora: Date = new Date()): stri
 
 export function nombreVisible(p: { nombre: string; apodo: string | null }): string {
   return p.apodo ? `${p.nombre} (${p.apodo})` : p.nombre;
+}
+
+/**
+ * Moneda a partir de su código, con los decimales de ISO 4217, para la lista de grupos, que no
+ * carga el catálogo: ARS y USD tienen 2, CLP no tiene.
+ */
+export function monedaSegunCodigo(codigo: string): Moneda {
+  const decimales = new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: codigo,
+  }).resolvedOptions().maximumFractionDigits;
+  return { codigo, nombre: codigo, decimales: decimales ?? 2 };
+}
+
+/**
+ * Línea de la última novedad en la lista de grupos, en segunda persona cuando la hizo quien mira:
+ * "Tomás: ¿salimos?", "Propusiste «Kayak»", "Ana anotó «Cena» · $ 12.000", "Tomás te pagó $ 400".
+ */
+export function textoNovedad(n: NovedadViaje, miId: string, monedaCodigo: string): string {
+  const soyYo = n.autor?.id === miId;
+  const quien = n.autor?.nombre ?? '';
+  const monto = n.monto === null ? '' : formatearMonto(n.monto, monedaSegunCodigo(monedaCodigo));
+  switch (n.tipo) {
+    case 'MENSAJE':
+      return `${soyYo ? 'Vos' : quien}: ${n.texto}`;
+    case 'PROPUESTA':
+      return soyYo ? `Propusiste «${n.texto}»` : `${quien} propuso «${n.texto}»`;
+    case 'CONFIRMACION':
+      if (!n.autor) return `Se confirmó «${n.texto}»`;
+      return soyYo ? `Confirmaste «${n.texto}»` : `${quien} confirmó «${n.texto}»`;
+    case 'GASTO':
+      return `${soyYo ? 'Anotaste' : `${quien} anotó`} «${n.texto}» · ${monto}`;
+    case 'PAGO':
+      return soyYo
+        ? `Le pagaste ${monto} a ${n.contraparte?.nombre ?? ''}`
+        : `${quien} te pagó ${monto}`;
+  }
+}
+
+/** Quiénes escriben en el chat: "Tomás está escribiendo…" o "Tomás y Ana están escribiendo…". */
+export function textoEscribiendo(personas: PersonaVista[]): string {
+  const [a, b] = personas;
+  if (!a) return '';
+  if (!b) return `${a.nombre} está escribiendo…`;
+  if (personas.length === 2) return `${a.nombre} y ${b.nombre} están escribiendo…`;
+  return 'Varias personas están escribiendo…';
 }
 
 /**

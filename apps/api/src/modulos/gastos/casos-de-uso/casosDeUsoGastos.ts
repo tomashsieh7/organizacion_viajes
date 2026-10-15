@@ -6,6 +6,7 @@ import type {
   DeudaVista,
   GastoVista,
   RespuestaPago,
+  PagoDeActividad,
   RolEnDeuda,
 } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../../compartido/errores.js';
@@ -132,6 +133,11 @@ export class ConsultarDeudas {
 
   ejecutar(viajeId: string, usuarioId: string, rol: RolEnDeuda): Promise<DeudaVista[]> {
     return this.saldos.deudas(viajeId, usuarioId, rol);
+  }
+
+  /** Para la Actividad de Cuentas: cada uno ve solo los pagos que hizo o recibió. */
+  pagos(viajeId: string, usuarioId: string): Promise<PagoDeActividad[]> {
+    return this.saldos.pagosDe(viajeId, usuarioId);
   }
 }
 

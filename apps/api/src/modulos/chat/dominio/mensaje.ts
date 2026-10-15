@@ -1,3 +1,4 @@
+import { EMOJIS_REACCION, type EmojiReaccion } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../../compartido/errores.js';
 
 const LARGO_MAXIMO_MENSAJE = 2000;
@@ -45,4 +46,17 @@ export class Mensaje {
   aDatos(): DatosMensaje {
     return { ...this.datos };
   }
+}
+
+/** Una reacción solo puede ser uno de los emojis del conjunto fijo. */
+export function emojiDeReaccion(emoji: string): EmojiReaccion {
+  const valido = EMOJIS_REACCION.find((e) => e === emoji);
+  if (!valido) {
+    throw new ErrorDeDominio(
+      'VALIDACION',
+      'REACCION_INVALIDA',
+      'Elegí una de las reacciones disponibles',
+    );
+  }
+  return valido;
 }

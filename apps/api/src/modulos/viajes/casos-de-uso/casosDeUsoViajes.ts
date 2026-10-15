@@ -15,6 +15,7 @@ import type { UnidadDeTrabajo } from '../../../compartido/unidadDeTrabajo.js';
 import type {
   BuscadorDeUsuarios,
   ConsultaDeudas,
+  ConsultaNovedades,
   ConsultaSaldosPendientes,
   ConsultaViajes,
   LectorDeViajes,
@@ -144,6 +145,8 @@ export class TransferirAdministracion {
   }
 }
 
+const SIN_NOVEDADES = { mensajesSinLeer: 0, ultimaNovedad: null };
+
 /** Lecturas de viajes, participantes y monedas. */
 export class ConsultarViajes {
   constructor(
@@ -156,10 +159,21 @@ export class ConsultarViajes {
       | 'listarMonedas'
     >,
     private readonly deudas: ConsultaDeudas,
+    private readonly novedades: ConsultaNovedades,
   ) {}
 
-  listarMisViajes(usuarioId: string): Promise<ResumenViaje[]> {
-    return this.consultas.listarDeUsuario(usuarioId);
+  /**
+   * Como una lista de chats: primero el viaje con la novedad más reciente. Los que no tienen
+   * novedades quedan al final, en el orden de la consulta (por fecha de inicio).
+   */
+  async listarMisViajes(usuarioId: string): Promise<ResumenViaje[]> {
+    const viajes = await this.consultas.listarDeUsuario(usuarioId);
+    // Con acceso solo a saldos no se ve el chat ni el resto del viaje.
+    const completos = viajes.filter((v) => v.miAcceso === 'COMPLETO').map((v) => v.id);
+    const novedades = await this.novedades.deViajes(usuarioId, completos);
+    return viajes
+      .map((v) => ({ ...v, ...(novedades.get(v.id) ?? SIN_NOVEDADES) }))
+      .sort((a, b) => (b.ultimaNovedad?.en ?? '').localeCompare(a.ultimaNovedad?.en ?? ''));
   }
 
   async detalle(viajeId: string, usuarioId: string): Promise<DetalleViaje> {

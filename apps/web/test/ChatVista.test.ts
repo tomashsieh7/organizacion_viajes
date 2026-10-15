@@ -50,4 +50,52 @@ describe('ChatVista', () => {
     expect((campo.element as HTMLTextAreaElement).value).toBe('');
     vi.restoreAllMocks();
   });
+
+  it('marca leído al entrar y al salir, avisa que uno escribe y muestra quién escribe', async () => {
+    const falso = clienteChatFalso();
+    const opciones = montaje(clienteAuthFalso(), clienteViajesFalso(), {
+      [CLIENTE_CHAT as symbol]: falso.cliente,
+    });
+    await abrirViaje(opciones);
+    useSesionStore().usuario = ANA;
+    await useChatStore().entrar('v1');
+    const vista = mount(ChatVista, opciones);
+    await flushPromises();
+    expect(falso.cliente.marcarLeido).toHaveBeenCalledTimes(1);
+
+    await vista.find('textarea').setValue('Ho');
+    expect(falso.conexion.escribiendo).toHaveBeenCalledWith('v1');
+    falso.servidor().escribiendo({
+      viajeId: 'v1',
+      usuario: { id: 'tomas', nombre: 'Tomás', apodo: null },
+    });
+    await flushPromises();
+    expect(vista.find('.escribiendo').text()).toBe('Tomás está escribiendo…');
+
+    vista.unmount();
+    expect(falso.cliente.marcarLeido).toHaveBeenCalledTimes(2);
+  });
+
+  it('con el chat abierto, lo que llega de otros se marca leído a los 2 segundos', async () => {
+    const falso = clienteChatFalso();
+    const opciones = montaje(clienteAuthFalso(), clienteViajesFalso(), {
+      [CLIENTE_CHAT as symbol]: falso.cliente,
+    });
+    await abrirViaje(opciones);
+    useSesionStore().usuario = ANA;
+    await useChatStore().entrar('v1');
+    const vista = mount(ChatVista, opciones);
+    await flushPromises();
+    vi.useFakeTimers();
+    try {
+      falso.servidor().mensaje(mensaje('m1', 'tomas', 'Hola'));
+      falso.servidor().mensaje(mensaje('m2', 'tomas', '¿Vamos?'));
+      await flushPromises();
+      vi.advanceTimersByTime(2_000);
+      expect(falso.cliente.marcarLeido).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+      vista.unmount();
+    }
+  });
 });

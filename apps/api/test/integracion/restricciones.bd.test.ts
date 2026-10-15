@@ -63,6 +63,23 @@ describe('F1 — restricciones del esquema (sección 4.3)', () => {
     ).rejects.toThrow(/credencial_email_normalizado/);
   });
 
+  it('una reacción por persona y mensaje, solo con un emoji del conjunto', async () => {
+    const mensaje = await prisma.mensaje.create({
+      data: { viajeId: viaje, autorId: ana, contenido: 'Hola' },
+    });
+    await expect(
+      prisma.reaccion.create({ data: { mensajeId: mensaje.id, usuarioId: ana, emoji: '🍕' } }),
+    ).rejects.toThrow(/reaccion_emoji_valido/);
+    await prisma.reaccion.create({ data: { mensajeId: mensaje.id, usuarioId: ana, emoji: '❤️' } });
+    await expect(
+      prisma.reaccion.create({ data: { mensajeId: mensaje.id, usuarioId: ana, emoji: '👍' } }),
+    ).rejects.toThrow();
+    await prisma.reaccion.create({
+      data: { mensajeId: mensaje.id, usuarioId: tomas, emoji: '👍' },
+    });
+    expect(await prisma.reaccion.count()).toBe(2);
+  });
+
   it('rechaza una deuda de un viajero consigo mismo', async () => {
     await expect(
       prisma.deuda.create({ data: { viajeId: viaje, deudorId: ana, acreedorId: ana, monto: 10n } }),
