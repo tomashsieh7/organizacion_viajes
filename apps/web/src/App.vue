@@ -172,6 +172,8 @@ onErrorCaptured((error) => {
 body {
   margin: 0;
   min-height: 100vh;
+  /* Un link pegado o un nombre sin espacios se corta en lugar de salirse de la pantalla. */
+  overflow-wrap: anywhere;
 }
 h1,
 h2,

@@ -1739,3 +1739,30 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Release 5:** las reacciones, "escribiendo…" y la lista de grupos con novedades y mensajes sin leer siguen guardadas en `claude/release-5-mensajeria`.
 - **Story map** (`docs/diagramas.drawio`, Página-13): la tarjeta del progreso pasó del Release 10 al MVP, en la columna "Gestionar el grupo" (x=430, y=830), con los colores del MVP.
 - **PLAN.md:** se actualizaron la sección 7.1.1, la fila del R10 en la sección 9 y la tabla de 10.2.
+
+## 2026-10-15 11:28 — Merge del PR #30
+
+- Con la autorización del usuario ("Sí, aplicalo y mergealo si pasa el CI"), el PR #30 ("Story map: el progreso del viaje pasa del Release 10 al MVP") se mergeó a `main` en `57299c9`, fijando la cabeza verificada `6f79714`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-15 11:28 — Revisión con datos largos: mensajes en castellano, montos de millones y palabras sin espacios
+
+- **Pedido del usuario:** "Fijate si hay más cosas para mejorar o arreglar".
+- **Revisión:**
+  - **Bases:** `npm audit` da 0 vulnerabilidades, `jscpd` encuentra 36 clones (1,1 %, sin cambios) y el error del PR #29 (`confirmar?.(…await…)`) no se repite en otro lugar.
+  - **Recorrido:** se recorrieron todas las pantallas a 360 px con datos al máximo permitido y con datos largos realistas.
+  - **Lo que quedó como está:** TypeScript 7 (versión mayor recién salida, con el compilador reescrito) y Prisma 8, que todavía es preliminar.
+- **Hallazgos y arreglos, elegidos por el usuario:**
+  - **Mensajes en inglés:** los largos máximos no tenían mensaje propio y se veía "Too big: expected string to have <=120 characters".
+    - `LARGOS_MAXIMOS` en `packages/compartido` centraliza los límites, con el mensaje "Puede tener hasta N caracteres". También se agregaron mensajes para la contraseña al ingresar y para el precio.
+    - Cada campo lleva `maxlength`. En "Nuevo grupo", la ciudad (70) y el país (48) suman, con ", ", los 120 del destino.
+  - **Montos de millones:**
+    - el balance de la billetera usa `clamp(1.5rem, 8vw, 2.25rem)`;
+    - los totales de Saldos se achican según su largo dentro de la pestaña (`--largo` y `cqi`), así "$ 0,00" conserva su tamaño y "$ 11.111.111,01" entra en un renglón a 360 px.
+  - **Filas de la Actividad y de Saldos:** con `flex-wrap`, el monto baja al renglón siguiente solo cuando no entra al lado del título o del nombre.
+  - **Palabras sin espacios:** `overflow-wrap: anywhere` en `body`. Los montos que podían partirse por esa regla se revisaron uno por uno.
+- **Ajuste durante la implementación:** con el título a 9rem, los montos normales de los pagos bajaban de renglón sin necesidad, así que se pasó a 7rem.
+- **Pruebas:**
+  - los mensajes de largo en castellano, en la web y en `POST /viajes`;
+  - `maxlength` en "Nuevo grupo" y en anotar gasto;
+  - una e2e nueva en `diseno.spec.ts` con datos largos a 360 px, que falla sin estos arreglos y pasa con ellos.
+- **Diagramas:** no cambian, porque el cambio es de validación y presentación.

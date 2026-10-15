@@ -682,6 +682,12 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
 - **Errores inesperados:** si un componente falla sin manejar el error, `App.vue` lo captura (`onErrorCaptured`), lo registra en la consola y muestra un aviso para recargar, que se quita al cambiar de página.
 - **Títulos de página:** cada ruta define su título (`meta.titulo`) y la pestaña muestra, por ejemplo, "Saldos · Organizador de viajes" (WCAG 2.4.2).
 - **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026", "jueves 10 dic"), con `formatearRango`, `formatearDia`, `formatearHorario`, `formatearHora` (siempre con 24 horas) y `etiquetaDelDia` ("Hoy", "Ayer", "24 sep") de `utiles/formato.ts` y `nombreDelDia` de `utiles/fechas.ts`.
+- **Textos y montos largos:**
+  - cada campo de texto tiene el mismo largo máximo que su esquema (`LARGOS_MAXIMOS` en `packages/compartido`), con el mensaje "Puede tener hasta N caracteres";
+  - las palabras sin espacios se cortan dentro de su contenedor (`overflow-wrap: anywhere` en `body`);
+  - el balance de la billetera y los totales de Saldos se achican en celular para que entren montos de millones;
+  - en las filas de la Actividad y de Saldos, el monto baja al renglón siguiente cuando no entra al lado del nombre;
+  - la prueba de diseño recorre las páginas a 360 px también con datos largos.
 - **Patrones tomados de otras apps** (el patrón de uso, nunca su identidad visual):
   - **Chat, como WhatsApp:** separadores de día ("Hoy", "Ayer", "24 sep"), mensajes seguidos de la misma persona agrupados (el nombre se ve solo al empezar el bloque y los lectores de pantalla lo leen siempre), la hora dentro de la burbuja, un campo que crece hasta unos cinco renglones y "Enviar" como botón redondo con ícono.
   - **Cuentas, como una billetera (Mercado Pago):** el balance neto en grande, accesos rápidos redondos (Anotar gasto, Pagar, Me deben) y la "Actividad" con los gastos y los pagos propios agrupados por día, con el ícono de su categoría y tu parte; el reparto se despliega al tocar. Al pagar se muestra un comprobante (monto, a quién, fecha y lo que queda) y los montos se escriben grandes y centrados (`.monto-grande`).

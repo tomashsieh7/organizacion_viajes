@@ -27,8 +27,10 @@ const pagueYo = computed(() => props.pago.deudor.id === props.miId);
 </template>
 
 <style scoped>
+/* Como en TarjetaGasto: si no entra al lado del título, el monto baja al renglón siguiente. */
 .pago {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--esp-3);
   padding: var(--esp-3) var(--esp-4);
@@ -44,7 +46,7 @@ const pagueYo = computed(() => props.pago.deudor.id === props.miId);
   color: var(--color-acento);
 }
 .pago__texto {
-  flex: 1;
+  flex: 1 1 7rem;
   min-width: 0;
 }
 .pago__titulo,
@@ -56,6 +58,7 @@ const pagueYo = computed(() => props.pago.deudor.id === props.miId);
   font-size: 0.875rem;
 }
 .monto {
+  margin-left: auto;
   white-space: nowrap;
 }
 .monto--recibido {

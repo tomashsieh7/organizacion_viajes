@@ -19,6 +19,9 @@ const pestana = ref<'debo' | 'meDeben'>(
   useRoute()?.query['ver'] === 'meDeben' ? 'meDeben' : 'debo',
 );
 const error = ref('');
+const total = (n: number) => formatearMonto(n, viaje.actual!.moneda);
+/** El largo del total, para que el CSS lo achique solo si no entra en la pestaña. */
+const largo = (n: number) => ({ '--largo': total(n).length });
 // Hasta que llegan las deudas no se muestran las que quedaron de otra visita, que pueden estar viejas.
 const cargado = ref(false);
 
@@ -46,9 +49,12 @@ onMounted(async () => {
         @click="pestana = 'debo'"
       >
         <span class="pestana__rotulo">Debo<span class="solo-lectores">:</span></span>
-        <span class="pestana__total monto" :class="{ 'pestana__total--cero': !gastos.totalDebo }">{{
-          formatearMonto(gastos.totalDebo, viaje.actual!.moneda)
-        }}</span>
+        <span
+          class="pestana__total monto"
+          :class="{ 'pestana__total--cero': !gastos.totalDebo }"
+          :style="largo(gastos.totalDebo)"
+          >{{ total(gastos.totalDebo) }}</span
+        >
       </button>
       <button
         type="button"
@@ -61,7 +67,8 @@ onMounted(async () => {
         <span
           class="pestana__total monto"
           :class="{ 'pestana__total--cero': !gastos.totalMeDeben }"
-          >{{ formatearMonto(gastos.totalMeDeben, viaje.actual!.moneda) }}</span
+          :style="largo(gastos.totalMeDeben)"
+          >{{ total(gastos.totalMeDeben) }}</span
         >
       </button>
     </div>
@@ -108,11 +115,15 @@ onMounted(async () => {
 /* Los dos totales como pestañas grandes: cuánto debés y cuánto te deben, a simple vista. */
 .pestanas {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, …): las dos pestañas comparten el ancho aunque el total sea largo. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--esp-3);
   margin-bottom: var(--esp-4);
 }
 .pestana {
+  min-width: 0;
+  /* El total se mide contra el ancho de su pestaña. */
+  container-type: inline-size;
   font: inherit;
   display: flex;
   flex-direction: column;
@@ -133,7 +144,13 @@ onMounted(async () => {
   font-weight: 500;
 }
 .pestana__total {
-  font-size: 1.375rem;
+  /*
+   * Tamaño normal mientras el monto entra en la pestaña; si no, se achica según su largo
+   * (cada cifra mide unos 0,62 em en negrita), así en celular entran montos de millones.
+   */
+  font-size: min(1.375rem, calc(100cqi / (var(--largo, 10) * 0.62)));
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-weight: 700;
 }
 .pestana--debo .pestana__total {

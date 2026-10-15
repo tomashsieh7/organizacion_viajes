@@ -135,7 +135,11 @@ onMounted(() =>
 }
 .billetera .billetera__monto {
   font-family: var(--fuente-titulos);
-  font-size: 2.25rem;
+  /* Se achica en celular para que entren montos de millones. */
+  font-size: clamp(1.5rem, 8vw, 2.25rem);
+  /* Como último recurso, un monto enorme se parte en lugar de salirse de la tarjeta. */
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-weight: 800;
   color: var(--color-exito);
   margin: var(--esp-1) 0;
