@@ -96,6 +96,15 @@ describe('DialogoNuevoViaje (CU01)', () => {
     expect(dialogo.emitted('creado')).toEqual([['v1']]);
   });
 
+  it('limita el nombre, y la ciudad y el país para que el destino no supere los 120', async () => {
+    const { dialogo } = montar();
+    await flushPromises();
+    const largo = (id: string) => Number(dialogo.find(id).attributes('maxlength'));
+    expect(largo('#viaje-nombre')).toBe(80);
+    // Con la ", " del medio, ciudad y país completos suman exactamente 120.
+    expect(largo('#viaje-ciudad') + 2 + largo('#viaje-pais')).toBe(120);
+  });
+
   it('Atrás vuelve al paso 1 conservando lo cargado', async () => {
     const { dialogo } = montar();
     await flushPromises();

@@ -55,6 +55,8 @@ describe('GastoFormularioVista', () => {
     expect(vista.find('#gasto-pagador').text()).toContain('Yo');
     expect(vista.findAll('input[type="checkbox"]:checked')).toHaveLength(0);
     expect(vista.find('button[type="submit"]').attributes('disabled')).toBeDefined();
+    // No deja escribir más que el largo máximo del título.
+    expect(vista.find('#gasto-titulo').attributes('maxlength')).toBe('120');
   });
 
   it('RN-G1: la categoría no viene elegida y es obligatoria', async () => {

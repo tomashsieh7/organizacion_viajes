@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { esquemaGastoNuevo, type DatosGastoNuevo, type ModoDivision } from '@viajes/compartido';
+import {
+  LARGOS_MAXIMOS,
+  esquemaGastoNuevo,
+  type DatosGastoNuevo,
+  type ModoDivision,
+} from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import CampoFormulario from '../componentes/base/CampoFormulario.vue';
 import SelectorDeudores from '../componentes/gastos/SelectorDeudores.vue';
@@ -119,6 +124,7 @@ async function enviar() {
         <input
           id="gasto-titulo"
           v-model="datos.titulo"
+          :maxlength="LARGOS_MAXIMOS.titulo"
           name="titulo"
           placeholder="Cena en el centro"
           v-bind="aria('titulo', 'gasto-titulo')"
