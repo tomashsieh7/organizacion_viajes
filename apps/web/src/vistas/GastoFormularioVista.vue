@@ -12,7 +12,7 @@ import { ErrorDeApi, mensajeDeError } from '../clientes/http';
 import { useGastosStore } from '../stores/gastos';
 import { useSesionStore } from '../stores/sesion';
 import { useViajeStore } from '../stores/viaje';
-import { aUnidadMinima, formatearMonto } from '../utiles/formato';
+import { aUnidadMinima, formatearMonto, simboloMoneda } from '../utiles/formato';
 import { useValidacion } from '../composables/useValidacion';
 import { MONTO_INVALIDO, problemasSegun } from '../utiles/formularios';
 
@@ -124,34 +124,38 @@ async function enviar() {
           v-bind="aria('titulo', 'gasto-titulo')"
         />
       </CampoFormulario>
-      <div class="fila">
-        <CampoFormulario id="gasto-categoria" etiqueta="Categoría" :error="errores['categoriaId']">
-          <!-- RN-G1: la categoría la elige quien anota; no se preselecciona ninguna. -->
-          <select
-            id="gasto-categoria"
-            v-model="datos.categoriaId"
-            name="categoriaId"
-            v-bind="aria('categoriaId', 'gasto-categoria')"
-          >
-            <option value="" disabled>Elegí una categoría</option>
-            <option v-for="c in gastos.categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
-          </select>
-        </CampoFormulario>
-        <CampoFormulario
-          id="gasto-monto"
-          :etiqueta="`Monto en ${actual.moneda.codigo}`"
-          :error="errores['monto']"
-        >
+      <!-- El monto, protagonista: en grande, como en una app de pagos. -->
+      <CampoFormulario
+        id="gasto-monto"
+        :etiqueta="`Monto en ${actual.moneda.codigo}`"
+        :error="errores['monto']"
+      >
+        <div class="monto-grande">
+          <span class="monto-grande__simbolo" aria-hidden="true">{{
+            simboloMoneda(actual.moneda)
+          }}</span>
           <input
             id="gasto-monto"
             v-model="datos.monto"
             name="monto"
             inputmode="decimal"
-            placeholder="48000"
+            placeholder="0"
             v-bind="aria('monto', 'gasto-monto')"
           />
-        </CampoFormulario>
-      </div>
+        </div>
+      </CampoFormulario>
+      <CampoFormulario id="gasto-categoria" etiqueta="Categoría" :error="errores['categoriaId']">
+        <!-- RN-G1: la categoría la elige quien anota; no se preselecciona ninguna. -->
+        <select
+          id="gasto-categoria"
+          v-model="datos.categoriaId"
+          name="categoriaId"
+          v-bind="aria('categoriaId', 'gasto-categoria')"
+        >
+          <option value="" disabled>Elegí una categoría</option>
+          <option v-for="c in gastos.categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+        </select>
+      </CampoFormulario>
       <SelectorPagador
         v-model="datos.pagadoPorId"
         :participantes="viaje.participantes"

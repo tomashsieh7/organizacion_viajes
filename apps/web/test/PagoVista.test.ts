@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { DeudaVista } from '@viajes/compartido';
 import { CLIENTE_GASTOS, type ClienteGastos } from '../src/clientes/gastos';
 import { ErrorDeApi } from '../src/clientes/http';
@@ -14,9 +14,7 @@ import {
   montaje,
 } from './soporte/clientesFalsos';
 
-const push = vi.fn();
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push }),
   useRoute: () => ({ params: { viajeId: 'v1', acreedorId: 'ana' } }),
 }));
 
@@ -37,8 +35,6 @@ async function montar(parcial: Partial<ClienteGastos>) {
   await flushPromises();
   return vista;
 }
-
-beforeEach(() => push.mockReset());
 
 describe('PagoVista (CU23)', () => {
   it('RN-P2: muestra lo que se debe y "Pagar el total" completa el monto', async () => {
@@ -63,7 +59,7 @@ describe('PagoVista (CU23)', () => {
     expect(vista.find('.aviso-excede').exists()).toBe(false);
   });
 
-  it('registra el pago, vuelve a los saldos y deja la confirmación con lo que queda', async () => {
+  it('registra el pago y muestra el comprobante con lo que queda por pagar', async () => {
     let saldo = 100_000;
     const pagar = vi.fn<ClienteGastos['pagar']>(async (_v, d) => {
       saldo -= d.monto;
@@ -85,12 +81,19 @@ describe('PagoVista (CU23)', () => {
     await vista.find('form').trigger('submit');
     await flushPromises();
     expect(pagar).toHaveBeenCalledWith('v1', { acreedorId: 'ana', monto: 40_000 });
-    expect(push).toHaveBeenCalledWith('/viajes/v1/saldos');
-    expect(useGastosStore().mensaje).toMatch(/Todavía le debés \$\s?600,00 a Ana/);
+    const comprobante = vista.find('.comprobante');
+    expect(comprobante.attributes('role')).toBe('status');
+    expect(comprobante.find('h3').text()).toBe('Pago registrado');
+    expect(comprobante.find('.comprobante__monto').text()).toMatch(/\$\s?400,00/);
+    expect(comprobante.text()).toContain('Ana');
+    expect(comprobante.text()).toMatch(/Te queda por pagarle\s*\$\s?600,00/);
+    expect(comprobante.find('a').text()).toBe('Listo');
+    expect(comprobante.find('a').attributes('to')).toBe('/viajes/v1/saldos');
+    expect(vista.find('form').exists()).toBe(false);
     expect(useGastosStore().debo[0]?.monto).toBe(60_000);
   });
 
-  it('pago total: la deuda deja de estar en la lista y confirma que quedó saldada', async () => {
+  it('pago total: el comprobante dice que la deuda quedó saldada y se celebra', async () => {
     let saldo = 100_000;
     const vista = await montar({
       deudas: async (_v, rol) => (rol === 'deudor' && saldo > 0 ? [deudaConAna(saldo)] : []),
@@ -110,8 +113,8 @@ describe('PagoVista (CU23)', () => {
     await vista.find('button[type="button"]').trigger('click');
     await vista.find('form').trigger('submit');
     await flushPromises();
-    expect(push).toHaveBeenCalledWith('/viajes/v1/saldos');
-    expect(useGastosStore().mensaje).toBe('Saldaste tu deuda con Ana.');
+    expect(vista.find('.comprobante h3').text()).toBe('¡Deuda saldada!');
+    expect(vista.find('.comprobante').text()).toMatch(/Te queda por pagarle\s*Nada/);
     expect(useCelebracion().celebracion.value?.mensaje).toBe('¡Cuentas saldadas con Ana!');
     useCelebracion().cerrar();
     expect(useGastosStore().debo).toEqual([]);
@@ -129,7 +132,7 @@ describe('PagoVista (CU23)', () => {
     await vista.find('#pago-monto').setValue('500');
     await vista.find('form').trigger('submit');
     await flushPromises();
-    expect(push).not.toHaveBeenCalled();
+    expect(vista.find('.comprobante').exists()).toBe(false);
     expect(vista.find('.aviso-excede').text()).toMatch(/\$\s?300,00/);
   });
 

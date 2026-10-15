@@ -26,21 +26,29 @@ function gasto(parcial: Partial<GastoVista> = {}): GastoVista {
 }
 
 describe('TarjetaGasto', () => {
-  it('muestra el total, quién pagó y la parte de cada uno, con "vos" para el usuario', () => {
+  it('como movimiento: ícono de la categoría, quién pagó, tu parte y el total', () => {
     const tarjeta = mount(TarjetaGasto, { props: { gasto: gasto(), moneda: ARS, miId: 'ana' } });
-    expect(tarjeta.find('h3').text()).toBe('Cena');
-    expect(tarjeta.find('strong').text()).toMatch(/\$\s?3\.000,00/);
-    expect(tarjeta.find('.meta').text()).toContain('Comida · pagó vos · en partes iguales');
+    expect(tarjeta.find('.gasto__titulo').text()).toBe('Cena');
+    expect(tarjeta.find('summary .monto').text()).toMatch(/\$\s?3\.000,00/);
+    expect(tarjeta.find('summary .meta').text()).toMatch(/^Pagaste vos · tu parte \$\s?1\.500,00$/);
+    expect(tarjeta.find('.gasto__icono').attributes('title')).toBe('Comida');
+    // El reparto completo queda plegado.
+    expect(tarjeta.find('details').attributes('open')).toBeUndefined();
+    expect(tarjeta.find('.detalle .meta').text()).toBe('Comida · en partes iguales');
     expect(tarjeta.findAll('.partes li').map((li) => li.text())).toEqual([
       expect.stringMatching(/^vos: \$\s?1\.500,00$/),
       expect.stringMatching(/^Tomás \(Tomi\): \$\s?1\.500,00$/),
     ]);
   });
 
-  it('indica la división arbitraria y nombra a quien pagó si no es el usuario', () => {
+  it('nombra a quien pagó, indica la división arbitraria y avisa si no participás', () => {
+    const otro = { id: 'luis', nombre: 'Luis', apodo: null };
     const tarjeta = mount(TarjetaGasto, {
       props: { gasto: gasto({ modoDivision: 'ARBITRARIA' }), moneda: ARS, miId: 'tomas' },
     });
-    expect(tarjeta.find('.meta').text()).toContain('pagó Ana · división indicada');
+    expect(tarjeta.find('summary .meta').text()).toMatch(/^Pagó Ana · tu parte/);
+    expect(tarjeta.find('.detalle .meta').text()).toBe('Comida · división indicada');
+    const ajeno = mount(TarjetaGasto, { props: { gasto: gasto(), moneda: ARS, miId: otro.id } });
+    expect(ajeno.find('summary .meta').text()).toBe('Pagó Ana · no participás');
   });
 });

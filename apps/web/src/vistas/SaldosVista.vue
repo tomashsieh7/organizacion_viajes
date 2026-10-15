@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../componentes/base/EstadoVacio.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
@@ -13,7 +14,10 @@ import { formatearMonto } from '../utiles/formato';
 const viaje = useViajeStore();
 const gastos = useGastosStore();
 const miId = useSesionStore().usuario?.id ?? '';
-const pestana = ref<'debo' | 'meDeben'>('debo');
+// "Me deben" desde los accesos rápidos de Gastos abre directamente esa pestaña.
+const pestana = ref<'debo' | 'meDeben'>(
+  useRoute()?.query['ver'] === 'meDeben' ? 'meDeben' : 'debo',
+);
 const error = ref('');
 // Hasta que llegan las deudas no se muestran las que quedaron de otra visita, que pueden estar viejas.
 const cargado = ref(false);
@@ -27,14 +31,11 @@ onMounted(async () => {
     cargado.value = true;
   }
 });
-// La confirmación del pago se muestra una sola vez.
-onBeforeUnmount(() => (gastos.mensaje = ''));
 </script>
 
 <template>
   <section>
     <h2>Saldos</h2>
-    <AvisoMensaje v-if="gastos.mensaje" tipo="exito">{{ gastos.mensaje }}</AvisoMensaje>
     <SiluetaCarga v-if="!cargado" :cantidad="2" />
     <div v-else class="pestanas" role="tablist">
       <button

@@ -50,11 +50,31 @@ export function formatearDia(instante: string): string {
   return `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-/** Instante en la hora del dispositivo: "24 sep, 21:26", con 24 horas como el resto de la app. */
-export function formatearMomento(instante: string): string {
+/** Símbolo de la moneda como lo escribe el resto de la app: "$" para pesos, "US$" para dólares. */
+export function simboloMoneda(moneda: Moneda): string {
+  return (
+    new Intl.NumberFormat('es-AR', { style: 'currency', currency: moneda.codigo })
+      .formatToParts(0)
+      .find((p) => p.type === 'currency')?.value ?? moneda.codigo
+  );
+}
+
+/** Hora de un instante en el dispositivo, con 24 horas como el resto de la app: "21:26". */
+export function formatearHora(instante: string): string {
   const d = new Date(instante);
   const dos = (n: number) => String(n).padStart(2, '0');
-  return `${d.getDate()} ${MESES[d.getMonth()]}, ${dos(d.getHours())}:${dos(d.getMinutes())}`;
+  return `${dos(d.getHours())}:${dos(d.getMinutes())}`;
+}
+
+/** Día de un instante para separar el chat: "Hoy", "Ayer", "24 sep" o "24 sep 2025" si es de otro año. */
+export function etiquetaDelDia(instante: string, ahora: Date = new Date()): string {
+  const d = new Date(instante);
+  const dia = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diferencia = Math.round((dia(ahora) - dia(d)) / 86_400_000);
+  if (diferencia === 0) return 'Hoy';
+  if (diferencia === 1) return 'Ayer';
+  const base = `${d.getDate()} ${MESES[d.getMonth()]}`;
+  return d.getFullYear() === ahora.getFullYear() ? base : `${base} ${d.getFullYear()}`;
 }
 
 export function nombreVisible(p: { nombre: string; apodo: string | null }): string {

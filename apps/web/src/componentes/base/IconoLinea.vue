@@ -36,6 +36,15 @@ const TRAZOS = {
   cruz: ['M6 6l12 12M18 6L6 18'],
   'flecha-izquierda': ['M15 5l-7 7 7 7'],
   'flecha-derecha': ['M9 5l7 7-7 7'],
+  enviar: ['M21 3L3 10.5l7.5 3L13.5 21 21 3z', 'M10.5 13.5L21 3'],
+  mas: ['M12 5v14M5 12h14'],
+  comida: ['M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3', 'M17 21V3c-2 0-3.5 2.5-3.5 6s1.5 4.5 3.5 4.5'],
+  transporte: [
+    'M6 4h12a2 2 0 0 1 2 2v10H4V6a2 2 0 0 1 2-2z',
+    'M4 11h16M7.5 16v3M16.5 16v3M7.5 13.5h.01M16.5 13.5h.01',
+  ],
+  compras: ['M6 8h12l-1 12H7L6 8z', 'M9 8V6.5a3 3 0 0 1 6 0V8'],
+  pagar: ['M4 12h12M12 8l4 4-4 4', 'M20 5v14'],
   prohibido: ['M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', 'M5.6 5.6l12.8 12.8'],
   'a-favor': [
     'M7 11v9H4v-9h3z',

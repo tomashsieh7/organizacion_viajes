@@ -441,6 +441,75 @@ label {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/*
+ * Acción principal de una sección: en escritorio es un botón con texto; en celular flota abajo a
+ * la derecha, redondo y con solo el ícono, encima de la barra de navegación. El texto sigue ahí
+ * para los lectores de pantalla.
+ */
+@media (max-width: 47.99rem) {
+  .accion-flotante {
+    position: fixed;
+    z-index: 25;
+    right: var(--esp-4);
+    bottom: calc(var(--alto-barra-inferior) + env(safe-area-inset-bottom) + var(--esp-4));
+    width: 3.5rem;
+    height: 3.5rem;
+    padding: 0;
+    box-shadow: var(--sombra-elevada);
+  }
+  /* Lugar para que el último elemento de la lista no quede debajo del botón. */
+  .pagina.con-barra-inferior:has(.accion-flotante) {
+    padding-bottom: calc(var(--alto-barra-inferior) + env(safe-area-inset-bottom) + 6rem);
+  }
+  .accion-flotante__texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+/* Monto protagonista, como en una app de pagos: grande, centrado y con el símbolo adelante. */
+.monto-grande {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--esp-2);
+  padding: var(--esp-3) var(--esp-4);
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio-grande);
+  background: var(--color-superficie);
+}
+.monto-grande:focus-within {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+.monto-grande__simbolo {
+  font-family: var(--fuente-titulos);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-texto-secundario);
+}
+.monto-grande input {
+  width: 100%;
+  min-width: 0;
+  max-width: 14rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: var(--fuente-titulos);
+  font-size: 2.25rem;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.monto-grande input:focus {
+  outline: none;
+}
+.monto-grande:has(input[aria-invalid='true']) {
+  border-color: var(--color-error);
+}
 .saltar {
   position: absolute;
   left: var(--esp-3);

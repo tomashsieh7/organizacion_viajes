@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Participante } from '@viajes/compartido';
+import InicialPersona from '../base/InicialPersona.vue';
 import { nombreVisible } from '../../utiles/formato';
 
 /**
@@ -14,8 +15,6 @@ const elegidos = defineModel<string[]>({ required: true });
 const todos = computed(
   () => props.participantes.length > 0 && elegidos.value.length === props.participantes.length,
 );
-
-const inicial = (p: Participante) => nombreVisible(p).charAt(0).toUpperCase();
 
 function alternarTodos() {
   elegidos.value = todos.value ? [] : props.participantes.map((p) => p.usuarioId);
@@ -44,7 +43,7 @@ function alternar(usuarioId: string, marcado: boolean) {
     <ul class="personas">
       <li v-for="p in participantes" :key="p.usuarioId">
         <label class="persona" :class="{ elegida: elegidos.includes(p.usuarioId) }">
-          <span class="persona__inicial" aria-hidden="true">{{ inicial(p) }}</span>
+          <InicialPersona :nombre="p.nombre" :tamano="32" class="persona__inicial" />
           <span class="persona__nombre">{{ nombreVisible(p) }}</span>
           <input
             type="checkbox"
@@ -110,17 +109,6 @@ function alternar(usuarioId: string, marcado: boolean) {
 .persona.elegida {
   border-color: var(--color-acento);
   background: var(--color-acento-suave);
-}
-.persona__inicial {
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  display: grid;
-  place-content: center;
-  border-radius: 999px;
-  background: var(--color-superficie-alt);
-  font-weight: 700;
-  font-size: 0.875rem;
 }
 .persona.elegida .persona__inicial {
   background: var(--color-acento);

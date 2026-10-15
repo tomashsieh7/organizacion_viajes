@@ -27,4 +27,18 @@ describe('ListaParticipantes', () => {
     expect(vista.text()).toContain('Tomás (Tomi)');
     expect(vista.text()).toContain('Admin');
   });
+
+  it('agrupa por rol: el Admin primero y después los viajeros, cada uno con su inicial', () => {
+    const vista = mount(ListaParticipantes, {
+      props: { participantes, soyAdmin: false, miId: 'tomas' },
+    });
+    expect(vista.findAll('.grupo-rol__titulo').map((t) => t.text())).toEqual([
+      'Admin',
+      'Viajeros (1)',
+    ]);
+    const [admin, viajeros] = vista.findAll('.grupo-rol');
+    expect(admin!.text()).toContain('Ana');
+    expect(viajeros!.text()).toContain('Tomás (Tomi)');
+    expect(viajeros!.find('.inicial-persona').text()).toBe('T');
+  });
 });

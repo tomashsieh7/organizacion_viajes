@@ -24,8 +24,6 @@ export const useGastosStore = defineStore('gastos', () => {
   const categorias = ref<CategoriaGasto[]>([]);
   const debo = ref<DeudaVista[]>([]);
   const meDeben = ref<DeudaVista[]>([]);
-  /** Confirmación del último pago, que muestra la sección de saldos una sola vez. */
-  const mensaje = ref('');
   const totalDebo = computed(() => debo.value.reduce((t, d) => t + d.monto, 0));
   const totalMeDeben = computed(() => meDeben.value.reduce((t, d) => t + d.monto, 0));
 
@@ -61,7 +59,6 @@ export const useGastosStore = defineStore('gastos', () => {
   }
 
   return {
-    mensaje,
     pagar,
     gastos,
     categorias,
