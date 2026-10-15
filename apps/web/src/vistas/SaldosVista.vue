@@ -44,8 +44,8 @@ onBeforeUnmount(() => (gastos.mensaje = ''));
         :aria-selected="pestana === 'debo'"
         @click="pestana = 'debo'"
       >
-        <span class="pestana__rotulo">Debo · </span>
-        <span class="pestana__total monto">{{
+        <span class="pestana__rotulo">Debo<span class="solo-lectores">:</span></span>
+        <span class="pestana__total monto" :class="{ 'pestana__total--cero': !gastos.totalDebo }">{{
           formatearMonto(gastos.totalDebo, viaje.actual!.moneda)
         }}</span>
       </button>
@@ -56,10 +56,12 @@ onBeforeUnmount(() => (gastos.mensaje = ''));
         :aria-selected="pestana === 'meDeben'"
         @click="pestana = 'meDeben'"
       >
-        <span class="pestana__rotulo">Me deben · </span>
-        <span class="pestana__total monto">{{
-          formatearMonto(gastos.totalMeDeben, viaje.actual!.moneda)
-        }}</span>
+        <span class="pestana__rotulo">Me deben<span class="solo-lectores">:</span></span>
+        <span
+          class="pestana__total monto"
+          :class="{ 'pestana__total--cero': !gastos.totalMeDeben }"
+          >{{ formatearMonto(gastos.totalMeDeben, viaje.actual!.moneda) }}</span
+        >
       </button>
     </div>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
@@ -138,6 +140,10 @@ onBeforeUnmount(() => (gastos.mensaje = ''));
 }
 .pestana--meDeben .pestana__total {
   color: var(--color-exito);
+}
+/* En cero no hay nada que señalar: el monto va en gris. */
+.pestana .pestana__total--cero {
+  color: var(--color-texto-secundario);
 }
 .pestana[aria-selected='true'] {
   border-color: var(--color-acento);

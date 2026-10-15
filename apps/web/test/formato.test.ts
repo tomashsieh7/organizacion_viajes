@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { aUnidadMinima, formatearDia, formatearMonto, formatearRango } from '../src/utiles/formato';
+import {
+  aUnidadMinima,
+  formatearDia,
+  formatearMomento,
+  formatearMonto,
+  formatearRango,
+} from '../src/utiles/formato';
 
 describe('aUnidadMinima', () => {
   it('interpreta montos escritos en castellano', () => {
@@ -38,5 +44,12 @@ describe('formatearDia', () => {
     // Mediodía UTC: es el mismo día en casi cualquier zona horaria del dispositivo.
     expect(formatearDia('2026-10-14T12:00:00.000Z')).toBe('14 oct 2026');
     expect(formatearDia('2027-01-03T12:00:00.000Z')).toBe('3 ene 2027');
+  });
+});
+
+describe('formatearMomento', () => {
+  it('usa el mes abreviado y la hora de 24 horas del dispositivo', () => {
+    expect(formatearMomento(new Date(2026, 8, 24, 21, 26).toISOString())).toBe('24 sep, 21:26');
+    expect(formatearMomento(new Date(2026, 11, 3, 9, 5).toISOString())).toBe('3 dic, 09:05');
   });
 });

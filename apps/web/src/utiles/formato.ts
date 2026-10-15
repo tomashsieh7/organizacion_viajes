@@ -50,6 +50,13 @@ export function formatearDia(instante: string): string {
   return `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+/** Instante en la hora del dispositivo: "24 sep, 21:26", con 24 horas como el resto de la app. */
+export function formatearMomento(instante: string): string {
+  const d = new Date(instante);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${d.getDate()} ${MESES[d.getMonth()]}, ${dos(d.getHours())}:${dos(d.getMinutes())}`;
+}
+
 export function nombreVisible(p: { nombre: string; apodo: string | null }): string {
   return p.apodo ? `${p.nombre} (${p.apodo})` : p.nombre;
 }
