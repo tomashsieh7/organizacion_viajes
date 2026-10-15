@@ -1587,3 +1587,19 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - la cobertura pasa 559 pruebas: 349 del backend y 210 del frontend, con 93,2 % de líneas en el frontend;
   - la e2e pasa 8 de 8;
   - `knip` muestra solo sus falsos positivos conocidos.
+
+## 2026-10-14 22:19 — Merge del PR #25
+
+- Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #25 ("Viaje duplicado al reintentar, npm run dev:red y vulnerabilidades de Prisma") se mergeó a `main` en `92e009d`, fijando la cabeza verificada `5bdd3b4`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-14 22:19 — Más lugar para el contenido en celular
+
+- **Pedido del usuario:** "Fijate si hay más cosas para mejorar o arreglar". De la revisión, eligió las dos mejoras propuestas para celular.
+- **Problema:** en las capturas a 360 px, el encabezado fijo se partía en dos líneas y medía unos 70 px. La portada del viaje ocupaba unos 330 px de los 780 en cada sección, así que en el Cronograma, el Mapa o Gastos el contenido arrancaba a mitad de pantalla.
+- **Encabezado** (`App.vue`): en celular, la marca dice "Viajes" en lugar de "Organizador de viajes", el nombre de quien usa la app se oculta y nada se parte en dos líneas. Mide 61 px. En escritorio no cambia.
+- **Portada compacta** (`ViajeLayout.vue`, clase `portada--compacta`): en celular, fuera del Resumen, quedan solo "← Mis grupos", el nombre y la cuenta regresiva en una línea. Mide 113 px. La portada completa, con destino, fechas y "4 viajeros", sigue en el Resumen y en escritorio.
+- **Pruebas nuevas:**
+  - la marca tiene el texto largo y el corto;
+  - la portada es compacta en el Cronograma y completa en el Resumen.
+- **PLAN.md 7.1:** se actualiza la descripción de la portada y del encabezado en celular.
+- **Capturas:** a 360 px en claro y oscuro, y a 1280 px en claro, del listado, el Resumen, el Cronograma y Gastos, sin errores en la consola.

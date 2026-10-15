@@ -148,4 +148,16 @@ describe('ViajeLayout', () => {
       '/viajes/v1/mapa?dia=2026-12-15',
     ]);
   });
+
+  it('fuera del Resumen la portada es compacta; en el Resumen, completa', async () => {
+    ruta = '/viajes/v1/cronograma';
+    const enCronograma = montar().vista;
+    await flushPromises();
+    expect(enCronograma.find('.portada').classes()).toContain('portada--compacta');
+
+    ruta = '/viajes/v1/resumen';
+    const enResumen = montar().vista;
+    await flushPromises();
+    expect(enResumen.find('.portada').classes()).not.toContain('portada--compacta');
+  });
 });

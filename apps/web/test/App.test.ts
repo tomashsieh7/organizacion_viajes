@@ -42,6 +42,14 @@ afterEach(() => {
 });
 
 describe('App', () => {
+  it('la marca tiene un texto largo para escritorio y uno corto para celular', async () => {
+    const { app } = await montarApp();
+    expect(app.find('.marca__largo').text()).toBe('Organizador de viajes');
+    expect(app.find('.marca__corto').text()).toBe('Viajes');
+    // El nombre sigue en la página; en celular lo oculta el CSS.
+    expect(app.find('.usuario__nombre').exists()).toBe(true);
+  });
+
   it('WCAG 2.4.1: el enlace para saltar lleva el foco al contenido', async () => {
     const { app } = await montarApp();
     await app.find('a.saltar').trigger('click');
