@@ -70,10 +70,12 @@ onMounted(cargar);
     <div class="encabezado">
       <h2>Alojamientos</h2>
       <RouterLink
-        class="boton boton--principal"
+        class="boton boton--principal accion-flotante"
         :to="`/viajes/${viaje.actual!.id}/alojamientos/nuevo`"
       >
-        Proponer alojamiento
+        <IconoLinea nombre="mas" :tamano="20" /><span class="accion-flotante__texto"
+          >Proponer alojamiento</span
+        >
       </RouterLink>
     </div>
     <div class="filtro">

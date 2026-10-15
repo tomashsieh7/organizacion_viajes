@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import IconoLinea from '../componentes/base/IconoLinea.vue';
 import { computed, onMounted, ref } from 'vue';
 import type { AccionSobrePropuesta, ConflictoHorario, ValorVoto } from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
@@ -62,10 +63,12 @@ onMounted(cargar);
     <div class="encabezado">
       <h2>Actividades</h2>
       <RouterLink
-        class="boton boton--principal"
+        class="boton boton--principal accion-flotante"
         :to="`/viajes/${viaje.actual!.id}/actividades/nueva`"
       >
-        Proponer actividad
+        <IconoLinea nombre="mas" :tamano="20" /><span class="accion-flotante__texto"
+          >Proponer actividad</span
+        >
       </RouterLink>
     </div>
     <div class="filtro">
