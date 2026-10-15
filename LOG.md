@@ -1603,3 +1603,49 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - la portada es compacta en el Cronograma y completa en el Resumen.
 - **PLAN.md 7.1:** se actualiza la descripción de la portada y del encabezado en celular.
 - **Capturas:** a 360 px en claro y oscuro, y a 1280 px en claro, del listado, el Resumen, el Cronograma y Gastos, sin errores en la consola.
+
+## 2026-10-14 22:46 — Merge del PR #26
+
+- Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #26 ("Celular: encabezado en una línea y portada compacta fuera del Resumen") se mergeó a `main` en `f3dc79e`, fijando la cabeza verificada `2c71668`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+- **Rama:** el usuario pidió no armar un plan para ese paso. La rama alineada con `main` se subió junto con el merge, y así se le avisó.
+
+## 2026-10-14 22:46 — Chat y saldos en celular, Escape en los diálogos y pruebas exploratorias
+
+- **Pedido del usuario:** "Fijate si hay más cosas para mejorar o arreglar". Aprobó los tres arreglos propuestos y pidió además pruebas para buscar cosas que fallen.
+- **Chat: la barra inferior tapaba "Enviar".**
+  - **Problema:** se midió en 360×780, 390×844 y 360×640, y la barra cubría 13 px del botón y del campo para escribir.
+  - **Arreglo:** en celular, la lista de mensajes resta `--alto-barra-inferior` a su alto. El botón queda unos 50 px por encima de la barra y la página ya no se desplaza.
+- **Chat: hora de los mensajes.** Pasó de "24/9, 09:26 p. m." a "24 sep, 21:26", con 24 horas y el mes abreviado, sin partirse. Lo arma `formatearMomento` en `utiles/formato.ts`.
+- **Saldos:**
+  - se quitó el "·" que quedaba colgando en "Debo ·" y "Me deben ·", y los dos puntos quedan solo para lectores de pantalla;
+  - un total en cero va en gris, en lugar de rojo o verde.
+- **Pruebas exploratorias** (spec temporal de Playwright, que se borró después de usarla):
+  - **API:** unos 60 pedidos con datos raros (fechas inválidas o invertidas, textos de 1000 caracteres, montos negativos, decimales o enormes, ids inexistentes o mal formados, coordenadas incompletas, horarios fuera de rango, divisiones que no suman), pagos y votos simultáneos, un pedido sin `Origin` y un usuario ajeno. Ningún 500, los pagos simultáneos no aceptan más que la deuda y lo ajeno se rechaza.
+  - **Interfaz a 360 px:**
+    - crear un viaje de dos meses con doble clic (crea uno solo);
+    - un `?dia=` inválido o fuera del viaje;
+    - un viaje inexistente;
+    - chat vacío, de 2100 caracteres y con HTML;
+    - gasto con montos inválidos y partes que no suman;
+    - formularios vacíos;
+    - salir del grupo;
+    - cerrar la sesión en otra pestaña.
+    Sin errores en la consola ni el aviso "Algo salió mal", y nada se sale de la pantalla.
+  - **Falla encontrada: Escape no cerraba el diálogo de crear grupo después de agregar a alguien.** Al deshabilitarse el botón "Agregar" mientras espera, el navegador le saca el foco y lo deja fuera del diálogo, y `DialogoModal` escuchaba Escape solo adentro. Ahora lo escucha en todo el documento mientras está abierto. La prueba nueva falla con el código anterior.
+
+## 2026-10-14 22:54 — Volver desde un viaje sin acceso, avisos de la lista y prueba de robustez
+
+- **Pedido del usuario:** de los detalles que encontraron las pruebas exploratorias, aprobó el enlace para volver, el aviso al salir y dejar la prueba de la API como permanente.
+- **Enlace para volver:** si el viaje no existe o no participás, `ViajeLayout` muestra "← Volver a mis grupos" debajo del error.
+- **El aviso al ser quitado nunca se veía.** Apareció al preparar el aviso al salir y se reprodujo en el navegador antes de arreglarlo.
+  - **Causa:** `cerrarPorBaja` escribía "El Admin te quitó de…" en `store.aviso` y navegaba a la lista. Al cerrarse, `ViajeLayout` borraba ese mismo campo antes de que `ViajesVista` lo mostrara.
+  - **Arreglo:** el store separa `aviso` (dentro del viaje) de `avisoLista` (para la lista). `ViajeLayout` solo borra el suyo.
+- **Aviso al salir:** quien sale sin saldos pendientes ve "Saliste de «Bariloche 2026»." en la lista.
+- **Pruebas:**
+  - **Unitarias:** el enlace para volver, que `avisoLista` sobrevive al cierre del viaje y el aviso al salir.
+  - **E2E `administracion.spec.ts`:** suma la verificación del aviso al salir y un flujo nuevo, en el que el Admin quita a alguien que está mirando el chat. Esa persona vuelve a la lista con el aviso y, al reabrir el viaje, tiene el enlace para volver.
+  - **E2E nuevo `robustez.spec.ts`:**
+    - unos 50 pedidos inválidos a la API, que tienen que responder 4xx y nunca 5xx;
+    - un pedido sin `Origin`, que se rechaza;
+    - un usuario ajeno, que no ve los gastos;
+    - tres pagos simultáneos por el total de la deuda, de los que solo se acepta uno.
