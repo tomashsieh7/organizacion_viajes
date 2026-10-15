@@ -25,6 +25,20 @@ npm run dev                     # API en http://localhost:3000 y web en http://l
 
 La web redirige `/api` al backend, así que en desarrollo alcanza con abrir `http://localhost:5173`.
 
+### Probar desde el celular u otra compu
+
+Con el celular conectado al mismo wifi que la compu donde corre la app:
+
+```bash
+npm run dev:red
+```
+
+El script busca la IP de la compu en la red local y muestra la dirección para abrir en el celular, por ejemplo `http://192.168.0.78:5173`. Si elige mal la IP, se indica a mano: `IP_RED=192.168.0.78 npm run dev:red`.
+
+- **Por qué hace falta:** la API acepta solo los pedidos que vienen del origen configurado en `ORIGEN_WEB`, y Vite atiende únicamente a la misma compu salvo que se le pida otra cosa. `dev:red` resuelve las dos cosas: usa la IP como `ORIGEN_WEB` y hace que Vite atienda a la red.
+- **Mientras corre `dev:red`:** en la misma compu también hay que abrir la app con la IP y no con `localhost`, porque la API rechaza el inicio de sesión desde un origen distinto.
+- **Si el celular no carga la página:** revisá que esté en el mismo wifi y que el firewall deje pasar el puerto 5173. Algunas redes públicas o de oficina no dejan que los dispositivos se vean entre sí.
+
 ## Datos de ejemplo
 
 `npm run db:reset` borra la base de desarrollo, aplica las migraciones y carga la semilla: un viaje a Bariloche con cuatro viajeros. Se puede ingresar con `ana@ejemplo.com`, `tomas@ejemplo.com`, `luis@ejemplo.com` o `sofia@ejemplo.com`, todos con la contraseña `viaje-de-prueba-2026`. Nunca lo ejecutes contra una base con datos reales.
@@ -47,6 +61,7 @@ En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, las pruebas con co
 | Script | Qué hace |
 |---|---|
 | `npm run dev` | Levanta el paquete compartido en modo observación, la API y la web. |
+| `npm run dev:red` | Igual que `dev`, pero accesible desde otros dispositivos de la red local (ver "Probar desde el celular u otra compu"). |
 | `npm run build` | Compila los tres paquetes. |
 | `npm test` | Corre las pruebas del backend y del frontend con Vitest. |
 | `npm run cobertura` | Corre las mismas pruebas y mide la cobertura; falla si baja de los mínimos de cada paquete. El informe HTML queda en `apps/*/coverage/`. |

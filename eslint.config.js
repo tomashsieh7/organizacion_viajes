@@ -23,7 +23,7 @@ export default tseslint.config(
     languageOptions: { parserOptions: { parser: tseslint.parser } },
   },
   {
-    files: ['apps/api/**/*.ts', 'packages/**/*.ts', 'e2e/**/*.ts', '*.js'],
+    files: ['apps/api/**/*.ts', 'packages/**/*.ts', 'e2e/**/*.ts', '*.js', 'scripts/**/*.js'],
     languageOptions: { globals: globals.node },
   },
   {
