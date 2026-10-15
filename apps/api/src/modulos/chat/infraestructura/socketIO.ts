@@ -83,7 +83,9 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
         try {
           const usuarioId = await deps.usuarioDeSesion(socket.data.token);
           if (usuarioId !== socket.data.usuarioId) throw new Error('La sesión cambió de usuario');
-          confirmar?.({ ok: true, ...(await accion(usuarioId, datos)) });
+          // La acción corre aunque el evento no pida confirmación, como `chat:salir`.
+          const resultado = await accion(usuarioId, datos);
+          confirmar?.({ ok: true, ...resultado });
         } catch (error) {
           confirmar?.(rechazo(error) as ConfirmacionSocket<R>);
           // Con la sesión cerrada o vencida se corta la conexión, después de responder.
