@@ -27,6 +27,8 @@ Esta lista sirve para auditar el proyecto varias veces con el mismo criterio, as
 | `npx jscpd apps packages e2e --ignore "**/generado/**,**/node_modules/**,**/dist/**" --reporters console` | Bloques copiados. Comparar la cantidad de clones con la pasada anterior. |
 | `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code` | Corre desde `apps/api` con `DATABASE_URL` apuntando a `viajes_test` y después de `npm test`, que aplica las migraciones. Tiene que decir "No difference detected". |
 
+`npm run e2e` incluye `e2e/accesibilidad.spec.ts`, que pasa axe con las reglas WCAG 2.2 A y AA por las pantallas principales. Si falla, el mensaje dice la pantalla, el modo, el ancho y la regla.
+
 **Falsos positivos conocidos de `knip`:**
 - `e2e/soporte/prepararBase.ts`: lo ejecuta `prepararTodo.ts` con `tsx`.
 - `@prisma/client`: lo usa el cliente generado en `src/generado`.
