@@ -244,10 +244,10 @@ button.calendario__dia {
 button.calendario__dia:hover {
   border-color: var(--color-borde-fuerte);
 }
+/* Los días fuera del viaje se distinguen por el peso y la falta de fondo, no por un gris ilegible. */
 .calendario__dia--fuera {
   font-weight: 400;
   color: var(--color-texto-secundario);
-  opacity: 0.6;
 }
 .calendario__dia--hoy {
   border-color: var(--color-acento);
