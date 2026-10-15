@@ -9,8 +9,8 @@ import { mensajeDeError } from '../clientes/http';
 import { useCelebracion } from '../composables/useCelebracion';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
-import { hoyDelDispositivo, nombreDelDia } from '../utiles/fechas';
-import { calcularProgreso, cuentaRegresiva, type ClaveHito } from '../utiles/progreso';
+import { nombreDelDia } from '../utiles/fechas';
+import { calcularProgreso, type ClaveHito } from '../utiles/progreso';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
@@ -26,9 +26,6 @@ const progreso = computed(() =>
     alojamientos: propuestas.alojamientos,
     actividades: propuestas.actividades,
   }),
-);
-const cuenta = computed(() =>
-  cuentaRegresiva(actual.fechaInicio, actual.fechaFin, hoyDelDispositivo()),
 );
 const hechos = computed(() => progreso.value.hitos.filter((h) => h.hecho).length);
 const mensaje = computed(() => {
@@ -52,7 +49,7 @@ const enlaces = computed<Partial<Record<ClaveHito, { ruta: string; texto: string
   cuentas: { ruta: ruta('saldos'), texto: 'Ver saldos' },
 }));
 
-/** "jueves 10/12 y viernes 11/12", o "jueves 10/12, viernes 11/12 y otras" si hay más. */
+/** "jueves 10 dic y viernes 11 dic", o "jueves 10 dic, viernes 11 dic y otras" si hay más. */
 const lista = (fechas: string[]) => {
   const nombres = fechas.slice(0, 2).map(nombreDelDia);
   return fechas.length > 2 ? `${nombres.join(', ')} y otras` : nombres.join(' y ');
@@ -117,6 +114,9 @@ const pasos = computed<Paso[]>(() => {
   ];
   return todos.filter((x): x is Paso => x !== false).slice(0, 3);
 });
+/** Una sola acción destacada; las demás quedan plegadas debajo. */
+const principal = computed(() => pasos.value[0]);
+const otros = computed(() => pasos.value.slice(1));
 
 /** El 100 % se celebra una sola vez por viaje en este dispositivo. */
 function celebrarSiTermino() {
@@ -148,82 +148,71 @@ onMounted(async () => {
     <h2 class="solo-lectores">Resumen</h2>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <SiluetaCarga v-if="!cargado" :cantidad="2" />
-    <div v-else-if="!error" class="rejilla">
+    <div v-else-if="!error" class="columna">
+      <!-- Una sola acción destacada por pantalla; el detalle se despliega al tocar. -->
+      <section class="panel" aria-labelledby="titulo-proximo">
+        <h3 id="titulo-proximo">Lo próximo</h3>
+        <template v-if="principal">
+          <div class="paso paso--principal">
+            <span class="paso__icono"><IconoLinea :nombre="principal.icono" :tamano="22" /></span>
+            <span class="paso__texto"
+              ><strong>{{ principal.titulo }}</strong
+              ><span>{{ principal.detalle }}</span></span
+            >
+            <RouterLink :to="principal.ruta" class="boton boton--principal">{{
+              principal.accion
+            }}</RouterLink>
+          </div>
+          <details v-if="otros.length" class="desplegable">
+            <summary>
+              Ver {{ otros.length === 1 ? '1 paso más' : `${otros.length} pasos más` }}
+            </summary>
+            <ul class="pasos">
+              <li v-for="p in otros" :key="p.titulo" class="paso">
+                <span class="paso__icono"><IconoLinea :nombre="p.icono" :tamano="20" /></span>
+                <span class="paso__texto"
+                  ><strong>{{ p.titulo }}</strong
+                  ><span>{{ p.detalle }}</span></span
+                >
+                <RouterLink :to="p.ruta" class="boton boton--chico">{{ p.accion }}</RouterLink>
+              </li>
+            </ul>
+          </details>
+        </template>
+        <p v-else class="texto-secundario">No queda nada pendiente. ¡A disfrutar el viaje!</p>
+      </section>
+
       <section class="panel" aria-labelledby="titulo-progreso">
         <div class="progreso">
-          <AnilloProgreso :porcentaje="progreso.porcentaje" />
+          <AnilloProgreso :porcentaje="progreso.porcentaje" compacto />
           <div>
             <h3 id="titulo-progreso">{{ mensaje }}</h3>
             <p class="texto-secundario">
-              Completaron {{ hechos }} de {{ progreso.hitos.length }} hitos del viaje.
+              {{ hechos }} de {{ progreso.hitos.length }} hitos del viaje listos
             </p>
           </div>
         </div>
-        <ListaHitos :hitos="progreso.hitos" :enlaces="enlaces" />
+        <details class="desplegable">
+          <summary>Ver los hitos</summary>
+          <ListaHitos :hitos="progreso.hitos" :enlaces="enlaces" />
+        </details>
       </section>
-
-      <div class="columna">
-        <section class="panel" aria-labelledby="titulo-pasos">
-          <h3 id="titulo-pasos">Próximos pasos</h3>
-          <ul v-if="pasos.length" class="pasos">
-            <li v-for="(p, i) in pasos" :key="p.titulo" class="paso">
-              <span class="paso__icono"><IconoLinea :nombre="p.icono" :tamano="22" /></span>
-              <span class="paso__texto"
-                ><strong>{{ p.titulo }}</strong
-                ><span>{{ p.detalle }}</span></span
-              >
-              <RouterLink
-                :to="p.ruta"
-                class="boton boton--chico"
-                :class="{ 'boton--principal': i === 0 }"
-                >{{ p.accion }}</RouterLink
-              >
-            </li>
-          </ul>
-          <p v-else class="texto-secundario">No queda nada pendiente. ¡A disfrutar el viaje!</p>
-        </section>
-        <section class="panel cuenta" aria-label="Cuenta regresiva">
-          <template v-if="cuenta.etapa === 'antes'">
-            <span class="cuenta__numero">{{ cuenta.dias }}</span>
-            <p>
-              <strong>{{ cuenta.dias === 1 ? 'día para salir' : 'días para salir' }}</strong>
-              <span class="texto-secundario"
-                >Empieza el {{ nombreDelDia(actual.fechaInicio) }}</span
-              >
-            </p>
-          </template>
-          <template v-else-if="cuenta.etapa === 'durante'">
-            <span class="cuenta__numero">{{ cuenta.dia }}</span>
-            <p>
-              <strong>día de {{ cuenta.total }}</strong>
-              <span class="texto-secundario">¡Que lo disfruten!</span>
-            </p>
-          </template>
-          <p v-else>
-            <strong>Viaje terminado</strong>
-            <span class="texto-secundario">Revisá que las cuentas hayan quedado saldadas.</span>
-          </p>
-        </section>
-      </div>
     </div>
   </section>
 </template>
 
 <style scoped>
-.rejilla {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: var(--esp-4);
-  align-items: start;
-}
-/* Sin esto, el contenido de una celda puede ensanchar la grilla más que la pantalla. */
-.rejilla > *,
-.columna > * {
-  min-width: 0;
-}
 .columna {
   display: grid;
   gap: var(--esp-4);
+  max-width: 44rem;
+}
+/* Sin esto, el contenido de una celda puede ensanchar la grilla más que la pantalla. */
+.columna > * {
+  min-width: 0;
+}
+.columna h3 {
+  margin: 0 0 var(--esp-3);
 }
 .progreso {
   display: flex;
@@ -231,7 +220,7 @@ onMounted(async () => {
   align-items: center;
 }
 .progreso h3 {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   margin-bottom: var(--esp-1);
 }
 .progreso p {
@@ -240,7 +229,7 @@ onMounted(async () => {
 .pasos {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: var(--esp-3) 0 0;
   display: grid;
   gap: var(--esp-2);
 }
@@ -253,6 +242,10 @@ onMounted(async () => {
   border: 1px solid var(--color-borde);
   border-radius: var(--radio);
 }
+.paso--principal {
+  border-color: var(--color-acento);
+  background: var(--color-acento-suave);
+}
 .paso__icono {
   flex: none;
   width: 2.75rem;
@@ -262,6 +255,15 @@ onMounted(async () => {
   border-radius: var(--radio);
   background: var(--color-superficie-alt);
   color: var(--color-acento);
+}
+.paso--principal .paso__icono {
+  background: var(--color-superficie);
+}
+/* En celular, el botón de la acción principal ocupa todo el ancho, debajo del texto. */
+@media (max-width: 47.99rem) {
+  .paso--principal .boton {
+    flex-basis: 100%;
+  }
 }
 .paso__texto {
   flex: 1;
@@ -275,28 +277,33 @@ onMounted(async () => {
   font-size: 0.875rem;
   color: var(--color-texto-secundario);
 }
-.cuenta {
+/* El desplegable se nota tocable: flecha que gira y zona de toque de un control. */
+.desplegable {
+  margin-top: var(--esp-3);
+}
+.desplegable summary {
   display: flex;
-  gap: var(--esp-4);
   align-items: center;
-}
-.cuenta p {
-  margin: 0;
-}
-.cuenta p strong,
-.cuenta p span {
-  display: block;
-}
-.cuenta__numero {
-  font-family: var(--fuente-titulos);
-  font-size: 2.6rem;
-  font-weight: 800;
-  line-height: 1;
+  gap: var(--esp-2);
+  min-height: var(--alto-control);
   color: var(--color-acento);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
 }
-@media (max-width: 47.99rem) {
-  .rejilla {
-    grid-template-columns: 1fr;
-  }
+.desplegable summary::-webkit-details-marker {
+  display: none;
+}
+.desplegable summary::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--duracion);
+}
+.desplegable[open] summary::before {
+  transform: rotate(45deg);
 }
 </style>
