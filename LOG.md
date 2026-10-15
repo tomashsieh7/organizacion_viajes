@@ -1556,3 +1556,8 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - la e2e pasa 8 de 8, con el flujo nuevo de crear grupo e invitar, y con el día compartido entre Cronograma y Mapa;
   - `knip` muestra solo sus falsos positivos conocidos;
   - las capturas a 360 px y 1280 px, en claro y oscuro, no muestran errores de consola propios.
+
+## 2026-10-14 21:39 — Merge del PR #23
+
+- Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #23 ("Rediseño después de probar la app: crear grupo, Resumen, calendario y quiénes pagan") se mergeó a `main` en `35a8a9c`, fijando la cabeza verificada `839d9e3`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+- Después del merge se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
