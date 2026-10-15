@@ -1649,3 +1649,37 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
     - un pedido sin `Origin`, que se rechaza;
     - un usuario ajeno, que no ve los gastos;
     - tres pagos simultáneos por el total de la deuda, de los que solo se acepta uno.
+
+## 2026-10-14 23:19 — Merge del PR #27
+
+- Con la autorización del usuario ("Sí, PR y merge si pasa"), el PR #27 ("Chat y saldos en celular, Escape en diálogos, avisos de la lista y E2E de robustez") se mergeó a `main` en `397166e`, fijando la cabeza verificada `bea1f90`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-14 23:19 — Diseño inspirado en WhatsApp, Mercado Pago y Discord
+
+- **Pedido del usuario:** reevaluar el diseño tomando como inspiración WhatsApp, Mercado Pago, Playus, Discord y apps parecidas, evitando el plagio, y elegir de una lista de 18 ideas.
+  - Eligió 1, 2, 3, 5, 6, 7, 8, 10, 11, 12 y 17.
+  - Decidió hacer primero las de solo interfaz y dejar para otro PR las de backend (3, 11 y 12), con estas definiciones: "sin leer" cuenta solo mensajes del chat y las reacciones van solo en mensajes.
+  - Para el 10 pidió fotos de perfil en otro release.
+  - Aprobó el plan y que se sumen las historias al story map.
+- **Chat (1 y 2):** `ListaMensajes` arma filas con separadores de día (`etiquetaDelDia`) y agrupa los mensajes seguidos de la misma persona, a menos de 5 minutos. La hora (`formatearHora`) va dentro de la burbuja. `CampoMensaje` crece hasta unos cinco renglones y "Enviar" es un botón redondo con un ícono nuevo, con `aria-label`. `formatearMomento` se reemplazó por estas dos funciones.
+- **Cuentas como billetera (5 y 6):**
+  - `GastosVista` muestra el balance neto (lo que te deben menos lo que debés), con accesos rápidos a Anotar gasto, Pagar y Me deben. "Me deben" abre Saldos en esa pestaña con `?ver=meDeben`.
+  - La "Actividad" agrupa los gastos por día. `TarjetaGasto` pasa a ser una fila con el ícono de la categoría (íconos nuevos: comida, transporte, compras), quién pagó y tu parte, y el reparto se despliega al tocarla.
+  - Los pagos no entran en la actividad: la API solo devuelve los de deudas abiertas, así que el historial quedaría incompleto. Sumarlos requiere backend.
+- **Comprobante (7):** `PagoVista` muestra el comprobante en lugar de volver a Saldos. Tiene una tilde, el monto, a quién, la fecha, lo que queda por pagar y el botón "Listo". Se quitó `gastos.mensaje`, que dejó de usarse.
+- **Monto protagonista (8):** la clase global `.monto-grande` tiene el símbolo de la moneda (`simboloMoneda`) y el número grande y centrado. Se usa en anotar gasto, donde el monto pasa a ir después del título, y en pagar.
+- **Participantes por rol (10):** `ListaParticipantes` agrupa en "Admin" y "Viajeros (n)". El nuevo `InicialPersona` es el círculo con la inicial y lo comparten con `SelectorDeudores`; ahí irían las fotos de perfil.
+- **Botón flotante (17):** `.accion-flotante` en "Proponer alojamiento" y "Proponer actividad". En celular flota encima de la barra, con el texto oculto pero disponible para lectores de pantalla. En Gastos, la acción principal ya está en los accesos rápidos.
+- **Story map** (`docs/diagramas.drawio`, Página-13):
+  - en el R5, en la columna "Comunicarse", se agregaron "Viajero reacciona con un emoji a un mensaje del chat", "Viajero ve quién está escribiendo en el chat" y "Viajero ve en la lista de grupos la última novedad y los mensajes sin leer";
+  - en el R6, en "Gestionar el grupo", se agregó "Viajero sube su foto de perfil";
+  - para hacerles lugar, todo lo que está debajo del R5 bajó 240 px.
+- **PLAN.md:** se actualizaron la sección 7.1.1 (los patrones nuevos y las funciones de fecha) y la sección 9 (R5 y R6, con cómo encajan las historias nuevas).
+- **Pruebas:**
+  - **Nuevas:** `ListaMensajes.test.ts`, `GastosVista.test.ts`, el comprobante, `?ver=meDeben`, `simboloMoneda`, `etiquetaDelDia` y `formatearHora`, y los grupos por rol.
+  - **Ajustadas:** las E2E de gastos (la fila desplegable y el comprobante) y de administración (el grupo Admin).
+- **Verificación:**
+  - lint pasa;
+  - la cobertura pasa 573 pruebas: 349 del backend y 224 del frontend, con 94 % de líneas en el frontend;
+  - la e2e pasa 11 de 11;
+  - las capturas a 360 px en claro y oscuro y a 1280 px, del chat, Gastos, anotar gasto, el pago con su comprobante, Participantes y Actividades, no muestran errores en la consola.
