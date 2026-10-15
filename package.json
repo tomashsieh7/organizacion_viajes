@@ -35,5 +35,9 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.1",
     "vitest": "^5.0.4"
+  },
+  "overrides": {
+    "mysql2": "^3.24.6",
+    "deepmerge-ts": "^8.0.2"
   }
 }
