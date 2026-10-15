@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted } from 'vue';
 import type { GastoVista, PagoDeActividad } from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../componentes/base/EstadoVacio.vue';
@@ -7,7 +7,7 @@ import IconoLinea from '../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import FilaPago from '../componentes/gastos/FilaPago.vue';
 import TarjetaGasto from '../componentes/gastos/TarjetaGasto.vue';
-import { mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useGastosStore } from '../stores/gastos';
 import { useSesionStore } from '../stores/sesion';
 import { useViajeStore } from '../stores/viaje';
@@ -16,9 +16,10 @@ import { etiquetaDelDia, formatearMonto } from '../utiles/formato';
 const viaje = useViajeStore();
 const gastos = useGastosStore();
 const sesion = useSesionStore();
-const error = ref('');
 /** Hasta la primera carga no se muestra la lista vacía. */
-const cargado = ref(false);
+const { cargado, error, cargar, reintentar } = useCarga(() =>
+  Promise.all([gastos.cargarGastos(), gastos.cargarDeudas(), gastos.cargarPagos()]),
+);
 const ruta = (seccion: string) => `/viajes/${viaje.actual!.id}/${seccion}`;
 const monto = (n: number) => formatearMonto(n, viaje.actual!.moneda);
 
@@ -48,18 +49,14 @@ const porDia = computed(() => {
   return grupos;
 });
 
-onMounted(() =>
-  Promise.all([gastos.cargarGastos(), gastos.cargarDeudas(), gastos.cargarPagos()])
-    .catch((e) => (error.value = mensajeDeError(e)))
-    .finally(() => (cargado.value = true)),
-);
+onMounted(cargar);
 </script>
 
 <template>
   <section>
     <h2 class="solo-lectores">Gastos</h2>
     <SiluetaCarga v-if="!cargado" />
-    <AvisoMensaje v-else-if="error" tipo="error">{{ error }}</AvisoMensaje>
+    <AvisoMensaje v-else-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
     <template v-else>
       <div class="billetera panel">
         <p class="billetera__rotulo">

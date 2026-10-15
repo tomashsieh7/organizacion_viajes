@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../componentes/base/EstadoVacio.vue';
 import IconoLinea from '../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import DialogoNuevoViaje from '../componentes/viajes/DialogoNuevoViaje.vue';
-import { mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useViajeStore } from '../stores/viaje';
 import { hoyDelDispositivo } from '../utiles/fechas';
 import { formatearRango } from '../utiles/formato';
@@ -15,17 +15,22 @@ import { cuentaRegresiva } from '../utiles/progreso';
 const store = useViajeStore();
 const router = useRouter();
 const creando = ref(false);
-const error = ref('');
 /** Hasta la primera carga no se muestra la lista vacía. */
-const cargado = ref(false);
+const { cargado, error, cargar, reintentar } = useCarga(() => store.cargarViajes());
 const hoy = hoyDelDispositivo();
 
-onMounted(() =>
-  store
-    .cargarViajes()
-    .catch((e) => (error.value = mensajeDeError(e)))
-    .finally(() => (cargado.value = true)),
-);
+/**
+ * Primero los viajes en curso y los próximos, en el orden de la API (por fecha de inicio); al final
+ * los terminados, del más reciente al más viejo, así el viaje que se organiza queda arriba.
+ */
+const viajes = computed(() => {
+  const terminados = store.viajes
+    .filter((v) => v.fechaFin < hoy)
+    .sort((a, b) => b.fechaFin.localeCompare(a.fechaFin));
+  return [...store.viajes.filter((v) => v.fechaFin >= hoy), ...terminados];
+});
+
+onMounted(cargar);
 // El aviso se muestra una sola vez.
 onBeforeUnmount(() => (store.avisoLista = ''));
 
@@ -43,7 +48,7 @@ function alCrear(viajeId: string) {
     </div>
     <AvisoMensaje v-if="store.avisoLista" tipo="info">{{ store.avisoLista }}</AvisoMensaje>
     <SiluetaCarga v-if="!cargado" :cantidad="2" />
-    <AvisoMensaje v-else-if="error" tipo="error">{{ error }}</AvisoMensaje>
+    <AvisoMensaje v-else-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
     <EstadoVacio
       v-else-if="store.viajes.length === 0"
       icono="🧳"
@@ -53,7 +58,7 @@ function alCrear(viajeId: string) {
       <button class="boton" type="button" @click="creando = true">Crear mi primer grupo</button>
     </EstadoVacio>
     <ul class="tarjetas">
-      <li v-for="v in store.viajes" :key="v.id" class="tarjeta">
+      <li v-for="v in viajes" :key="v.id" class="tarjeta">
         <RouterLink
           class="panel"
           :to="v.miAcceso === 'SOLO_SALDOS' ? `/viajes/${v.id}/saldos` : `/viajes/${v.id}`"

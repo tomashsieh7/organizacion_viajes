@@ -39,4 +39,45 @@ describe('DialogoModal', () => {
     escape();
     expect(cerrar).toHaveBeenCalledTimes(1);
   });
+
+  it('Tab y Mayús + Tab dan la vuelta dentro del diálogo, sin pasar a la página de atrás', () => {
+    const afuera = document.createElement('button');
+    document.body.append(afuera);
+    const dialogo = mount(DialogoModal, {
+      props: { titulo: 'Nuevo grupo' },
+      slots: {
+        default:
+          '<input id="primero" /><button id="deshabilitado" disabled>No</button><button id="ultimo">Sí</button>',
+      },
+      attachTo: document.body,
+    });
+    const tab = (shiftKey = false) => {
+      const evento = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey,
+        bubbles: true,
+        cancelable: true,
+      });
+      document.activeElement!.dispatchEvent(evento);
+      return evento.defaultPrevented;
+    };
+    const enfocado = () => document.activeElement?.id;
+
+    // Entre controles, Tab sigue su curso normal: el navegador mueve el foco.
+    (document.getElementById('primero') as HTMLElement).focus();
+    expect(tab()).toBe(false);
+    // Desde el último, Tab vuelve al primero; desde el primero, Mayús + Tab va al último.
+    (document.getElementById('ultimo') as HTMLElement).focus();
+    expect(tab()).toBe(true);
+    expect(enfocado()).toBe('primero');
+    expect(tab(true)).toBe(true);
+    expect(enfocado()).toBe('ultimo');
+    // Si el foco quedó afuera, Tab lo devuelve al diálogo.
+    afuera.focus();
+    expect(tab()).toBe(true);
+    expect(enfocado()).toBe('primero');
+
+    dialogo.unmount();
+    afuera.remove();
+  });
 });

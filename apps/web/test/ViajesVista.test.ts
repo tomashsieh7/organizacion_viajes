@@ -52,6 +52,22 @@ describe('ViajesVista', () => {
     expect(tarjetas[1]!.text()).toContain('Solo saldos');
   });
 
+  it('muestra primero los viajes en curso y próximos, y al final los terminados', async () => {
+    // Hoy es 14 oct 2026; la API los devuelve por fecha de inicio.
+    const vista = await montar([
+      viaje('viejo', { nombre: 'Salta', fechaInicio: '2025-03-01', fechaFin: '2025-03-05' }),
+      viaje('reciente', { nombre: 'Jujuy', fechaInicio: '2026-07-01', fechaFin: '2026-07-10' }),
+      viaje('en-curso', { nombre: 'Córdoba', fechaInicio: '2026-10-12', fechaFin: '2026-10-16' }),
+      viaje('proximo', { nombre: 'Bariloche' }),
+    ]);
+    expect(vista.findAll('.tarjeta__titulo strong').map((t) => t.text())).toEqual([
+      'Córdoba',
+      'Bariloche',
+      'Jujuy',
+      'Salta',
+    ]);
+  });
+
   it('muestra el aviso pendiente una sola vez', async () => {
     const vista = await montar([viaje('v1')]);
     useViajeStore().avisoLista = 'Saliste de «Mendoza».';

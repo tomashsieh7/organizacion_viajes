@@ -7,6 +7,7 @@ import IconoLinea from '../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import TarjetaPropuesta from '../componentes/propuestas/TarjetaPropuesta.vue';
 import { mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useCelebracion } from '../composables/useCelebracion';
 import { usePropuestasStore } from '../stores/propuestas';
 import { useViajeStore } from '../stores/viaje';
@@ -15,25 +16,20 @@ import { formatearRango, NOMBRES_ESTADO } from '../utiles/formato';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
+/** Errores de votar y resolver; los de la carga los maneja `useCarga`. */
 const error = ref('');
 /** Hasta la primera carga no se muestra la lista vacía. */
-const cargado = ref(false);
+const {
+  cargado,
+  error: errorDeCarga,
+  cargar,
+  reintentar,
+} = useCarga(() => propuestas.cargarAlojamientos());
 
 /** Noches de la estadía: el día de salida no cuenta (RN-C3). */
 function noches(desde: string, hasta: string): string {
   const n = diasEntre(desde, hasta).length - 1;
   return n === 1 ? '1 noche' : `${n} noches`;
-}
-
-async function cargar() {
-  error.value = '';
-  try {
-    await propuestas.cargarAlojamientos();
-  } catch (e) {
-    error.value = mensajeDeError(e);
-  } finally {
-    cargado.value = true;
-  }
 }
 
 /** Hay un voto o una resolución en curso: un segundo clic no manda otro pedido. */
@@ -89,6 +85,9 @@ onMounted(cargar);
     </div>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <SiluetaCarga v-if="!cargado" />
+    <AvisoMensaje v-else-if="errorDeCarga" tipo="error" :reintentar="reintentar">{{
+      errorDeCarga
+    }}</AvisoMensaje>
     <template v-else-if="!error && !propuestas.alojamientos.length">
       <EstadoVacio
         v-if="propuestas.filtro"

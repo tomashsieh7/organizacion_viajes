@@ -5,7 +5,7 @@ import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../componentes/base/EstadoVacio.vue';
 import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
 import FilaSaldo from '../componentes/gastos/FilaSaldo.vue';
-import { mensajeDeError } from '../clientes/http';
+import { useCarga } from '../composables/useCarga';
 import { useGastosStore } from '../stores/gastos';
 import { useSesionStore } from '../stores/sesion';
 import { useViajeStore } from '../stores/viaje';
@@ -18,28 +18,20 @@ const miId = useSesionStore().usuario?.id ?? '';
 const pestana = ref<'debo' | 'meDeben'>(
   useRoute()?.query['ver'] === 'meDeben' ? 'meDeben' : 'debo',
 );
-const error = ref('');
 const total = (n: number) => formatearMonto(n, viaje.actual!.moneda);
 /** El largo del total, para que el CSS lo achique solo si no entra en la pestaña. */
 const largo = (n: number) => ({ '--largo': total(n).length });
 // Hasta que llegan las deudas no se muestran las que quedaron de otra visita, que pueden estar viejas.
-const cargado = ref(false);
-
-onMounted(async () => {
-  try {
-    await gastos.cargarDeudas();
-  } catch (e) {
-    error.value = mensajeDeError(e);
-  } finally {
-    cargado.value = true;
-  }
-});
+const { cargado, error, cargar, reintentar } = useCarga(() => gastos.cargarDeudas());
+onMounted(cargar);
 </script>
 
 <template>
   <section>
     <h2>Saldos</h2>
     <SiluetaCarga v-if="!cargado" :cantidad="2" />
+    <!-- Si no cargaron las deudas, solo el error: unos totales en cero parecerían reales. -->
+    <AvisoMensaje v-else-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
     <div v-else class="pestanas" role="tablist">
       <button
         type="button"
@@ -72,8 +64,7 @@ onMounted(async () => {
         >
       </button>
     </div>
-    <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
-    <div v-if="cargado" role="tabpanel">
+    <div v-if="cargado && !error" role="tabpanel">
       <template v-if="pestana === 'debo'">
         <EstadoVacio v-if="!gastos.debo.length" icono="🎉" titulo="No le debés nada a nadie." />
         <ul class="saldos">

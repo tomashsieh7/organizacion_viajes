@@ -1,5 +1,6 @@
 <script setup lang="ts">
-defineProps<{ tipo?: 'error' | 'info' | 'exito' }>();
+/** Con `reintentar`, el aviso ofrece volver a intentar lo que falló (por ejemplo, una carga). */
+defineProps<{ tipo?: 'error' | 'info' | 'exito'; reintentar?: (() => unknown) | undefined }>();
 
 /** El ícono acompaña al color, para que el tipo de aviso no dependa solo de él. */
 const ICONOS = { error: '⚠', info: 'ℹ', exito: '✓' } as const;
@@ -12,7 +13,10 @@ const ICONOS = { error: '⚠', info: 'ℹ', exito: '✓' } as const;
     :role="tipo === 'error' ? 'alert' : 'status'"
   >
     <span class="aviso__icono" aria-hidden="true">{{ ICONOS[tipo ?? 'info'] }}</span>
-    <span><slot /></span>
+    <span class="aviso__texto"><slot /></span>
+    <button v-if="reintentar" type="button" class="boton aviso__reintentar" @click="reintentar()">
+      Reintentar
+    </button>
   </p>
 </template>
 
@@ -29,6 +33,14 @@ const ICONOS = { error: '⚠', info: 'ℹ', exito: '✓' } as const;
   border-left-color: var(--color-acento);
   background: var(--color-acento-suave);
   color: var(--color-texto);
+}
+.aviso__texto {
+  flex: 1;
+}
+.aviso__reintentar {
+  flex: none;
+  min-height: 2rem;
+  margin: -0.25rem 0;
 }
 .aviso__icono {
   font-weight: 700;
