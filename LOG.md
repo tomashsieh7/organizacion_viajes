@@ -1505,3 +1505,15 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - Con la autorización del usuario ("Si"), el PR #20 ("Fechas con nombre de día y mes abreviado, y más pruebas del rediseño") se mergeó a `main` en `8f23f62`, fijando la cabeza verificada `ff97878`.
 - El CI pasó los tres trabajos (Lint y tipos, Pruebas de Vitest y Pruebas de punta a punta), sin conflictos ni comentarios.
 - Después del merge se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
+
+## 2026-10-14 21:15 — El chat fallaba al abrir la app por la IP de la red local
+
+- **Pedido del usuario:** probó la app en su laptop con Linux, abriendo `http://192.168.0.78:5173`. Al mandar un mensaje en el chat apareció "Algo salió mal".
+- **Causa:** `stores/chat.ts` armaba el id temporal del mensaje con `crypto.randomUUID()`, que el navegador solo ofrece con HTTPS o en `localhost`. En una dirección `http` de la red local esa función no existe y el envío lanzaba un TypeError, que `onErrorCaptured` de `App.vue` mostraba como error inesperado. Las pruebas no lo detectaron porque siempre corren en `localhost`.
+- **Arreglo:** el nuevo `utiles/idTemporal.ts` arma el id con `crypto.getRandomValues`, que está disponible en cualquier contexto. El servidor acepta cualquier texto de 1 a 100 caracteres, así que no cambia.
+- **Prueba:** `chatStore.test.ts` envía un mensaje con un `crypto` sin `randomUUID`. Con el código anterior falla con "crypto.randomUUID is not a function", y con el arreglo pasa.
+- **Verificación:** lint pasa y las 191 pruebas del frontend pasan.
+
+## 2026-10-14 21:16 — Merge del PR #21
+
+- Con la autorización del usuario, el PR #21 ("Registrar en el LOG el merge del PR #20") se mergeó a `main` en `e22f516`, fijando la cabeza verificada `0898a74`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
