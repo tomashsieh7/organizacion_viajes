@@ -128,13 +128,6 @@ export class Propuesta {
     this.datos = { ...this.datos, estado: destino, resueltaPorId: adminId, resueltaEn: ahora };
   }
 
-  conteo(): { aFavor: number; enContra: number } {
-    return {
-      aFavor: this.datos.votos.filter((v) => v.valor === 'A_FAVOR').length,
-      enContra: this.datos.votos.filter((v) => v.valor === 'EN_CONTRA').length,
-    };
-  }
-
   aDatos(): DatosPropuesta {
     return { ...this.datos, votos: this.datos.votos.map((v) => ({ ...v })) };
   }

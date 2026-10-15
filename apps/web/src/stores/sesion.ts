@@ -47,5 +47,5 @@ export const useSesionStore = defineStore('sesion', () => {
     usuario.value = null;
   }
 
-  return { usuario, cargada, autenticado, cargar, ingresar, registrarse, perder, cerrarSesion };
+  return { usuario, autenticado, cargar, ingresar, registrarse, perder, cerrarSesion };
 });

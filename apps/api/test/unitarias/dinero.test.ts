@@ -47,7 +47,6 @@ describe('Dinero', () => {
     expect(ars(10).restar(ars(15)).monto).toBe(-5);
     expect(ars(10).esMayorQue(ars(5))).toBe(true);
     expect(ars(10).menorEntre(ars(5)).monto).toBe(5);
-    expect(ars(0).esCero()).toBe(true);
   });
 
   it('RN-X6: no combina montos de monedas distintas', () => {

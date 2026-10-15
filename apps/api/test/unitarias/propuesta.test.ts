@@ -68,14 +68,17 @@ describe('Propuesta', () => {
       p.votar('ana', 'A_FAVOR', AHORA);
       p.votar('tomas', 'A_FAVOR', AHORA);
       p.votar('tomas', 'EN_CONTRA', AHORA);
-      expect(p.conteo()).toEqual({ aFavor: 1, enContra: 1 });
+      expect(p.aDatos().votos.map((v) => [v.usuarioId, v.valor])).toEqual([
+        ['ana', 'A_FAVOR'],
+        ['tomas', 'EN_CONTRA'],
+      ]);
     });
 
     it('P6: desvotar retira el voto propio y avisa si no había votado', () => {
       const p = nueva();
       p.votar('tomas', 'A_FAVOR', AHORA);
       p.desvotar('tomas');
-      expect(p.conteo()).toEqual({ aFavor: 0, enContra: 0 });
+      expect(p.aDatos().votos).toEqual([]);
       expect(() => p.desvotar('tomas')).toThrow(expect.objectContaining({ codigo: 'SIN_VOTO' }));
     });
 

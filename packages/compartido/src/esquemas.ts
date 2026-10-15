@@ -80,19 +80,15 @@ export const esquemaViajeNuevo = z
 export type DatosViajeNuevo = z.input<typeof esquemaViajeNuevo>;
 
 export const esquemaAgregarViajero = z.object({ email: esquemaEmail });
-export type DatosAgregarViajero = z.input<typeof esquemaAgregarViajero>;
 
 export const esquemaSalirDelViaje = z.object({ nuevoAdminId: z.uuid().optional() });
-export type DatosSalirDelViaje = z.input<typeof esquemaSalirDelViaje>;
 
 export const esquemaTraspaso = z.object({ nuevoAdminId: z.uuid('Elegí a un participante') });
-export type DatosTraspaso = z.input<typeof esquemaTraspaso>;
 
 export const ESTADOS_PROPUESTA = ['PENDIENTE', 'CONFIRMADA', 'DENEGADA', 'CANCELADA'] as const;
 export const VALORES_VOTO = ['A_FAVOR', 'EN_CONTRA'] as const;
 
 export const esquemaVoto = z.object({ valor: z.enum(VALORES_VOTO, 'Elegí a favor o en contra') });
-export type DatosVoto = z.input<typeof esquemaVoto>;
 
 /** CU17: `hoy` es la fecha del dispositivo (P19); `dia`, el que eligió el viajero. */
 export const esquemaConsultaMapa = z.object({

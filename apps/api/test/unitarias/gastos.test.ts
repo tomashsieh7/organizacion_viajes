@@ -167,7 +167,7 @@ describe('Deuda.registrarPago (RN-P3 a RN-P5, P17)', () => {
   it('el pago exacto deja el saldo en cero', () => {
     const d = deuda('tomas', 'ana', 1_000);
     pagar(d, 1_000);
-    expect(d.monto.esCero()).toBe(true);
+    expect(d.monto.monto).toBe(0);
   });
 
   it('RN-P4: un pago mayor que la deuda se rechaza con el saldo y no cambia nada', () => {
