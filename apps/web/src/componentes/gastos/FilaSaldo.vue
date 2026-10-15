@@ -34,17 +34,21 @@ defineProps<{
 </template>
 
 <style scoped>
+/* Nombre e importe en una línea; si no entran, el importe baja al renglón siguiente. */
 .fila-saldo {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--esp-1) var(--esp-3);
   margin-bottom: var(--esp-3);
 }
 .nombre {
+  flex: 1 1 9rem;
+  min-width: 0;
   font-weight: 600;
 }
 .importe {
+  margin-left: auto;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -66,7 +70,7 @@ defineProps<{
 .actualizado,
 .pagos,
 .acciones {
-  grid-column: 1 / -1;
+  flex-basis: 100%;
 }
 .pagos summary {
   cursor: pointer;

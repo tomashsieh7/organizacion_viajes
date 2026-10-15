@@ -62,6 +62,11 @@ describe('CU01: crear viaje y consultarlo', () => {
     const moneda = await ana.c.post('/api/viajes', { ...nuevoViaje, monedaCodigo: 'XXX' });
     expect(moneda.status).toBe(422);
     expect(moneda.body.error.codigo).toBe('MONEDA_INEXISTENTE');
+    const largo = await ana.c.post('/api/viajes', { ...nuevoViaje, nombre: 'x'.repeat(81) });
+    expect(largo.status).toBe(400);
+    expect(largo.body.error.detalles).toEqual([
+      { campo: 'nombre', mensaje: 'Puede tener hasta 80 caracteres' },
+    ]);
   });
 
   it('lista monedas y exige sesión', async () => {

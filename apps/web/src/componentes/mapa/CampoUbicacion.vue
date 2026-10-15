@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { inject, onBeforeUnmount, ref } from 'vue';
+import { LARGOS_MAXIMOS } from '@viajes/compartido';
 import MapaSelector from './MapaSelector.vue';
 import { BUSCADOR_UBICACIONES, type Ubicacion } from '../../clientes/ubicaciones';
 
@@ -51,6 +52,7 @@ onBeforeUnmount(() => clearTimeout(espera));
       id="ubicacion"
       name="ubicacion"
       :value="modelo.ubicacion"
+      :maxlength="LARGOS_MAXIMOS.ubicacion"
       autocomplete="off"
       placeholder="Buscá una dirección o un lugar"
       @input="alEscribir(($event.target as HTMLInputElement).value)"

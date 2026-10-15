@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { esquemaAlojamientoNuevo } from '@viajes/compartido';
+import { LARGOS_MAXIMOS, esquemaAlojamientoNuevo } from '@viajes/compartido';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import CampoFormulario from '../componentes/base/CampoFormulario.vue';
 import CampoUbicacion, { type ValorUbicacion } from '../componentes/mapa/CampoUbicacion.vue';
@@ -79,6 +79,7 @@ async function enviar() {
         <input
           id="alojamiento-nombre"
           v-model="datos.nombre"
+          :maxlength="LARGOS_MAXIMOS.titulo"
           name="nombre"
           placeholder="Hostel Patagonia"
           v-bind="aria('nombre', 'alojamiento-nombre')"
@@ -92,6 +93,7 @@ async function enviar() {
         <textarea
           id="alojamiento-descripcion"
           v-model="datos.descripcion"
+          :maxlength="LARGOS_MAXIMOS.descripcion"
           name="descripcion"
           rows="3"
           v-bind="aria('descripcion', 'alojamiento-descripcion')"

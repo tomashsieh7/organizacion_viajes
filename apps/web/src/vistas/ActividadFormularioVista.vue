@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
+  LARGOS_MAXIMOS,
   esquemaActividadNueva,
   type ActividadVista,
   type ConflictoHorario,
@@ -128,6 +129,7 @@ async function enviar() {
         <input
           id="actividad-titulo"
           v-model="datos.titulo"
+          :maxlength="LARGOS_MAXIMOS.titulo"
           name="titulo"
           placeholder="Kayak en el lago"
           v-bind="aria('titulo', 'actividad-titulo')"
@@ -141,6 +143,7 @@ async function enviar() {
         <textarea
           id="actividad-descripcion"
           v-model="datos.descripcion"
+          :maxlength="LARGOS_MAXIMOS.descripcion"
           name="descripcion"
           rows="3"
           v-bind="aria('descripcion', 'actividad-descripcion')"

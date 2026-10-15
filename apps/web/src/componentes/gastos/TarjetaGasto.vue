@@ -57,8 +57,10 @@ const pagueYo = computed(() => props.gasto.pagadoPor.id === props.miId);
 </template>
 
 <style scoped>
+/* Si el título y el monto no entran en una línea, el monto baja al renglón siguiente. */
 summary {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--esp-3);
   padding: var(--esp-3) var(--esp-4);
@@ -79,7 +81,7 @@ summary::-webkit-details-marker {
   color: var(--color-acento);
 }
 .gasto__texto {
-  flex: 1;
+  flex: 1 1 7rem;
   min-width: 0;
 }
 .gasto__titulo,
@@ -92,6 +94,7 @@ summary::-webkit-details-marker {
   margin: 0;
 }
 .monto {
+  margin-left: auto;
   white-space: nowrap;
 }
 .detalle {

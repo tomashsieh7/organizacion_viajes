@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { CONTRASENA_MIN, esContrasenaComun, esquemaRegistro } from '@viajes/compartido';
+import {
+  CONTRASENA_MIN,
+  LARGOS_MAXIMOS,
+  esContrasenaComun,
+  esquemaRegistro,
+} from '@viajes/compartido';
 import CampoFormulario from '../componentes/base/CampoFormulario.vue';
 import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import { ErrorDeApi, mensajeDeError } from '../clientes/http';
@@ -49,6 +54,7 @@ async function enviar() {
         <input
           id="nombre"
           v-model="datos.nombre"
+          :maxlength="LARGOS_MAXIMOS.nombrePersona"
           name="nombre"
           autocomplete="name"
           required
@@ -59,6 +65,7 @@ async function enviar() {
         <input
           id="apodo"
           v-model="datos.apodo"
+          :maxlength="LARGOS_MAXIMOS.apodo"
           name="apodo"
           autocomplete="nickname"
           v-bind="aria('apodo', 'apodo')"

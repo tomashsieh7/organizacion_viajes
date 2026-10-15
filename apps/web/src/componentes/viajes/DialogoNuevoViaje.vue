@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
-import { esquemaViajeNuevo, type DatosViajeNuevo } from '@viajes/compartido';
+import { LARGOS_MAXIMOS, esquemaViajeNuevo, type DatosViajeNuevo } from '@viajes/compartido';
 import CampoFormulario from '../base/CampoFormulario.vue';
 import AvisoMensaje from '../base/AvisoMensaje.vue';
 import DialogoModal from '../base/DialogoModal.vue';
@@ -19,6 +19,10 @@ const store = useViajeStore();
 
 type Paso = 1 | 2 | 3;
 const TITULOS: Record<Paso, string> = { 1: '¿A dónde van?', 2: '¿Cuándo?', 3: '¿Con quién?' };
+/** Con la ", " del medio, ciudad y país nunca superan el largo máximo del destino. */
+const LARGO_CIUDAD = 70;
+const LARGO_PAIS = LARGOS_MAXIMOS.destino - LARGO_CIUDAD - 2;
+
 /** Los campos que se validan en cada paso; el destino se carga como ciudad y país. */
 const CAMPOS: Record<1 | 2, string[]> = {
   1: ['nombre', 'ciudad'],
@@ -129,6 +133,7 @@ function cerrar() {
             id="viaje-nombre"
             v-bind="aria('nombre', 'viaje-nombre', 'viaje-nombre-ayuda')"
             v-model="datos.nombre"
+            :maxlength="LARGOS_MAXIMOS.nombreViaje"
             name="nombre"
             placeholder="Bariloche 2026"
           />
@@ -139,6 +144,7 @@ function cerrar() {
               id="viaje-ciudad"
               v-bind="aria('ciudad', 'viaje-ciudad')"
               v-model="datos.ciudad"
+              :maxlength="LARGO_CIUDAD"
               name="ciudad"
               placeholder="Bariloche"
               autocomplete="off"
@@ -148,6 +154,7 @@ function cerrar() {
             <input
               id="viaje-pais"
               v-model="datos.pais"
+              :maxlength="LARGO_PAIS"
               name="pais"
               placeholder="Argentina"
               autocomplete="country-name"

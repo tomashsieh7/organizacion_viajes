@@ -20,27 +20,55 @@ export const esquemaEmail = z
   .toLowerCase()
   .pipe(z.email('Ingresá un email válido'));
 
+/** Largos máximos de los textos; la web los usa también como `maxlength` de cada campo. */
+export const LARGOS_MAXIMOS = {
+  nombrePersona: 80,
+  apodo: 40,
+  nombreViaje: 80,
+  destino: 120,
+  titulo: 120,
+  descripcion: 1000,
+  ubicacion: 200,
+} as const;
+
+const hasta = (n: number) => `Puede tener hasta ${n} caracteres`;
+
 export const esquemaRegistro = z.object({
   email: esquemaEmail,
   password: z
     .string()
     .min(CONTRASENA_MIN, `La contraseña debe tener al menos ${CONTRASENA_MIN} caracteres`)
     .max(CONTRASENA_MAX, `La contraseña puede tener hasta ${CONTRASENA_MAX} caracteres`),
-  nombre: z.string().trim().min(1, 'Ingresá tu nombre').max(80),
-  apodo: z.string().trim().max(40).optional(),
+  nombre: z
+    .string()
+    .trim()
+    .min(1, 'Ingresá tu nombre')
+    .max(LARGOS_MAXIMOS.nombrePersona, hasta(LARGOS_MAXIMOS.nombrePersona)),
+  apodo: z.string().trim().max(LARGOS_MAXIMOS.apodo, hasta(LARGOS_MAXIMOS.apodo)).optional(),
 });
 export type DatosRegistro = z.input<typeof esquemaRegistro>;
 
 export const esquemaInicioSesion = z.object({
   email: esquemaEmail,
-  password: z.string().min(1, 'Ingresá tu contraseña').max(CONTRASENA_MAX),
+  password: z
+    .string()
+    .min(1, 'Ingresá tu contraseña')
+    .max(CONTRASENA_MAX, `La contraseña puede tener hasta ${CONTRASENA_MAX} caracteres`),
 });
 export type DatosInicioSesion = z.input<typeof esquemaInicioSesion>;
 
 export const esquemaViajeNuevo = z
   .object({
-    nombre: z.string().trim().min(1, 'Ingresá un nombre').max(80),
-    destino: z.string().trim().min(1, 'Ingresá un destino').max(120),
+    nombre: z
+      .string()
+      .trim()
+      .min(1, 'Ingresá un nombre')
+      .max(LARGOS_MAXIMOS.nombreViaje, hasta(LARGOS_MAXIMOS.nombreViaje)),
+    destino: z
+      .string()
+      .trim()
+      .min(1, 'Ingresá un destino')
+      .max(LARGOS_MAXIMOS.destino, hasta(LARGOS_MAXIMOS.destino)),
     fechaInicio: esquemaFecha,
     fechaFin: esquemaFecha,
     monedaCodigo: z.string().length(3, 'Elegí una moneda'),
@@ -101,7 +129,11 @@ const montoEntero = z
  */
 export const esquemaGastoNuevo = z
   .object({
-    titulo: z.string().trim().min(1, 'Ingresá un título').max(120),
+    titulo: z
+      .string()
+      .trim()
+      .min(1, 'Ingresá un título')
+      .max(LARGOS_MAXIMOS.titulo, hasta(LARGOS_MAXIMOS.titulo)),
     categoriaId: z.uuid('Elegí una categoría'),
     monto: montoEntero.positive('El monto tiene que ser mayor que cero'),
     pagadoPorId: z.uuid().optional(),
@@ -139,14 +171,22 @@ const coordenadas = {
 
 /** Datos comunes a toda propuesta (P8): descripción, ubicación, coordenadas y precio opcional. */
 const baseDePropuesta = {
-  descripcion: z.string().trim().min(1, 'Ingresá una descripción').max(1000),
-  ubicacion: z.string().trim().min(1, 'Ingresá la ubicación').max(200),
+  descripcion: z
+    .string()
+    .trim()
+    .min(1, 'Ingresá una descripción')
+    .max(LARGOS_MAXIMOS.descripcion, hasta(LARGOS_MAXIMOS.descripcion)),
+  ubicacion: z
+    .string()
+    .trim()
+    .min(1, 'Ingresá la ubicación')
+    .max(LARGOS_MAXIMOS.ubicacion, hasta(LARGOS_MAXIMOS.ubicacion)),
   ...coordenadas,
   precio: z
     .number()
     .int('El precio va en centavos')
     .min(0, 'El precio no puede ser negativo')
-    .max(Number.MAX_SAFE_INTEGER)
+    .max(Number.MAX_SAFE_INTEGER, 'El precio es demasiado grande')
     .optional(),
 };
 
@@ -155,7 +195,11 @@ const coordenadasCompletas = (v: { latitud?: number | undefined; longitud?: numb
 
 export const esquemaAlojamientoNuevo = z
   .object({
-    nombre: z.string().trim().min(1, 'Ingresá el nombre del alojamiento').max(120),
+    nombre: z
+      .string()
+      .trim()
+      .min(1, 'Ingresá el nombre del alojamiento')
+      .max(LARGOS_MAXIMOS.titulo, hasta(LARGOS_MAXIMOS.titulo)),
     ...baseDePropuesta,
     fechaDesde: esquemaFecha,
     fechaHasta: esquemaFecha,
@@ -171,7 +215,11 @@ export const esquemaHora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Usá e
 
 /** RN-A1 y RN-B2: datos de una actividad o de una alternativa; las coordenadas son obligatorias (P8). */
 export const esquemaActividadNueva = z.object({
-  titulo: z.string().trim().min(1, 'Ingresá un título').max(120),
+  titulo: z
+    .string()
+    .trim()
+    .min(1, 'Ingresá un título')
+    .max(LARGOS_MAXIMOS.titulo, hasta(LARGOS_MAXIMOS.titulo)),
   ...baseDePropuesta,
   latitud: z.number({ error: 'Marcá la ubicación en el mapa' }).min(-90).max(90),
   longitud: z.number({ error: 'Marcá la ubicación en el mapa' }).min(-180).max(180),
