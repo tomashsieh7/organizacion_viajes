@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CLIENTE_GASTOS } from '../src/clientes/gastos';
 import SaldosVista from '../src/vistas/SaldosVista.vue';
 import {
@@ -9,6 +9,9 @@ import {
   clienteViajesFalso,
   montaje,
 } from './soporte/clientesFalsos';
+
+let consulta: Record<string, string> = {};
+vi.mock('vue-router', () => ({ useRoute: () => ({ query: consulta }) }));
 
 const deuda = (id: string, nombre: string, monto: number) => ({
   id,
@@ -86,5 +89,21 @@ describe('SaldosVista (CU21 y CU22)', () => {
     const [debo, meDeben] = vista.findAll('[role="tab"]');
     expect(debo!.find('.pestana__total').classes()).toContain('pestana__total--cero');
     expect(meDeben!.find('.pestana__total').classes()).not.toContain('pestana__total--cero');
+  });
+
+  it('con ?ver=meDeben, desde los accesos rápidos de Gastos, abre esa pestaña', async () => {
+    consulta = { ver: 'meDeben' };
+    const opciones = montaje(clienteAuthFalso(), clienteViajesFalso(), {
+      [CLIENTE_GASTOS as symbol]: clienteGastosFalso({
+        deudas: async (_v, rol) => (rol === 'deudor' ? [] : [deuda('d2', 'Luis', 30_000)]),
+      }),
+    });
+    await abrirViaje(opciones);
+    const vista = mount(SaldosVista, opciones);
+    await flushPromises();
+    consulta = {};
+    const [, meDeben] = vista.findAll('[role="tab"]');
+    expect(meDeben!.attributes('aria-selected')).toBe('true');
+    expect(vista.findAll('.fila-saldo').map((f) => f.find('span').text())).toEqual(['Luis']);
   });
 });

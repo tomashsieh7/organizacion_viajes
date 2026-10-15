@@ -21,9 +21,12 @@ test('CU20, CU21 y CU23: anotar un gasto con división arbitraria y pagar parte 
   await expect(p.locator('.diferencia')).toHaveAttribute('data-cuadra', 'true');
   await p.getByRole('button', { name: 'Guardar' }).click();
   await expect(p).toHaveURL(new RegExp(`/viajes/${viajeId}/gastos$`));
-  await expect(p.locator('article', { hasText: 'Alquiler de auto' })).toContainText(
-    'Tomás: $ 600,00',
-  );
+  // En la actividad, el gasto muestra tu parte; el reparto completo se despliega al tocarlo.
+  const gasto = p.locator('article', { hasText: 'Alquiler de auto' });
+  await expect(gasto).toContainText('Pagaste vos · tu parte $ 400,00');
+  await gasto.getByText('Alquiler de auto').click();
+  await expect(gasto.getByText('Tomás: $ 600,00')).toBeVisible();
+  await expect(p.locator('.billetera')).toContainText('Te deben');
 
   const t = tomas.page;
   await t.goto(`/viajes/${viajeId}/saldos`);
@@ -35,10 +38,13 @@ test('CU20, CU21 y CU23: anotar un gasto con división arbitraria y pagar parte 
   await expect(t.getByRole('alert')).toContainText('El monto supera lo que debés');
   await t.fill('#pago-monto', '250');
   await t.getByRole('button', { name: 'Pagar', exact: true }).click();
+  // El comprobante muestra lo pagado, a quién y lo que queda.
+  const comprobante = t.locator('.comprobante');
+  await expect(comprobante).toContainText('Pago registrado');
+  await expect(comprobante).toContainText('$ 250,00');
+  await expect(comprobante).toContainText('Te queda por pagarle$ 350,00');
+  await comprobante.getByRole('link', { name: 'Listo' }).click();
   await expect(t).toHaveURL(new RegExp(`/viajes/${viajeId}/saldos$`));
-  await expect(
-    t.getByRole('status').filter({ hasText: 'Todavía le debés $ 350,00 a Ana' }),
-  ).toBeVisible();
 
   await p.goto(`/viajes/${viajeId}/saldos`);
   await p.getByRole('tab', { name: /Me deben/ }).click();
