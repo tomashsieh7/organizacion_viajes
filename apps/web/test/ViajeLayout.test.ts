@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLIENTE_CHAT } from '../src/clientes/chat';
+import { ErrorDeApi } from '../src/clientes/http';
 import { useViajeStore } from '../src/stores/viaje';
 import ViajeLayout from '../src/vistas/ViajeLayout.vue';
 import {
@@ -59,7 +60,10 @@ describe('ViajeLayout', () => {
       .membresiaFinalizada({ viajeId: 'v1', motivo: 'ELIMINADO', conservaAccesoSaldos: false });
     await flushPromises();
     expect(push).toHaveBeenCalledWith('/viajes');
-    expect(useViajeStore().aviso).toBe('El Admin te quitó de «Bariloche».');
+    expect(useViajeStore().avisoLista).toBe('El Admin te quitó de «Bariloche».');
+    // Cerrar el viaje no borra el aviso de la lista, que todavía no se mostró.
+    vista.unmount();
+    expect(useViajeStore().avisoLista).toBe('El Admin te quitó de «Bariloche».');
     expect(falso.conexion.cerrar).toHaveBeenCalled();
   });
 
@@ -159,5 +163,16 @@ describe('ViajeLayout', () => {
     const enResumen = montar().vista;
     await flushPromises();
     expect(enResumen.find('.portada').classes()).not.toContain('portada--compacta');
+  });
+
+  it('si no puede abrir el viaje, muestra el error con un enlace para volver a la lista', async () => {
+    const { vista } = montar(async () => {
+      throw new ErrorDeApi(403, 'NO_PARTICIPANTE', 'No participás de este viaje');
+    });
+    await flushPromises();
+    expect(vista.text()).toContain('No participás de este viaje');
+    const volver = vista.find('a.volver');
+    expect(volver.text()).toBe('← Volver a mis grupos');
+    expect(volver.attributes('to')).toBe('/viajes');
   });
 });
