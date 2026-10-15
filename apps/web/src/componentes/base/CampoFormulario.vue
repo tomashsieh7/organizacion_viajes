@@ -1,11 +1,13 @@
 <script setup lang="ts">
-defineProps<{ etiqueta: string; error?: string | undefined; id: string }>();
+/** `ayuda`: texto bajo el campo; el control lo enlaza con `aria-describedby` a `{id}-ayuda`. */
+defineProps<{ etiqueta: string; error?: string | undefined; id: string; ayuda?: string }>();
 </script>
 
 <template>
   <div class="campo">
     <label :for="id">{{ etiqueta }}</label>
     <slot />
+    <small v-if="ayuda" :id="`${id}-ayuda`" class="ayuda">{{ ayuda }}</small>
     <p v-if="error" :id="`${id}-error`" class="campo__error" role="alert">
       <span aria-hidden="true">⚠ </span>{{ error }}
     </p>
