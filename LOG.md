@@ -1766,3 +1766,22 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - `maxlength` en "Nuevo grupo" y en anotar gasto;
   - una e2e nueva en `diseno.spec.ts` con datos largos a 360 px, que falla sin estos arreglos y pasa con ellos.
 - **Diagramas:** no cambian, porque el cambio es de validación y presentación.
+
+## 2026-10-15 12:05 — Merge del PR #31
+
+- Con la autorización del usuario ("Sí, hacé el commit y mergealo si pasa el CI"), el PR #31 ("Mensajes de largo en castellano y textos y montos largos en celular") se mergeó a `main` en `51d2049`, fijando la cabeza verificada `bda0802`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+- El usuario pidió que, cuando apruebe un commit con merge, se haga directamente, sin presentar un plan para ese paso.
+
+## 2026-10-15 12:05 — Revisión de accesibilidad con axe
+
+- **Pedido del usuario:** "Cuando termines, fijate si hay más cosas para mejorar o arreglar".
+- **Revisión:**
+  - **Seguridad:** `helmet`, sin `x-powered-by`, y cookies `httpOnly`, `SameSite=Lax` y `secure` en producción.
+  - **Carga:** cada ruta se carga por separado y la parte común pesa 59 kB comprimida.
+  - **Base de datos:** la única consulta dentro de un bucle es la que bloquea las opciones de una actividad en orden, a propósito.
+  - **Accesibilidad:** axe-core, descargado en el scratchpad y fuera del repositorio, recorrió 14 pantallas en claro, oscuro, 360 px y 1280 px.
+- **Hallazgos y arreglos, elegidos por el usuario:**
+  - **Contraste del calendario:** los días fuera del viaje tenían 2,67:1 por `opacity: 0.6`. Ahora usan el gris secundario sin transparencia (más de 4,5:1) y se siguen distinguiendo por el peso y la falta de fondo.
+  - **Crédito del mapa:** el enlace "Leaflet" tenía 2,55:1 contra el texto de alrededor, sin subrayado. Ahora va subrayado y con el color del texto, en los dos modos.
+  - **Prueba de accesibilidad:** `@axe-core/playwright` como dependencia de desarrollo y `e2e/accesibilidad.spec.ts`, que recorre 13 pantallas en claro a 1280 px y en oscuro a 360 px. Falla sin estos arreglos y pasa con ellos.
+- **Documentación:** PLAN.md 7.1.1 y `docs/auditoria.md` (sección 1).

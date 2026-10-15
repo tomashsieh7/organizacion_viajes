@@ -529,6 +529,14 @@ label {
   outline: none;
 }
 /* Oculta un texto a la vista y lo deja para los lectores de pantalla. */
+/*
+ * Crédito del mapa (Leaflet): el enlace se subraya y toma el color del texto de alrededor, así se
+ * distingue sin depender del color en los dos modos (el recuadro de Leaflet siempre es claro).
+ */
+.leaflet-container .leaflet-control-attribution a {
+  color: inherit;
+  text-decoration: underline;
+}
 .solo-lectores {
   position: absolute;
   width: 1px;

@@ -681,6 +681,7 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
 - **Teclado y lectores de pantalla:** el enlace "Saltar al contenido" lleva el foco más allá del encabezado y los menús (WCAG 2.4.1), y al cambiar de página una región `aria-live` anuncia el título nuevo sin mover el foco.
 - **Errores inesperados:** si un componente falla sin manejar el error, `App.vue` lo captura (`onErrorCaptured`), lo registra en la consola y muestra un aviso para recargar, que se quita al cambiar de página.
 - **Títulos de página:** cada ruta define su título (`meta.titulo`) y la pestaña muestra, por ejemplo, "Saldos · Organizador de viajes" (WCAG 2.4.2).
+- **Control automático:** `e2e/accesibilidad.spec.ts` pasa axe (`@axe-core/playwright`, reglas WCAG 2.2 A y AA) por las pantallas principales, en claro a ancho de escritorio y en oscuro a ancho de celular. Cualquier problema que detecte hace fallar el CI. Los días fuera del viaje en el calendario usan el gris secundario sin transparencia, y el enlace del crédito del mapa va subrayado.
 - **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026", "jueves 10 dic"), con `formatearRango`, `formatearDia`, `formatearHorario`, `formatearHora` (siempre con 24 horas) y `etiquetaDelDia` ("Hoy", "Ayer", "24 sep") de `utiles/formato.ts` y `nombreDelDia` de `utiles/fechas.ts`.
 - **Textos y montos largos:**
   - cada campo de texto tiene el mismo largo máximo que su esquema (`LARGOS_MAXIMOS` en `packages/compartido`), con el mensaje "Puede tener hasta N caracteres";
