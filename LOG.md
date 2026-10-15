@@ -1499,3 +1499,9 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - la cobertura pasa 539 pruebas: 349 del backend y 190 del frontend, con 92,7 % de líneas en el frontend;
   - la e2e pasa 8 de 8;
   - `knip` muestra solo sus falsos positivos conocidos.
+
+## 2026-10-14 15:29 — Merge del PR #20
+
+- Con la autorización del usuario ("Si"), el PR #20 ("Fechas con nombre de día y mes abreviado, y más pruebas del rediseño") se mergeó a `main` en `8f23f62`, fijando la cabeza verificada `ff97878`.
+- El CI pasó los tres trabajos (Lint y tipos, Pruebas de Vitest y Pruebas de punta a punta), sin conflictos ni comentarios.
+- Después del merge se dejó de seguir el PR, se borró la revisión programada y la rama se alineó con `main` por avance directo.
