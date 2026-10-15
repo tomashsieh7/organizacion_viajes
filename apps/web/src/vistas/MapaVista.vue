@@ -6,10 +6,10 @@ import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
 import AvisoSinActividades from '../componentes/itinerario/AvisoSinActividades.vue';
 import MapaActividades from '../componentes/itinerario/MapaActividades.vue';
 import PanelActividad from '../componentes/itinerario/PanelActividad.vue';
-import SelectorDia from '../componentes/itinerario/SelectorDia.vue';
+import CalendarioViaje from '../componentes/itinerario/CalendarioViaje.vue';
 import { useMapaDelDia } from '../composables/useMapaDelDia';
 import { useViajeStore } from '../stores/viaje';
-import { diasEntre } from '../utiles/fechas';
+import { hoyDelDispositivo } from '../utiles/fechas';
 
 const viaje = useViajeStore();
 const route = useRoute();
@@ -17,7 +17,7 @@ const router = useRouter();
 const actual = viaje.actual!;
 const { mapa, elegida, error, cargar, elegir, abrirActividad } = useMapaDelDia(() => actual.id);
 
-const dias = computed(() => diasEntre(actual.fechaInicio, actual.fechaFin));
+const hoy = hoyDelDispositivo();
 const numeroElegida = computed(() => {
   const i = mapa.value?.actividades.findIndex((a) => a.id === elegida.value?.actividad.id) ?? -1;
   return i >= 0 ? i + 1 : null;
@@ -31,7 +31,10 @@ function cerrarDetalle() {
   elegida.value = null;
 }
 
-/** RN-M7: el día queda en la dirección para poder compartirla o volver atrás. */
+/**
+ * RN-M7: el día queda en la dirección para poder compartirla, volver atrás y conservarlo al pasar
+ * al cronograma.
+ */
 async function elegirDia(dia: string) {
   await router.replace({ query: { dia } });
   await cargar(dia);
@@ -41,6 +44,9 @@ onMounted(async () => {
   const actividad = parametro('actividad');
   if (actividad) await abrirActividad(actividad);
   else await cargar(parametro('dia'));
+  // El día que eligió la API (RN-M1 o RN-M8) también va a la dirección.
+  if (mapa.value && parametro('dia') !== mapa.value.dia)
+    await router.replace({ query: { ...route.query, dia: mapa.value.dia } });
 });
 </script>
 
@@ -49,10 +55,12 @@ onMounted(async () => {
     <h2>Mapa del día</h2>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <template v-if="mapa">
-      <SelectorDia
-        :dias="dias"
-        :dias-con-actividad="mapa.diasConActividad"
+      <CalendarioViaje
+        :inicio="actual.fechaInicio"
+        :fin="actual.fechaFin"
         :seleccionado="mapa.dia"
+        :dias-con-actividad="mapa.diasConActividad"
+        :hoy="hoy"
         @elegir="elegirDia"
       />
       <AvisoSinActividades v-if="mapa.aviso === 'SIN_ACTIVIDADES_CONFIRMADAS'" />

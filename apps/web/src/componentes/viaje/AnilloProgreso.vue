@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-const props = defineProps<{ porcentaje: number }>();
+/** `compacto`: versión chica para una tarjeta de resumen, solo con el porcentaje. */
+const props = defineProps<{ porcentaje: number; compacto?: boolean }>();
 const RADIO = 50;
 const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
 const desfase = computed(() => CIRCUNFERENCIA * (1 - props.porcentaje / 100));
@@ -10,13 +11,14 @@ const desfase = computed(() => CIRCUNFERENCIA * (1 - props.porcentaje / 100));
 <template>
   <div
     class="anillo"
+    :class="{ 'anillo--compacto': compacto }"
     role="progressbar"
     aria-label="Progreso del viaje"
     aria-valuemin="0"
     aria-valuemax="100"
     :aria-valuenow="porcentaje"
   >
-    <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+    <svg width="100%" height="100%" viewBox="0 0 120 120" aria-hidden="true">
       <circle class="anillo__fondo" cx="60" cy="60" :r="RADIO" />
       <circle
         class="anillo__avance"
@@ -28,7 +30,7 @@ const desfase = computed(() => CIRCUNFERENCIA * (1 - props.porcentaje / 100));
       />
     </svg>
     <span class="anillo__texto" aria-hidden="true"
-      ><strong>{{ porcentaje }}%</strong><span>listo</span></span
+      ><strong>{{ porcentaje }}%</strong><span v-if="!compacto">listo</span></span
     >
   </div>
 </template>
@@ -66,6 +68,13 @@ circle {
 .anillo__texto strong {
   font-size: 1.9rem;
   line-height: 1;
+}
+.anillo--compacto {
+  width: 76px;
+  height: 76px;
+}
+.anillo--compacto .anillo__texto strong {
+  font-size: 1.2rem;
 }
 .anillo__texto span {
   font-size: 0.8rem;

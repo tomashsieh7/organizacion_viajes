@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { ActividadVista, AlojamientoVista } from '@viajes/compartido';
 import { CLIENTE_PROPUESTAS } from '../src/clientes/propuestas';
 import { useCelebracion } from '../src/composables/useCelebracion';
@@ -57,23 +57,40 @@ function todoListo() {
 }
 
 afterEach(() => {
-  vi.useRealTimers();
   localStorage.clear();
   useCelebracion().cerrar();
 });
 
 describe('ResumenVista', () => {
-  it('muestra el progreso, los hitos y los próximos pasos de un viaje sin planificar', async () => {
+  it('destaca un solo paso y pliega el resto y los hitos, en un viaje sin planificar', async () => {
     const vista = await montar();
+    // Primero lo próximo, después el progreso.
+    expect(vista.findAll('h3').map((h) => h.text())).toEqual([
+      'Lo próximo',
+      'El viaje va tomando forma',
+    ]);
+    const principal = vista.find('.paso--principal');
+    expect(principal.text()).toContain('Faltan 6 noches de alojamiento');
+    expect(principal.find('.boton--principal').text()).toBe('Proponer');
+    // Una sola acción destacada en la pantalla.
+    expect(vista.findAll('.boton--principal')).toHaveLength(1);
+
+    const [pasos, hitos] = vista.findAll('details');
+    expect(pasos!.find('summary').text()).toBe('Ver 1 paso más');
+    expect(pasos!.text()).toContain('7 días sin actividades');
     // Se sumó el grupo y las cuentas están al día: 2 de 6 hitos.
     expect(vista.find('[role="progressbar"]').attributes('aria-valuenow')).toBe('33');
-    expect(vista.text()).toContain('Completaron 2 de 6 hitos del viaje.');
-    expect(vista.text()).toContain('6 noches sin lugar');
-    const pasos = vista.findAll('.paso');
-    expect(pasos[0]!.text()).toContain('Faltan 6 noches de alojamiento');
-    expect(pasos[0]!.find('.boton--principal').exists()).toBe(true);
-    expect(pasos[1]!.text()).toContain('7 días sin actividades');
-    expect(pasos[1]!.find('.boton--principal').exists()).toBe(false);
+    expect(vista.text()).toContain('2 de 6 hitos del viaje listos');
+    expect(hitos!.find('summary').text()).toBe('Ver los hitos');
+    expect(hitos!.text()).toContain('6 noches sin lugar');
+    // Los desplegables arrancan cerrados.
+    expect(pasos!.attributes('open')).toBeUndefined();
+    expect(hitos!.attributes('open')).toBeUndefined();
+  });
+
+  it('la cuenta regresiva ya no está en el Resumen: queda en la portada', async () => {
+    const vista = await montar();
+    expect(vista.find('[aria-label="Cuenta regresiva"]').exists()).toBe(false);
   });
 
   it('las decisiones pendientes son un paso solo para el Admin; el voto, para todos', async () => {
@@ -103,24 +120,5 @@ describe('ResumenVista', () => {
     const vista = await montar({}, 'ADMIN', true);
     expect(vista.text()).toContain('Ocurrió un error inesperado');
     expect(vista.find('[role="progressbar"]').exists()).toBe(false);
-  });
-
-  it('la cuenta regresiva cambia durante el viaje y al terminar', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-12-12T12:00:00'));
-    const durante = await montar();
-    expect(durante.find('.cuenta').text()).toContain('3');
-    expect(durante.find('.cuenta').text()).toContain('día de 7');
-    vi.setSystemTime(new Date('2026-12-20T12:00:00'));
-    const despues = await montar();
-    expect(despues.find('.cuenta').text()).toContain('Viaje terminado');
-  });
-
-  it('antes del viaje dice cuántos días faltan y cuándo empieza', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-10-14T12:00:00'));
-    const vista = await montar();
-    expect(vista.find('.cuenta__numero').text()).toBe('57');
-    expect(vista.find('.cuenta').text()).toContain('Empieza el jueves 10 dic');
   });
 });

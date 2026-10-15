@@ -1517,3 +1517,42 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 ## 2026-10-14 21:16 — Merge del PR #21
 
 - Con la autorización del usuario, el PR #21 ("Registrar en el LOG el merge del PR #20") se mergeó a `main` en `e22f516`, fijando la cabeza verificada `0898a74`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-14 21:21 — Merge del PR #22
+
+- Con la autorización del usuario, el PR #22 ("Chat: id temporal sin crypto.randomUUID, que falta fuera de HTTPS") se mergeó a `main` en `6a79294`, fijando la cabeza verificada `2eea52f`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-14 21:33 — Rediseño después de probar la app: crear grupo, Resumen, calendario y quiénes pagan
+
+- **Pedido del usuario:** después de probar la app en su laptop, pidió cambios en crear un grupo (pocas ayudas y un destino ambiguo), el Resumen (demasiada información junta), Participantes (no tiene que estar en Inicio), el Cronograma y el Mapa (con viajes largos, demasiados días en pantalla) y el selector de quiénes pagan (sin estructura). Respondió las preguntas del plan y lo aprobó:
+  - **Destino:** ciudad y país, guardados juntos.
+  - **Crear grupo:** textos de ayuda, paso a paso e invitar al crear.
+  - **Resumen:** basarse en cómo lo encaran otras apps.
+  - **Itinerario:** un calendario del mes.
+- **Crear grupo en tres pasos** (`DialogoNuevoViaje`):
+  - **"¿A dónde van?":** nombre, ciudad y país opcional. El destino se guarda como "Ciudad, País", así que la base de datos y la API no cambian.
+  - **"¿Cuándo?":** fechas y moneda, con textos de ayuda. Al terminar este paso se crea el viaje.
+  - **"¿Con quién?":** reutiliza `FormularioAgregarViajero` sobre el viaje ya creado, así un email que falla no deja el viaje a medias. Cerrar el diálogo en este paso también lleva al viaje.
+  - `CampoFormulario` acepta un texto de ayuda, enlazado con `aria-describedby`.
+- **Resumen en una columna**, con lo que se tomó de la investigación (la vista general de Wanderlog con una sola acción destacada, la revelación progresiva y la guía de NN/g sobre acordeones en celular):
+  - **"Lo próximo":** el paso más importante, destacado; los demás quedan en "Ver 2 pasos más".
+  - **Progreso:** compacto, con "Ver los hitos" desplegable.
+  - **Cuenta regresiva:** sale del Resumen y pasa a la portada, más grande y justo debajo del nombre.
+- **Participantes:** se abre desde "4 viajeros" en la portada, e Inicio queda solo con el Resumen. Con acceso solo a saldos, ese dato no es un enlace.
+- **Calendario compartido** (`CalendarioViaje`, que reemplaza a `SelectorDia`):
+  - el mes de lunes a domingo, con los días del viaje elegibles, un punto en los que tienen actividades, hoy marcado, flechas si el viaje abarca dos meses y navegación con las flechas del teclado;
+  - el Cronograma muestra el día elegido y el Mapa su recorrido;
+  - el día va en `?dia=` y las pestañas lo conservan;
+  - sin `?dia=`, se aplica la regla de RN-M1 (`diaInicial` en `utiles/fechas.ts`).
+- **Quiénes pagan** (`SelectorDeudores`): una fila por persona, con la inicial, el nombre y la casilla; la elegida se resalta. Un contador "2 de 4" acompaña al botón de todos. RN-G3 no cambia.
+- **Detalle:** el título del día en el cronograma decía "Viernes 11 Dic"; ahora dice "Viernes 11 dic".
+- **PLAN.md:**
+  - RN-C1 y RN-C4 se actualizaron, con la aprobación del usuario: el calendario muestra todos los días, el detalle se ve de a uno y se abre en hoy en lugar de desplazarse;
+  - también se actualizaron RN-M7, la navegación de la sección 7.1, la tabla de rutas y 7.1.1;
+  - `docs/diagramas.drawio` no cambia, porque solo modela el dominio y los casos de uso.
+- **Verificación:**
+  - lint pasa;
+  - la cobertura pasa 558 pruebas: 349 del backend y 209 del frontend, con 93,1 % de líneas en el frontend;
+  - la e2e pasa 8 de 8, con el flujo nuevo de crear grupo e invitar, y con el día compartido entre Cronograma y Mapa;
+  - `knip` muestra solo sus falsos positivos conocidos;
+  - las capturas a 360 px y 1280 px, en claro y oscuro, no muestran errores de consola propios.

@@ -24,20 +24,21 @@ interface Grupo {
   nombre: string;
   icono: NombreIcono;
   secciones: Seccion[];
+  /** Rutas que no tienen pestaña propia pero marcan el grupo como activo. */
+  tambien?: string[];
 }
 
 /**
- * Las ocho secciones se agrupan en cinco destinos, el máximo recomendado para una barra de
- * navegación fija; dentro de cada grupo, las secciones se eligen con pestañas.
+ * Las secciones se agrupan en cinco destinos, el máximo recomendado para una barra de navegación
+ * fija; dentro de cada grupo, las secciones se eligen con pestañas. Participantes se abre desde
+ * la portada ("4 viajeros") y cuenta como parte de Inicio.
  */
 const GRUPOS: Grupo[] = [
   {
     nombre: 'Inicio',
     icono: 'casa',
-    secciones: [
-      { nombre: 'Resumen', ruta: 'resumen' },
-      { nombre: 'Participantes', ruta: 'participantes' },
-    ],
+    secciones: [{ nombre: 'Resumen', ruta: 'resumen' }],
+    tambien: ['participantes'],
   },
   {
     nombre: 'Planificar',
@@ -70,16 +71,31 @@ const soloSaldos = computed(() => store.actual?.miAcceso === 'SOLO_SALDOS');
 const grupos = computed(() => (soloSaldos.value ? [] : GRUPOS));
 
 const enlace = (ruta: string) => `/viajes/${store.actual?.id}/${ruta}`;
+/** Cronograma y Mapa comparten el día elegido (`?dia=`): las pestañas lo conservan. */
+const enlaceSeccion = (ruta: string) => {
+  const dia = route.query?.['dia'];
+  return grupoActivo.value?.nombre === 'Itinerario' && typeof dia === 'string'
+    ? `${enlace(ruta)}?dia=${dia}`
+    : enlace(ruta);
+};
 /** Cuenta regresiva de la portada, con la fecha del dispositivo. */
 const cuenta = computed(() =>
   store.actual
     ? cuentaRegresiva(store.actual.fechaInicio, store.actual.fechaFin, hoyDelDispositivo())
     : null,
 );
+const viajeros = computed(() => {
+  const n = store.actual?.cantidadParticipantes ?? 0;
+  return `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
+});
 /** La sección activa, incluidas sus subrutas (por ejemplo, `gastos/nuevo`). */
 const seccionActiva = computed(() => route.path.split('/')[3] ?? '');
 const grupoActivo = computed(() =>
-  GRUPOS.find((g) => g.secciones.some((s) => s.ruta === seccionActiva.value)),
+  GRUPOS.find(
+    (g) =>
+      g.secciones.some((s) => s.ruta === seccionActiva.value) ||
+      g.tambien?.includes(seccionActiva.value),
+  ),
 );
 
 /** Con acceso solo a saldos, cualquier otra sección lleva a la de saldos. */
@@ -148,20 +164,26 @@ onBeforeUnmount(() => {
         <div class="portada">
           <RouterLink to="/viajes" class="volver">← Mis grupos</RouterLink>
           <h1>{{ store.actual.nombre }}</h1>
+          <p v-if="cuenta" class="chip" :class="`chip--${cuenta.etapa}`">
+            <IconoLinea nombre="reloj" :tamano="18" /> {{ cuenta.texto }}
+          </p>
           <p class="portada__datos texto-secundario">
             <span><IconoLinea nombre="pin" :tamano="16" /> {{ store.actual.destino }}</span>
             <span
               ><IconoLinea nombre="calendario" :tamano="16" />
               {{ formatearRango(store.actual.fechaInicio, store.actual.fechaFin) }}</span
             >
-            <span
-              ><IconoLinea nombre="personas" :tamano="16" />
-              {{ store.actual.cantidadParticipantes }}
-              {{ store.actual.cantidadParticipantes === 1 ? 'viajero' : 'viajeros' }}</span
+            <span v-if="soloSaldos" class="portada__viajeros"
+              ><IconoLinea nombre="personas" :tamano="16" /> {{ viajeros }}</span
             >
-          </p>
-          <p v-if="cuenta" class="chip" :class="`chip--${cuenta.etapa}`">
-            <IconoLinea nombre="reloj" :tamano="16" /> {{ cuenta.texto }}
+            <RouterLink
+              v-else
+              :to="enlace('participantes')"
+              class="portada__viajeros"
+              :class="{ activo: seccionActiva === 'participantes' }"
+              :aria-current="seccionActiva === 'participantes' ? 'page' : undefined"
+              ><IconoLinea nombre="personas" :tamano="16" /> {{ viajeros }}</RouterLink
+            >
           </p>
         </div>
         <nav v-if="grupos.length" class="grupos" aria-label="Secciones del viaje">
@@ -185,7 +207,7 @@ onBeforeUnmount(() => {
           <RouterLink
             v-for="s in grupoActivo.secciones"
             :key="s.ruta"
-            :to="enlace(s.ruta)"
+            :to="enlaceSeccion(s.ruta)"
             class="subseccion"
             :class="{ activo: s.ruta === seccionActiva }"
             :aria-current="s.ruta === seccionActiva ? 'page' : undefined"
@@ -234,16 +256,39 @@ onBeforeUnmount(() => {
 .portada__datos {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--esp-1) var(--esp-4);
-  margin-bottom: var(--esp-3);
+  margin: 0;
 }
+/* Participantes se abre desde acá: parece un botón chico para que se note que se puede tocar. */
+.portada__viajeros {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+a.portada__viajeros {
+  min-height: 2.25rem;
+  padding: 0 var(--esp-3);
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: 999px;
+  color: var(--color-texto);
+  font-weight: 600;
+  text-decoration: none;
+}
+a.portada__viajeros:hover,
+a.portada__viajeros.activo {
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento);
+}
+/* La cuenta regresiva es lo primero que se lee debajo del nombre. */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: var(--esp-2);
-  margin: 0;
-  padding: var(--esp-1) var(--esp-3);
+  margin: 0 0 var(--esp-3);
+  padding: var(--esp-2) var(--esp-4);
   border-radius: 999px;
+  font-size: 1.05rem;
   font-weight: 700;
   background: var(--color-acento);
   color: var(--color-sobre-acento);
