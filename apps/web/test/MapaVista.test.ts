@@ -67,11 +67,22 @@ describe('MapaVista', () => {
     vi.useRealTimers();
     expect(mapa).toHaveBeenCalledWith('v1', '2026-12-11', undefined);
     expect(vista.find('[role="status"]').text()).toContain('no tiene actividades confirmadas');
-    // RN-M7: el selector ofrece todos los días y resalta los que tienen actividades.
-    const botones = vista.findAll('.selector-dia button');
-    expect(botones).toHaveLength(7);
-    expect(vista.find('.selector-dia .con-actividad').text()).toContain('12 dic');
-    expect(vista.find('.selector-dia [aria-pressed="true"]').text()).toContain('11 dic');
+    // RN-M7: el calendario ofrece todos los días y marca los que tienen actividades.
+    expect(vista.findAll('button.calendario__dia')).toHaveLength(7);
+    expect(vista.find('.calendario__dia--con-actividad').attributes('data-fecha')).toBe(
+      '2026-12-12',
+    );
+    expect(vista.find('[aria-pressed="true"]').attributes('data-fecha')).toBe('2026-12-11');
+    // El día que eligió la API queda en la dirección, para compartirlo con el cronograma.
+    expect(replace).toHaveBeenCalledWith({ query: { dia: '2026-12-11' } });
+  });
+
+  it('con ?dia= abre ese día y no reescribe la dirección', async () => {
+    consulta = { dia: '2026-12-12' };
+    const mapa = vi.fn(async (_v: string, _h: string, dia?: string) => mapaDe(dia!, true));
+    await montar(mapa);
+    expect(mapa).toHaveBeenCalledWith('v1', expect.any(String), '2026-12-12');
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('RN-M7: al elegir otro día lo guarda en la dirección y lo carga', async () => {
@@ -79,7 +90,7 @@ describe('MapaVista', () => {
       mapaDe(dia ?? '2026-12-10', dia === '2026-12-12'),
     );
     const vista = await montar(mapa);
-    await vista.find('.selector-dia .con-actividad').trigger('click');
+    await vista.find('.calendario__dia--con-actividad').trigger('click');
     await flushPromises();
     expect(replace).toHaveBeenCalledWith({ query: { dia: '2026-12-12' } });
     expect(mapa).toHaveBeenLastCalledWith('v1', expect.any(String), '2026-12-12');
@@ -94,6 +105,8 @@ describe('MapaVista', () => {
     const vista = await montar(mapa, { obtenerActividad });
     expect(obtenerActividad).toHaveBeenCalledWith('v1', 'k');
     expect(mapa).toHaveBeenCalledWith('v1', expect.any(String), '2026-12-11');
+    // El día de la actividad se suma a la dirección sin perder `?actividad=`.
+    expect(replace).toHaveBeenCalledWith({ query: { actividad: 'k', dia: '2026-12-11' } });
     const panel = vista.find('.panel-actividad');
     expect(panel.text()).toContain('Kayak');
     expect(panel.text()).toContain('Bahía López');

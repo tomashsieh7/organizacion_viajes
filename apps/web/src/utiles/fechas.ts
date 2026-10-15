@@ -17,6 +17,15 @@ export function diasEntre(desde: string, hasta: string): string[] {
   return dias;
 }
 
+/**
+ * RN-M1, la misma regla que usa la API para el mapa: hoy si cae dentro del viaje; si no, el
+ * primer día con actividad confirmada; si no hay ninguno, el primer día del viaje.
+ */
+export function diaInicial(dias: string[], diasConActividad: string[], hoy: string): string {
+  if (dias.includes(hoy)) return hoy;
+  return dias.find((d) => diasConActividad.includes(d)) ?? dias[0]!;
+}
+
 const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
 /** "2026-12-11" → "viernes 11 dic", con el mes abreviado como el resto de las fechas. */

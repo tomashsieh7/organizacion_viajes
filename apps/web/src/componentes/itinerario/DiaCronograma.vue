@@ -39,7 +39,10 @@ defineProps<{ dia: DiaDelCronograma; viajeId: string; esHoy: boolean }>();
 }
 h3 {
   margin: 0 0 0.4rem;
-  text-transform: capitalize;
+}
+/* "Viernes 11 dic": mayúscula solo al principio, el mes queda abreviado en minúscula. */
+h3::first-letter {
+  text-transform: uppercase;
 }
 ol {
   margin: 0;

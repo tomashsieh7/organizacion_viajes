@@ -25,24 +25,36 @@ test('CU13 y CU16 a CU18: confirmar una actividad y verla en el cronograma y en 
   // Confirmar se celebra con el nombre de la actividad.
   await expect(p.getByText('¡Confirmaron Cerro Catedral!')).toBeVisible();
 
-  // El grupo Itinerario abre su primera sección, el cronograma.
+  // El grupo Itinerario abre su primera sección, el cronograma, en el primer día con actividades.
   await p.getByRole('link', { name: 'Itinerario' }).click();
   await expect(p.getByRole('link', { name: 'Cronograma' })).toHaveAttribute('aria-current', 'page');
   const dia = p.locator('#dia-2026-12-12');
   await expect(dia).toContainText('09:30 a 13:30');
   await expect(dia).toContainText('Cerro Catedral');
+  await p.getByRole('button', { name: /^viernes 11 dic/ }).click();
   await expect(p.locator('#dia-2026-12-11')).toContainText('Sin actividades confirmadas');
 
-  await dia.getByRole('link', { name: 'Ver en el mapa' }).click();
-  await expect(p).toHaveURL(/\/mapa\?actividad=/);
-  await expect(p.locator('.selector-dia [aria-pressed="true"]')).toContainText('12 dic');
-  await expect(p.locator('.marcador-actividad')).toHaveText('1');
-  await expect(p.locator('.panel-actividad')).toContainText('Cerro Catedral');
-  await expect(p.locator('.panel-actividad')).toContainText('Base del cerro');
-
-  // Otro día sin actividades muestra el aviso.
-  await p.locator('.selector-dia button', { hasText: '13 dic' }).click();
+  // El día elegido se conserva al pasar al mapa.
+  await p.getByRole('link', { name: 'Mapa', exact: true }).click();
+  await expect(p).toHaveURL(/\/mapa\?dia=2026-12-11$/);
+  await expect(p.getByRole('button', { name: /^viernes 11 dic/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   await expect(
     p.getByRole('status').filter({ hasText: 'no tiene actividades confirmadas' }),
   ).toBeVisible();
+
+  // "Ver en el mapa" abre el día de la actividad con su detalle.
+  await p.getByRole('link', { name: 'Cronograma', exact: true }).click();
+  await p.getByRole('button', { name: /^sábado 12 dic/ }).click();
+  await dia.getByRole('link', { name: 'Ver en el mapa' }).click();
+  await expect(p).toHaveURL(/\/mapa\?actividad=/);
+  await expect(p.getByRole('button', { name: /^sábado 12 dic/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(p.locator('.marcador-actividad')).toHaveText('1');
+  await expect(p.locator('.panel-actividad')).toContainText('Cerro Catedral');
+  await expect(p.locator('.panel-actividad')).toContainText('Base del cerro');
 });

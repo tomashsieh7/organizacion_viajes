@@ -34,6 +34,8 @@ const TRAZOS = {
   bandeja: ['M3 13h5l2 3h4l2-3h5', 'M5 5h14l2 8v6H3v-6z'],
   check: ['M5 12.5l4.5 4.5L19 7.5'],
   cruz: ['M6 6l12 12M18 6L6 18'],
+  'flecha-izquierda': ['M15 5l-7 7 7 7'],
+  'flecha-derecha': ['M9 5l7 7-7 7'],
   prohibido: ['M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', 'M5.6 5.6l12.8 12.8'],
   'a-favor': [
     'M7 11v9H4v-9h3z',
