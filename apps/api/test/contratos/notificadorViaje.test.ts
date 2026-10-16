@@ -3,11 +3,11 @@ import type { AddressInfo } from 'node:net';
 import { Server } from 'socket.io';
 import { io as conectarCliente, type Socket } from 'socket.io-client';
 import {
-  NotificadorViajeSocketIO,
   salaDelUsuario,
   salaDelViaje,
   type EspacioChat,
-} from '../../src/modulos/chat/infraestructura/socketIO.js';
+} from '../../src/modulos/chat/infraestructura/gatewayChat.js';
+import { NotificadorViajeSocketIO } from '../../src/modulos/chat/infraestructura/notificadorViajeSocketIO.js';
 import { NotificadorViajeEnMemoria, type EventoRecibido } from '../soporte/memoria.js';
 import { probarContratoNotificadorViaje } from './notificadorViaje.contrato.js';
 

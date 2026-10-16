@@ -4,13 +4,10 @@ import { NOMBRE_COOKIE_SESION } from '../../middlewares/acceso.js';
 import { limiteDeRegistro, limitesDeIngreso } from '../../middlewares/seguridad.js';
 import { validar } from '../../middlewares/validar.js';
 import type { RequestHandler } from 'express';
-import type {
-  CerrarSesion,
-  IniciarSesion,
-  ObtenerPerfil,
-  Registrarse,
-  ResultadoIngreso,
-} from './casos-de-uso/casosDeUsoAuth.js';
+import type { CerrarSesion } from './casos-de-uso/cerrarSesion.js';
+import type { IniciarSesion, ResultadoIngreso } from './casos-de-uso/iniciarSesion.js';
+import type { ObtenerPerfil } from './casos-de-uso/obtenerPerfil.js';
+import type { Registrarse } from './casos-de-uso/registrarse.js';
 
 export interface DependenciasRutasAuth {
   registrarse: Registrarse;

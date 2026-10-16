@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { Dinero } from '../../src/compartido/valores/dinero.js';
+import { Dinero } from '../../src/comun/valores/dinero.js';
 import { Deuda } from '../../src/modulos/gastos/dominio/deuda.js';
-import {
-  DivisionArbitraria,
-  DivisionEnPartesIguales,
-} from '../../src/modulos/gastos/dominio/division.js';
+import { DivisionArbitraria } from '../../src/modulos/gastos/dominio/divisionArbitraria.js';
+import { DivisionEnPartesIguales } from '../../src/modulos/gastos/dominio/divisionEnPartesIguales.js';
 import { Gasto } from '../../src/modulos/gastos/dominio/gasto.js';
-import { tipoDeAcceso } from '../../src/modulos/viajes/dominio/viaje.js';
+import { tipoDeAcceso } from '../../src/modulos/viajes/dominio/membresia.js';
 
 const AHORA = new Date('2026-12-11T20:00:00Z');
 const ars = (m: number) => Dinero.de(m, 'ARS');

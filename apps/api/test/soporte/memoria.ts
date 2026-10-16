@@ -25,9 +25,9 @@ import {
   type PropuestaVista,
   type ResumenViaje,
 } from '@viajes/compartido';
-import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
-import { Intervalo } from '../../src/compartido/valores/intervalo.js';
-import { Dinero } from '../../src/compartido/valores/dinero.js';
+import { RangoFechas } from '../../src/comun/valores/rangoFechas.js';
+import { Intervalo } from '../../src/comun/valores/intervalo.js';
+import { Dinero } from '../../src/comun/valores/dinero.js';
 import { Deuda } from '../../src/modulos/gastos/dominio/deuda.js';
 import type { DatosGasto, Gasto } from '../../src/modulos/gastos/dominio/gasto.js';
 import type {
@@ -68,7 +68,7 @@ import type {
   ConsultaPropuestas,
   RepositorioPropuestas,
 } from '../../src/modulos/propuestas/dominio/puertos.js';
-import { ErrorDeDominio } from '../../src/compartido/errores.js';
+import { ErrorDeDominio } from '../../src/comun/errores.js';
 import { normalizarEmail } from '../../src/modulos/auth/dominio/emailContrasena.js';
 import type {
   Cuenta,
@@ -90,7 +90,8 @@ import type {
   RepositorioViajes,
   RetiroDeVotos,
 } from '../../src/modulos/viajes/dominio/puertos.js';
-import { tipoDeAcceso, Viaje, type DatosViaje } from '../../src/modulos/viajes/dominio/viaje.js';
+import { tipoDeAcceso } from '../../src/modulos/viajes/dominio/membresia.js';
+import { Viaje, type DatosViaje } from '../../src/modulos/viajes/dominio/viaje.js';
 
 export interface BaseEnMemoria {
   usuarios: { id: string; nombre: string; apodo: string | null }[];

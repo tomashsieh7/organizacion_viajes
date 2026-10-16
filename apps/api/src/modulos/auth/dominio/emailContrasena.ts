@@ -1,5 +1,5 @@
 import { esContrasenaComun } from '@viajes/compartido';
-import { ErrorDeDominio } from '../../../compartido/errores.js';
+import { ErrorDeDominio } from '../../../comun/errores.js';
 import type { Cuenta, HasheadorDeContrasenas, RepositorioCuentas } from './puertos.js';
 
 export interface DatosEmailContrasena {

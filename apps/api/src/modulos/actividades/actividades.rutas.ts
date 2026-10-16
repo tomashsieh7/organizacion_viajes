@@ -1,13 +1,11 @@
 import { Router } from 'express';
 import { esquemaActividadNueva, esquemaFiltroEstado } from '@viajes/compartido';
-import { ErrorDeDominio } from '../../compartido/errores.js';
+import { ErrorDeDominio } from '../../comun/errores.js';
 import { parametroUuid } from '../../middlewares/acceso.js';
 import { validar } from '../../middlewares/validar.js';
-import type {
-  ConsultarActividades,
-  ProponerActividad,
-  ProponerAlternativa,
-} from './casos-de-uso/casosDeUsoActividades.js';
+import type { ConsultarActividades } from './casos-de-uso/consultarActividades.js';
+import type { ProponerActividad } from './casos-de-uso/proponerActividad.js';
+import type { ProponerAlternativa } from './casos-de-uso/proponerAlternativa.js';
 
 export interface DependenciasRutasActividades {
   proponer: ProponerActividad;

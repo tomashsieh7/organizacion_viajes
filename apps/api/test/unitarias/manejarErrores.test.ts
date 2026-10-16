@@ -1,7 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
-import { ErrorDeDominio } from '../../src/compartido/errores.js';
+import { ErrorDeDominio } from '../../src/comun/errores.js';
 import { manejarErrores } from '../../src/middlewares/manejarErrores.js';
 
 function appQueLanza(error: unknown) {

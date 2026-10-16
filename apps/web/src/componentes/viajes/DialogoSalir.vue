@@ -5,7 +5,7 @@ import AvisoMensaje from '../base/AvisoMensaje.vue';
 import DialogoModal from '../base/DialogoModal.vue';
 import SelectorSucesor from './SelectorSucesor.vue';
 import { mensajeDeError } from '../../clientes/http';
-import { useViajeStore } from '../../stores/viaje';
+import { useViajeStore } from '../../stores/viajes';
 import { formatearMonto } from '../../utiles/formato';
 
 const props = defineProps<{ miId: string }>();

@@ -1,7 +1,7 @@
 import type { ModoDivision } from '@viajes/compartido';
-import { ErrorDeDominio } from '../../../compartido/errores.js';
-import { Dinero } from '../../../compartido/valores/dinero.js';
-import type { EstrategiaDivision, ParteDeGasto } from './division.js';
+import { ErrorDeDominio } from '../../../comun/errores.js';
+import { Dinero } from '../../../comun/valores/dinero.js';
+import type { EstrategiaDivision, ParteDeGasto } from './estrategiaDivision.js';
 
 export interface DatosGasto {
   id: string;

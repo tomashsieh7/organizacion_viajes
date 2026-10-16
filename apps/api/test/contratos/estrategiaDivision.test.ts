@@ -1,8 +1,6 @@
 import { repartirEnPartesIguales } from '@viajes/compartido';
-import {
-  DivisionArbitraria,
-  DivisionEnPartesIguales,
-} from '../../src/modulos/gastos/dominio/division.js';
+import { DivisionArbitraria } from '../../src/modulos/gastos/dominio/divisionArbitraria.js';
+import { DivisionEnPartesIguales } from '../../src/modulos/gastos/dominio/divisionEnPartesIguales.js';
 import { probarContratoEstrategiaDivision } from './estrategiaDivision.contrato.js';
 
 probarContratoEstrategiaDivision('partes iguales', () => new DivisionEnPartesIguales());

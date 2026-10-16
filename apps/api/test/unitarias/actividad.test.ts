@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Coordenadas } from '../../src/compartido/valores/coordenadas.js';
-import { Intervalo } from '../../src/compartido/valores/intervalo.js';
+import { Coordenadas } from '../../src/comun/valores/coordenadas.js';
+import { Intervalo } from '../../src/comun/valores/intervalo.js';
 import { Actividad } from '../../src/modulos/actividades/dominio/actividad.js';
 import {
   conflictosDeHorario,

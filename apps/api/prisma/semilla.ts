@@ -10,8 +10,8 @@
  * Los montos están en centavos (D16). Las deudas se calcularon a mano aplicando RN-G6 y P15; el
  * detalle está en los comentarios de cada paso.
  */
-import type { PrismaClient } from '../src/compartido/infraestructura/prisma.js';
-import { HasheadorArgon2 } from '../src/modulos/auth/infraestructura/adaptadores.js';
+import type { PrismaClient } from '../src/comun/infraestructura/clientePrisma.js';
+import { HasheadorArgon2 } from '../src/modulos/auth/infraestructura/hasheadorArgon2.js';
 
 /** Contraseña de los usuarios de ejemplo; solo existe en la base de desarrollo. */
 const CONTRASENA_DE_EJEMPLO = 'viaje-de-prueba-2026';

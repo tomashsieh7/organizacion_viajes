@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { esquemaConsultaMensajes } from '@viajes/compartido';
-import { ErrorDeDominio } from '../../compartido/errores.js';
-import type { ConsultarMensajes } from './casos-de-uso/casosDeUsoChat.js';
+import { ErrorDeDominio } from '../../comun/errores.js';
+import type { ConsultarMensajes } from './casos-de-uso/consultarMensajes.js';
 
 /** CU19: historial del chat (sección 5.8 de PLAN.md); los mensajes nuevos van por Socket.IO. */
 export function rutasDeChat(consultar: ConsultarMensajes): Router {

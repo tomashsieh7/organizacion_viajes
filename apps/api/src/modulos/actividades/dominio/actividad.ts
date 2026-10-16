@@ -1,7 +1,7 @@
-import { ErrorDeDominio } from '../../../compartido/errores.js';
-import type { Coordenadas } from '../../../compartido/valores/coordenadas.js';
-import type { Fecha } from '../../../compartido/valores/fecha.js';
-import { Intervalo } from '../../../compartido/valores/intervalo.js';
+import { ErrorDeDominio } from '../../../comun/errores.js';
+import type { Coordenadas } from '../../../comun/valores/coordenadas.js';
+import type { Fecha } from '../../../comun/valores/fecha.js';
+import { Intervalo } from '../../../comun/valores/intervalo.js';
 import { Propuesta } from '../../propuestas/dominio/propuesta.js';
 
 export interface DetalleActividad {

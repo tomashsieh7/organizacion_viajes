@@ -6,7 +6,7 @@ import AvisoMensaje from '../base/AvisoMensaje.vue';
 import DialogoModal from '../base/DialogoModal.vue';
 import FormularioAgregarViajero from './FormularioAgregarViajero.vue';
 import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
-import { useViajeStore } from '../../stores/viaje';
+import { useViajeStore } from '../../stores/viajes';
 import { useValidacion } from '../../composables/useValidacion';
 import { problemasSegun } from '../../utiles/formularios';
 

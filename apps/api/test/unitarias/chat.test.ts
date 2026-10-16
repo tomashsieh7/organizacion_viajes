@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BusDeEventosEnMemoria } from '../../src/compartido/eventos.js';
-import {
-  ConsultarMensajes,
-  EnviarMensaje,
-  ReenviarEventosDelViaje,
-  UnirseAlChat,
-} from '../../src/modulos/chat/casos-de-uso/casosDeUsoChat.js';
+import { BusDeEventosEnMemoria } from '../../src/comun/eventos.js';
+import { ConsultarMensajes } from '../../src/modulos/chat/casos-de-uso/consultarMensajes.js';
+import { EnviarMensaje } from '../../src/modulos/chat/casos-de-uso/enviarMensaje.js';
+import { ReenviarEventosDelViaje } from '../../src/modulos/chat/casos-de-uso/reenviarEventosDelViaje.js';
+import { UnirseAlChat } from '../../src/modulos/chat/casos-de-uso/unirseAlChat.js';
 import { Mensaje } from '../../src/modulos/chat/dominio/mensaje.js';
 import type { ConsultaParticipacion } from '../../src/modulos/chat/dominio/puertos.js';
 import type {

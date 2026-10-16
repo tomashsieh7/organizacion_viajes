@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  ConsultarCronograma,
-  ConsultarMapa,
-} from '../../src/modulos/itinerario/casos-de-uso/casosDeUsoItinerario.js';
+import { ConsultarCronograma } from '../../src/modulos/itinerario/casos-de-uso/consultarCronograma.js';
+import { ConsultarMapa } from '../../src/modulos/itinerario/casos-de-uso/consultarMapa.js';
 import {
   baseVacia,
   ConsultaItinerarioEnMemoria,

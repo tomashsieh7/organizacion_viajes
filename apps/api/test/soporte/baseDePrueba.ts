@@ -1,7 +1,7 @@
 import {
   crearClientePrisma,
   type PrismaClient,
-} from '../../src/compartido/infraestructura/prisma.js';
+} from '../../src/comun/infraestructura/clientePrisma.js';
 
 export const URL_BASE_DE_PRUEBA =
   process.env['DATABASE_URL_TEST'] ?? 'postgresql://viajes:viajes@localhost:5433/viajes_test';

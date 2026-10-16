@@ -1,5 +1,5 @@
-import { ErrorDeDominio } from '../../../compartido/errores.js';
-import { Dinero } from '../../../compartido/valores/dinero.js';
+import { ErrorDeDominio } from '../../../comun/errores.js';
+import { Dinero } from '../../../comun/valores/dinero.js';
 
 export interface DatosDeuda {
   id: string;

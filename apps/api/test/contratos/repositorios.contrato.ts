@@ -1,13 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
-import { Coordenadas } from '../../src/compartido/valores/coordenadas.js';
+import { RangoFechas } from '../../src/comun/valores/rangoFechas.js';
+import { Coordenadas } from '../../src/comun/valores/coordenadas.js';
 import { Actividad } from '../../src/modulos/actividades/dominio/actividad.js';
 import { Mensaje } from '../../src/modulos/chat/dominio/mensaje.js';
-import { Dinero } from '../../src/compartido/valores/dinero.js';
-import {
-  DivisionArbitraria,
-  DivisionEnPartesIguales,
-} from '../../src/modulos/gastos/dominio/division.js';
+import { Dinero } from '../../src/comun/valores/dinero.js';
+import { DivisionArbitraria } from '../../src/modulos/gastos/dominio/divisionArbitraria.js';
+import { DivisionEnPartesIguales } from '../../src/modulos/gastos/dominio/divisionEnPartesIguales.js';
 import { Gasto } from '../../src/modulos/gastos/dominio/gasto.js';
 import { Propuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
 import { Viaje } from '../../src/modulos/viajes/dominio/viaje.js';

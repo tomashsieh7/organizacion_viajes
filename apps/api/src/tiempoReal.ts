@@ -2,7 +2,10 @@ import type { Server as ServidorHttp } from 'node:http';
 import { Server } from 'socket.io';
 import type { Contenedor } from './contenedor.js';
 import { NOMBRE_COOKIE_SESION } from './middlewares/acceso.js';
-import { registrarGatewayChat, type EspacioChat } from './modulos/chat/infraestructura/socketIO.js';
+import {
+  registrarGatewayChat,
+  type EspacioChat,
+} from './modulos/chat/infraestructura/gatewayChat.js';
 
 /**
  * Conecta Socket.IO al servidor HTTP (D11): espacio de nombres `/chat` con su gateway, y el

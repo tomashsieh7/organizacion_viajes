@@ -9,7 +9,7 @@ import type {
   PagoDeActividad,
 } from '@viajes/compartido';
 import { CLIENTE_GASTOS } from '../clientes/gastos';
-import { useViajeStore } from './viaje';
+import { useViajeStore } from './viajes';
 
 /** Gastos y saldos del viaje abierto (CU20 a CU22). */
 export const useGastosStore = defineStore('gastos', () => {

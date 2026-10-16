@@ -1,4 +1,4 @@
-import type { ClientePrisma } from '../../../compartido/infraestructura/prisma.js';
+import type { ClientePrisma } from '../../../comun/infraestructura/clientePrisma.js';
 import type { BuscadorDeUsuarios } from '../../viajes/dominio/puertos.js';
 import { normalizarEmail } from '../dominio/emailContrasena.js';
 

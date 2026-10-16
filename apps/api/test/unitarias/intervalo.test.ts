@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Intervalo } from '../../src/compartido/valores/intervalo.js';
+import { Intervalo } from '../../src/comun/valores/intervalo.js';
 
 const act = (fecha: string, hora: string, duracion: number) =>
   Intervalo.deActividad(fecha, hora, duracion);

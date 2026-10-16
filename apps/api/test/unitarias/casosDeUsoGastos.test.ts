@@ -1,17 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { DatosGastoNuevo } from '@viajes/compartido';
-import {
-  AnotarGasto,
-  ConsultarDeudas,
-  RegistrarPago,
-} from '../../src/modulos/gastos/casos-de-uso/casosDeUsoGastos.js';
-import {
-  DivisionArbitraria,
-  DivisionEnPartesIguales,
-} from '../../src/modulos/gastos/dominio/division.js';
+import { AnotarGasto } from '../../src/modulos/gastos/casos-de-uso/anotarGasto.js';
+import { ConsultarDeudas } from '../../src/modulos/gastos/casos-de-uso/consultarDeudas.js';
+import { RegistrarPago } from '../../src/modulos/gastos/casos-de-uso/registrarPago.js';
+import { DivisionArbitraria } from '../../src/modulos/gastos/dominio/divisionArbitraria.js';
+import { DivisionEnPartesIguales } from '../../src/modulos/gastos/dominio/divisionEnPartesIguales.js';
 import type { ReposGastos } from '../../src/modulos/gastos/dominio/puertos.js';
-import { ConsultarAcceso } from '../../src/modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
-import { Dinero } from '../../src/compartido/valores/dinero.js';
+import { ConsultarAcceso } from '../../src/modulos/viajes/casos-de-uso/consultarAcceso.js';
+import { Dinero } from '../../src/comun/valores/dinero.js';
 import { UnidadDeTrabajoEnMemoria } from '../soporte/unidadDeTrabajoEnMemoria.js';
 import {
   baseVacia,

@@ -1,14 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BusDeEventosEnMemoria, type EventoDeDominio } from '../../src/compartido/eventos.js';
-import {
-  AgregarViajero,
-  ConsultarViajes,
-  CrearViaje,
-  EliminarParticipante,
-  SalirDelViaje,
-  TransferirAdministracion,
-  type DependenciasViajes,
-} from '../../src/modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
+import { BusDeEventosEnMemoria, type EventoDeDominio } from '../../src/comun/eventos.js';
+import { AgregarViajero } from '../../src/modulos/viajes/casos-de-uso/agregarViajero.js';
+import { ConsultarViajes } from '../../src/modulos/viajes/casos-de-uso/consultarViajes.js';
+import { CrearViaje } from '../../src/modulos/viajes/casos-de-uso/crearViaje.js';
+import { EliminarParticipante } from '../../src/modulos/viajes/casos-de-uso/eliminarParticipante.js';
+import { SalirDelViaje } from '../../src/modulos/viajes/casos-de-uso/salirDelViaje.js';
+import { TransferirAdministracion } from '../../src/modulos/viajes/casos-de-uso/transferirAdministracion.js';
+import type { DependenciasViajes } from '../../src/modulos/viajes/casos-de-uso/dependencias.js';
 import type { ReposViajes } from '../../src/modulos/viajes/dominio/puertos.js';
 import { UnidadDeTrabajoEnMemoria } from '../soporte/unidadDeTrabajoEnMemoria.js';
 import {

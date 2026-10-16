@@ -11,7 +11,7 @@ import type {
   ValorVoto,
 } from '@viajes/compartido';
 import { CLIENTE_PROPUESTAS } from '../clientes/propuestas';
-import { useViajeStore } from './viaje';
+import { useViajeStore } from './viajes';
 
 /** Propuestas del viaje abierto: alojamientos y actividades, con votos y resolución comunes. */
 export const usePropuestasStore = defineStore('propuestas', () => {

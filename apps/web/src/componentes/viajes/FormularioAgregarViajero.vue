@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { esquemaAgregarViajero } from '@viajes/compartido';
 import AvisoMensaje from '../base/AvisoMensaje.vue';
 import { mensajeDeError } from '../../clientes/http';
-import { useViajeStore } from '../../stores/viaje';
+import { useViajeStore } from '../../stores/viajes';
 
 const store = useViajeStore();
 const email = ref('');

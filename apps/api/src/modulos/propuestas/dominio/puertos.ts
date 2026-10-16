@@ -1,5 +1,5 @@
 import type { AccionSobrePropuesta, PropuestaVista } from '@viajes/compartido';
-import type { RangoFechas } from '../../../compartido/valores/rangoFechas.js';
+import type { RangoFechas } from '../../../comun/valores/rangoFechas.js';
 import type { LectorDeViajes } from '../../viajes/dominio/puertos.js';
 import type { Propuesta } from './propuesta.js';
 

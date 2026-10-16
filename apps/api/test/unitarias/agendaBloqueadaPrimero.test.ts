@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PropuestasConAgendaBloqueadaPrimero } from '../../src/modulos/actividades/casos-de-uso/agendaBloqueadaPrimero.js';
+import { PropuestasConAgendaBloqueadaPrimero } from '../../src/modulos/actividades/casos-de-uso/propuestasConAgendaBloqueadaPrimero.js';
 import type { RepositorioActividades } from '../../src/modulos/actividades/dominio/puertos.js';
 import type { Propuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
 import type { RepositorioPropuestas } from '../../src/modulos/propuestas/dominio/puertos.js';

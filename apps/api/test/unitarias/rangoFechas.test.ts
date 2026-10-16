@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { RangoFechas } from '../../src/compartido/valores/rangoFechas.js';
-import { esFechaValida } from '../../src/compartido/valores/fecha.js';
+import { RangoFechas } from '../../src/comun/valores/rangoFechas.js';
+import { esFechaValida } from '../../src/comun/valores/fecha.js';
 
 const viaje = RangoFechas.crear('2026-12-10', '2026-12-16');
 

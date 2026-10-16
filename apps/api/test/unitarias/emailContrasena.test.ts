@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { EmailContrasena } from '../../src/modulos/auth/dominio/emailContrasena.js';
-import { HasheadorArgon2 } from '../../src/modulos/auth/infraestructura/adaptadores.js';
+import { HasheadorArgon2 } from '../../src/modulos/auth/infraestructura/hasheadorArgon2.js';
 import { baseVacia, RepositorioCuentasEnMemoria } from '../soporte/memoria.js';
 
 describe('EmailContrasena con argon2id (D7)', () => {

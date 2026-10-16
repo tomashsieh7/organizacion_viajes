@@ -9,7 +9,7 @@ import type {
 } from '@viajes/compartido';
 import type { LectorDeViajes } from '../../viajes/dominio/puertos.js';
 import type { Deuda } from './deuda.js';
-import type { EstrategiaDivision } from './division.js';
+import type { EstrategiaDivision } from './estrategiaDivision.js';
 import type { Gasto } from './gasto.js';
 
 export interface RepositorioGastos {

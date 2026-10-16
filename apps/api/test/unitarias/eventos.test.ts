@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BusDeEventosEnMemoria, type EventoDeDominio } from '../../src/compartido/eventos.js';
+import { BusDeEventosEnMemoria, type EventoDeDominio } from '../../src/comun/eventos.js';
 
 interface Saludo extends EventoDeDominio {
   tipo: 'saludo';

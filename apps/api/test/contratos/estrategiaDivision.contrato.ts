@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Dinero } from '../../src/compartido/valores/dinero.js';
-import type { EstrategiaDivision } from '../../src/modulos/gastos/dominio/division.js';
+import { Dinero } from '../../src/comun/valores/dinero.js';
+import type { EstrategiaDivision } from '../../src/modulos/gastos/dominio/estrategiaDivision.js';
 
 /**
  * Contrato de `EstrategiaDivision` (RN-G4). `crear` arma una estrategia válida para ese total y

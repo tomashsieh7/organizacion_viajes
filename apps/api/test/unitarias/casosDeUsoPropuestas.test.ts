@@ -1,13 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  ConsultarAlojamientos,
-  ProponerAlojamiento,
-} from '../../src/modulos/alojamientos/casos-de-uso/casosDeUsoAlojamientos.js';
+import { ConsultarAlojamientos } from '../../src/modulos/alojamientos/casos-de-uso/consultarAlojamientos.js';
+import { ProponerAlojamiento } from '../../src/modulos/alojamientos/casos-de-uso/proponerAlojamiento.js';
 import type { ReposAlojamientos } from '../../src/modulos/alojamientos/dominio/puertos.js';
-import {
-  ResolverPropuesta,
-  Votar,
-} from '../../src/modulos/propuestas/casos-de-uso/casosDeUsoPropuestas.js';
+import { ResolverPropuesta } from '../../src/modulos/propuestas/casos-de-uso/resolverPropuesta.js';
+import { Votar } from '../../src/modulos/propuestas/casos-de-uso/votar.js';
 import type {
   ConsultaPropuestas,
   ReglaAlResolver,
