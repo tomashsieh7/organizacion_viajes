@@ -1,5 +1,5 @@
-import { ErrorDeDominio } from '../../../compartido/errores.js';
-import type { Reloj } from '../../../compartido/reloj.js';
+import { ErrorDeDominio } from '../../../comun/errores.js';
+import type { Reloj } from '../../../comun/reloj.js';
 import type { GeneradorDeTokens, RepositorioSesiones } from './puertos.js';
 
 export interface SesionNueva {

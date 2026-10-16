@@ -2,7 +2,7 @@
  * Escenarios para las pruebas de contrato: preparan datos de la misma forma sobre la base en
  * memoria y sobre PostgreSQL, y entregan los repositorios de cada implementación.
  */
-import type { PrismaClient } from '../../src/compartido/infraestructura/prisma.js';
+import type { PrismaClient } from '../../src/comun/infraestructura/clientePrisma.js';
 import type { ConsultaItinerario } from '../../src/modulos/itinerario/dominio/puertos.js';
 import type {
   ConsultaCategorias,
@@ -11,57 +11,45 @@ import type {
   RepositorioDeudas,
   RepositorioGastos,
 } from '../../src/modulos/gastos/dominio/puertos.js';
-import {
-  ConsultaCategoriasPrisma,
-  ConsultaGastosPrisma,
-  ConsultaSaldosPrisma,
-  RepositorioDeudasPrisma,
-  RepositorioGastosPrisma,
-} from '../../src/modulos/gastos/infraestructura/prisma.js';
+import { ConsultaCategoriasPrisma } from '../../src/modulos/gastos/infraestructura/consultaCategoriasPrisma.js';
+import { ConsultaGastosPrisma } from '../../src/modulos/gastos/infraestructura/consultaGastosPrisma.js';
+import { ConsultaSaldosPrisma } from '../../src/modulos/gastos/infraestructura/consultaSaldosPrisma.js';
+import { RepositorioDeudasPrisma } from '../../src/modulos/gastos/infraestructura/repositorioDeudasPrisma.js';
+import { RepositorioGastosPrisma } from '../../src/modulos/gastos/infraestructura/repositorioGastosPrisma.js';
 import type {
   ConsultaMensajes,
   RepositorioMensajes,
 } from '../../src/modulos/chat/dominio/puertos.js';
-import {
-  ConsultaMensajesPrisma,
-  RepositorioMensajesPrisma,
-} from '../../src/modulos/chat/infraestructura/prisma.js';
-import { ConsultaItinerarioPrisma } from '../../src/modulos/itinerario/infraestructura/prisma.js';
+import { ConsultaMensajesPrisma } from '../../src/modulos/chat/infraestructura/consultaMensajesPrisma.js';
+import { RepositorioMensajesPrisma } from '../../src/modulos/chat/infraestructura/repositorioMensajesPrisma.js';
+import { ConsultaItinerarioPrisma } from '../../src/modulos/itinerario/infraestructura/consultaItinerarioPrisma.js';
 import type {
   ConsultaActividades,
   RepositorioActividades,
 } from '../../src/modulos/actividades/dominio/puertos.js';
-import {
-  ConsultaActividadesPrisma,
-  RepositorioActividadesPrisma,
-} from '../../src/modulos/actividades/infraestructura/prisma.js';
+import { ConsultaActividadesPrisma } from '../../src/modulos/actividades/infraestructura/consultaActividadesPrisma.js';
+import { RepositorioActividadesPrisma } from '../../src/modulos/actividades/infraestructura/repositorioActividadesPrisma.js';
 import type {
   ConsultaAlojamientos,
   RepositorioAlojamientos,
 } from '../../src/modulos/alojamientos/dominio/puertos.js';
-import {
-  ConsultaAlojamientosPrisma,
-  RepositorioAlojamientosPrisma,
-} from '../../src/modulos/alojamientos/infraestructura/prisma.js';
+import { ConsultaAlojamientosPrisma } from '../../src/modulos/alojamientos/infraestructura/consultaAlojamientosPrisma.js';
+import { RepositorioAlojamientosPrisma } from '../../src/modulos/alojamientos/infraestructura/repositorioAlojamientosPrisma.js';
 import type {
   ConsultaFechasDeViaje,
   ConsultaPropuestas,
   RepositorioPropuestas,
 } from '../../src/modulos/propuestas/dominio/puertos.js';
-import {
-  ConsultaFechasDeViajePrisma,
-  ConsultaPropuestasPrisma,
-  RepositorioPropuestasPrisma,
-} from '../../src/modulos/propuestas/infraestructura/prisma.js';
+import { ConsultaFechasDeViajePrisma } from '../../src/modulos/propuestas/infraestructura/consultaFechasDeViajePrisma.js';
+import { ConsultaPropuestasPrisma } from '../../src/modulos/propuestas/infraestructura/consultaPropuestasPrisma.js';
+import { RepositorioPropuestasPrisma } from '../../src/modulos/propuestas/infraestructura/repositorioPropuestasPrisma.js';
 import type {
   RepositorioCuentas,
   RepositorioSesiones,
 } from '../../src/modulos/auth/dominio/puertos.js';
 import { BuscadorDeUsuariosPrisma } from '../../src/modulos/auth/infraestructura/buscadorDeUsuariosPrisma.js';
-import {
-  RepositorioCuentasPrisma,
-  RepositorioSesionesPrisma,
-} from '../../src/modulos/auth/infraestructura/repositoriosPrisma.js';
+import { RepositorioCuentasPrisma } from '../../src/modulos/auth/infraestructura/repositorioCuentasPrisma.js';
+import { RepositorioSesionesPrisma } from '../../src/modulos/auth/infraestructura/repositorioSesionesPrisma.js';
 import type {
   BuscadorDeUsuarios,
   ConsultaDeudas,
@@ -71,14 +59,12 @@ import type {
   RepositorioViajes,
   RetiroDeVotos,
 } from '../../src/modulos/viajes/dominio/puertos.js';
-import type { EstadoMembresia } from '../../src/modulos/viajes/dominio/viaje.js';
-import {
-  ConsultaDeudasPrisma,
-  ConsultaSaldosPendientesPrisma,
-  ConsultaViajesPrisma,
-  RepositorioViajesPrisma,
-  RetiroDeVotosPrisma,
-} from '../../src/modulos/viajes/infraestructura/prisma.js';
+import type { EstadoMembresia } from '../../src/modulos/viajes/dominio/membresia.js';
+import { ConsultaDeudasPrisma } from '../../src/modulos/viajes/infraestructura/consultaDeudasPrisma.js';
+import { ConsultaSaldosPendientesPrisma } from '../../src/modulos/viajes/infraestructura/consultaSaldosPendientesPrisma.js';
+import { ConsultaViajesPrisma } from '../../src/modulos/viajes/infraestructura/consultaViajesPrisma.js';
+import { RepositorioViajesPrisma } from '../../src/modulos/viajes/infraestructura/repositorioViajesPrisma.js';
+import { RetiroDeVotosPrisma } from '../../src/modulos/viajes/infraestructura/retiroDeVotosPrisma.js';
 import { vaciarBase } from './baseDePrueba.js';
 import {
   baseVacia,

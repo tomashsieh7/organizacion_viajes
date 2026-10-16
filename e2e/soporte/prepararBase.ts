@@ -7,7 +7,7 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { cargarCatalogos } from '../../apps/api/prisma/semilla.js';
-import { crearClientePrisma } from '../../apps/api/src/compartido/infraestructura/prisma.js';
+import { crearClientePrisma } from '../../apps/api/src/comun/infraestructura/clientePrisma.js';
 import { URL_BASE_E2E } from './constantes.js';
 
 const url = new URL(URL_BASE_E2E);

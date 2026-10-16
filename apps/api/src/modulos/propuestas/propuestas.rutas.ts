@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { esquemaVoto, type AccionSobrePropuesta } from '@viajes/compartido';
 import { parametroUuid, soloAdmin } from '../../middlewares/acceso.js';
 import { validar } from '../../middlewares/validar.js';
-import type { ResolverPropuesta, Votar } from './casos-de-uso/casosDeUsoPropuestas.js';
+import type { ResolverPropuesta } from './casos-de-uso/resolverPropuesta.js';
+import type { Votar } from './casos-de-uso/votar.js';
 import type { ReposPropuestas } from './dominio/puertos.js';
 
 export interface DependenciasRutasPropuestas {

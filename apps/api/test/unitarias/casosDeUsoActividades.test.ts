@@ -1,20 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { DatosActividadNueva } from '@viajes/compartido';
-import {
-  ConsultarActividades,
-  ProponerActividad,
-  ProponerAlternativa,
-  type DependenciasProponerActividad,
-} from '../../src/modulos/actividades/casos-de-uso/casosDeUsoActividades.js';
-import {
-  ReglaOpcionesAlConfirmar,
-  ReglaSuperposicionAlConfirmar,
-} from '../../src/modulos/actividades/casos-de-uso/reglasDeResolucion.js';
+import { ConsultarActividades } from '../../src/modulos/actividades/casos-de-uso/consultarActividades.js';
+import { ProponerActividad } from '../../src/modulos/actividades/casos-de-uso/proponerActividad.js';
+import { ProponerAlternativa } from '../../src/modulos/actividades/casos-de-uso/proponerAlternativa.js';
+import type { DependenciasProponerActividad } from '../../src/modulos/actividades/casos-de-uso/dependencias.js';
+import { ReglaOpcionesAlConfirmar } from '../../src/modulos/actividades/casos-de-uso/reglaOpcionesAlConfirmar.js';
+import { ReglaSuperposicionAlConfirmar } from '../../src/modulos/actividades/casos-de-uso/reglaSuperposicionAlConfirmar.js';
 import type { ReposResolucionConActividades } from '../../src/modulos/actividades/dominio/puertos.js';
-import {
-  ResolverPropuesta,
-  Votar,
-} from '../../src/modulos/propuestas/casos-de-uso/casosDeUsoPropuestas.js';
+import { ResolverPropuesta } from '../../src/modulos/propuestas/casos-de-uso/resolverPropuesta.js';
+import { Votar } from '../../src/modulos/propuestas/casos-de-uso/votar.js';
 import { UnidadDeTrabajoEnMemoria } from '../soporte/unidadDeTrabajoEnMemoria.js';
 import {
   baseVacia,

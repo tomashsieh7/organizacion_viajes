@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import type { RespuestaError } from '@viajes/compartido';
-import { ErrorDeDominio, type CategoriaError } from '../compartido/errores.js';
+import { ErrorDeDominio, type CategoriaError } from '../comun/errores.js';
 
 const ESTADO_HTTP: Record<CategoriaError, number> = {
   VALIDACION: 400,

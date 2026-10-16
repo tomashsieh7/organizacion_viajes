@@ -1,11 +1,9 @@
 import { Router } from 'express';
 import { esquemaAlojamientoNuevo, esquemaFiltroEstado } from '@viajes/compartido';
-import { ErrorDeDominio } from '../../compartido/errores.js';
+import { ErrorDeDominio } from '../../comun/errores.js';
 import { validar } from '../../middlewares/validar.js';
-import type {
-  ConsultarAlojamientos,
-  ProponerAlojamiento,
-} from './casos-de-uso/casosDeUsoAlojamientos.js';
+import type { ConsultarAlojamientos } from './casos-de-uso/consultarAlojamientos.js';
+import type { ProponerAlojamiento } from './casos-de-uso/proponerAlojamiento.js';
 
 export interface DependenciasRutasAlojamientos {
   proponer: ProponerAlojamiento;

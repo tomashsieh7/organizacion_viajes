@@ -8,14 +8,12 @@ import {
 } from '@viajes/compartido';
 import { parametroUuid, soloAdmin } from '../../middlewares/acceso.js';
 import { validar } from '../../middlewares/validar.js';
-import type {
-  AgregarViajero,
-  ConsultarViajes,
-  CrearViaje,
-  EliminarParticipante,
-  SalirDelViaje,
-  TransferirAdministracion,
-} from './casos-de-uso/casosDeUsoViajes.js';
+import type { AgregarViajero } from './casos-de-uso/agregarViajero.js';
+import type { ConsultarViajes } from './casos-de-uso/consultarViajes.js';
+import type { CrearViaje } from './casos-de-uso/crearViaje.js';
+import type { EliminarParticipante } from './casos-de-uso/eliminarParticipante.js';
+import type { SalirDelViaje } from './casos-de-uso/salirDelViaje.js';
+import type { TransferirAdministracion } from './casos-de-uso/transferirAdministracion.js';
 
 export interface DependenciasRutasViajes {
   crearViaje: CrearViaje;

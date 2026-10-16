@@ -1,8 +1,8 @@
 import type { RequestHandler } from 'express';
-import { ErrorDeDominio } from '../compartido/errores.js';
-import { esUuid } from '../compartido/uuid.js';
-import type { ObtenerUsuarioDeSesion } from '../modulos/auth/casos-de-uso/casosDeUsoAuth.js';
-import type { ConsultarAcceso } from '../modulos/viajes/casos-de-uso/casosDeUsoViajes.js';
+import { ErrorDeDominio } from '../comun/errores.js';
+import { esUuid } from '../comun/uuid.js';
+import type { ObtenerUsuarioDeSesion } from '../modulos/auth/casos-de-uso/obtenerUsuarioDeSesion.js';
+import type { ConsultarAcceso } from '../modulos/viajes/casos-de-uso/consultarAcceso.js';
 import type { ConsultaViajes } from '../modulos/viajes/dominio/puertos.js';
 
 export const NOMBRE_COOKIE_SESION = 'sesion';

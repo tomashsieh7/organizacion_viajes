@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { esquemaConsultaMapa } from '@viajes/compartido';
-import { ErrorDeDominio } from '../../compartido/errores.js';
-import type { ConsultarCronograma, ConsultarMapa } from './casos-de-uso/casosDeUsoItinerario.js';
+import { ErrorDeDominio } from '../../comun/errores.js';
+import type { ConsultarCronograma } from './casos-de-uso/consultarCronograma.js';
+import type { ConsultarMapa } from './casos-de-uso/consultarMapa.js';
 
 export interface DependenciasRutasItinerario {
   cronograma: ConsultarCronograma;

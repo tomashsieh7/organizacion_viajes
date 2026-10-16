@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Reloj } from '../../src/compartido/reloj.js';
-import { IniciarSesion, Registrarse } from '../../src/modulos/auth/casos-de-uso/casosDeUsoAuth.js';
+import type { Reloj } from '../../src/comun/reloj.js';
+import { IniciarSesion } from '../../src/modulos/auth/casos-de-uso/iniciarSesion.js';
+import { Registrarse } from '../../src/modulos/auth/casos-de-uso/registrarse.js';
 import { EmailContrasena } from '../../src/modulos/auth/dominio/emailContrasena.js';
 import type {
   GeneradorDeTokens,

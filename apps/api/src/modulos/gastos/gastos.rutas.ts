@@ -1,13 +1,11 @@
 import { Router, type RequestHandler } from 'express';
 import { esquemaConsultaDeudas, esquemaGastoNuevo, esquemaPagoNuevo } from '@viajes/compartido';
-import { ErrorDeDominio } from '../../compartido/errores.js';
+import { ErrorDeDominio } from '../../comun/errores.js';
 import { validar } from '../../middlewares/validar.js';
-import type {
-  AnotarGasto,
-  ConsultarDeudas,
-  ConsultarGastos,
-  RegistrarPago,
-} from './casos-de-uso/casosDeUsoGastos.js';
+import type { AnotarGasto } from './casos-de-uso/anotarGasto.js';
+import type { ConsultarDeudas } from './casos-de-uso/consultarDeudas.js';
+import type { ConsultarGastos } from './casos-de-uso/consultarGastos.js';
+import type { RegistrarPago } from './casos-de-uso/registrarPago.js';
 
 export interface DependenciasRutasGastos {
   anotar: AnotarGasto;

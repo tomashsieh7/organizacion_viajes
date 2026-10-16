@@ -1,5 +1,5 @@
 import { afterAll } from 'vitest';
-import { UnidadDeTrabajoPrisma } from '../../src/compartido/infraestructura/unidadDeTrabajoPrisma.js';
+import { UnidadDeTrabajoPrisma } from '../../src/comun/infraestructura/unidadDeTrabajoPrisma.js';
 import { clienteDePrueba, vaciarBase } from '../soporte/baseDePrueba.js';
 import {
   probarContratoUnidadDeTrabajo,

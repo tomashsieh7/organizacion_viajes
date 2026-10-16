@@ -1,4 +1,4 @@
-import { ErrorDeDominio } from '../../../compartido/errores.js';
+import { ErrorDeDominio } from '../../../comun/errores.js';
 
 const LARGO_MAXIMO_MENSAJE = 2000;
 

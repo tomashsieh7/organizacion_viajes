@@ -1,6 +1,6 @@
 import type { AccionSobrePropuesta, EstadoPropuesta } from '@viajes/compartido';
 import { describe, expect, it } from 'vitest';
-import { Coordenadas } from '../../src/compartido/valores/coordenadas.js';
+import { Coordenadas } from '../../src/comun/valores/coordenadas.js';
 import { Propuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
 
 const AHORA = new Date('2026-09-24T12:00:00Z');

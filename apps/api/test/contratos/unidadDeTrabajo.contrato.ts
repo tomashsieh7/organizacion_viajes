@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { UnidadDeTrabajo } from '../../src/compartido/unidadDeTrabajo.js';
+import type { UnidadDeTrabajo } from '../../src/comun/unidadDeTrabajo.js';
 
 /** Repositorio mínimo que usa el contrato para escribir y leer dentro de una transacción. */
 export interface RepositorioDeNotas {

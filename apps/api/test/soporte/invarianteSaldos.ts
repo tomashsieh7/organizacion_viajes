@@ -1,5 +1,5 @@
 import { expect } from 'vitest';
-import type { PrismaClient } from '../../src/compartido/infraestructura/prisma.js';
+import type { PrismaClient } from '../../src/comun/infraestructura/clientePrisma.js';
 
 interface Movimiento {
   viaje_id: string;

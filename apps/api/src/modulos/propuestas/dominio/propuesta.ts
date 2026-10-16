@@ -1,6 +1,6 @@
 import type { AccionSobrePropuesta, EstadoPropuesta, ValorVoto } from '@viajes/compartido';
-import { ErrorDeDominio } from '../../../compartido/errores.js';
-import type { Coordenadas } from '../../../compartido/valores/coordenadas.js';
+import { ErrorDeDominio } from '../../../comun/errores.js';
+import type { Coordenadas } from '../../../comun/valores/coordenadas.js';
 
 export type TipoPropuesta = 'ACTIVIDAD' | 'ALOJAMIENTO';
 

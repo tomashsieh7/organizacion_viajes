@@ -1,5 +1,5 @@
 import type { ConflictoHorario } from '@viajes/compartido';
-import type { Intervalo } from '../../../compartido/valores/intervalo.js';
+import type { Intervalo } from '../../../comun/valores/intervalo.js';
 import type { Actividad } from './actividad.js';
 
 /** Actividad ya ubicada en la agenda del viaje, con su intervalo. */

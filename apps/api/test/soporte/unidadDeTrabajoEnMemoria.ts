@@ -1,4 +1,4 @@
-import type { UnidadDeTrabajo } from '../../src/compartido/unidadDeTrabajo.js';
+import type { UnidadDeTrabajo } from '../../src/comun/unidadDeTrabajo.js';
 
 /**
  * Implementación en memoria de `UnidadDeTrabajo` para las pruebas unitarias de casos de uso.

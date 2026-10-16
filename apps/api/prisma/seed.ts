@@ -1,5 +1,5 @@
 /** Carga la semilla en la base de `DATABASE_URL` (`npm run db:reset`); los datos están en `semilla.ts`. */
-import { crearClientePrisma } from '../src/compartido/infraestructura/prisma.js';
+import { crearClientePrisma } from '../src/comun/infraestructura/clientePrisma.js';
 import { cargarCatalogos, cargarEjemplo } from './semilla.js';
 
 try {

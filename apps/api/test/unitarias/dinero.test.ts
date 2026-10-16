@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Dinero } from '../../src/compartido/valores/dinero.js';
+import { Dinero } from '../../src/comun/valores/dinero.js';
 
 const ars = (monto: number) => Dinero.de(monto, 'ARS');
 

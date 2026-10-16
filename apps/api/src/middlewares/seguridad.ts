@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
-import { ErrorDeDominio } from '../compartido/errores.js';
+import { ErrorDeDominio } from '../comun/errores.js';
 
 const METODOS_SEGUROS = new Set(['GET', 'HEAD', 'OPTIONS']);
 

@@ -1,4 +1,4 @@
-import type { EventoDeDominio } from '../../../compartido/eventos.js';
+import type { EventoDeDominio } from '../../../comun/eventos.js';
 
 export interface MiembroDadoDeBaja extends EventoDeDominio {
   readonly tipo: 'viaje.miembro-dado-de-baja';

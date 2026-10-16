@@ -1,5 +1,5 @@
 import type { PropuestaVista } from '@viajes/compartido';
-import { aMonto } from '../../../compartido/infraestructura/conversiones.js';
+import { aMonto } from '../../../comun/infraestructura/conversiones.js';
 
 /** Fila de propuesta con lo necesario para armar la vista común. */
 export interface FilaPropuesta {

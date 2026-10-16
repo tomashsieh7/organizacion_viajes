@@ -1,5 +1,5 @@
 import type { ActividadDelItinerario, AlojamientoDeLaNoche } from '@viajes/compartido';
-import type { RangoFechas } from '../../../compartido/valores/rangoFechas.js';
+import type { RangoFechas } from '../../../comun/valores/rangoFechas.js';
 
 export interface AlojamientoConfirmado extends AlojamientoDeLaNoche {
   estadia: RangoFechas;

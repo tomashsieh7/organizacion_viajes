@@ -59,7 +59,7 @@ La cobertura se mide con `npm run cobertura` (necesita la base de prueba, como `
 **Dominio.** No importa infraestructura, casos de uso, rutas, Express, Prisma ni Socket.IO:
 
 ```bash
-grep -rn "from '" apps/api/src/modulos/*/dominio apps/api/src/compartido/valores \
+grep -rn "from '" apps/api/src/modulos/*/dominio apps/api/src/comun/valores \
   | grep -E "infraestructura|casos-de-uso|rutas|express|prisma|socket"
 ```
 
