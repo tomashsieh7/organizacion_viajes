@@ -1,16 +1,16 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CLIENTE_CHAT } from '../src/clientes/chat';
-import { ErrorDeApi } from '../src/clientes/http';
-import { useViajeStore } from '../src/stores/viaje';
-import ViajeLayout from '../src/vistas/ViajeLayout.vue';
+import { CLIENTE_CHAT } from '../../../src/clientes/chat';
+import { ErrorDeApi } from '../../../src/clientes/http';
+import { useViajeStore } from '../../../src/stores/viajes';
+import ViajeLayout from '../../../src/vistas/viajes/ViajeLayout.vue';
 import {
   clienteAuthFalso,
   clienteChatFalso,
   clienteViajesFalso,
   detalle,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 const push = vi.fn();
 const replace = vi.fn();

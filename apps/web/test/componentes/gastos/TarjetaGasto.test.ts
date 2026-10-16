@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import type { GastoVista } from '@viajes/compartido';
-import TarjetaGasto from '../src/componentes/gastos/TarjetaGasto.vue';
+import TarjetaGasto from '../../../src/componentes/gastos/TarjetaGasto.vue';
 
 const ARS = { codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 };
 const ana = { id: 'ana', nombre: 'Ana', apodo: null };

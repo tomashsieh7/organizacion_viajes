@@ -143,7 +143,7 @@ El gateway de Socket.IO es otro adaptador de entrada, como el controlador, y usa
 │   │   │   ├── servidor.ts            # levanta HTTP y Socket.IO
 │   │   │   ├── contenedor.ts          # punto de composición: crea implementaciones e inyecta dependencias
 │   │   │   ├── config.ts              # lectura y validación de variables de entorno
-│   │   │   ├── compartido/            # UnidadDeTrabajo, errores y eventos de dominio, objetos de valor Dinero, RangoFechas e Intervalo
+│   │   │   ├── comun/                 # piezas comunes del servidor: UnidadDeTrabajo, errores y eventos de dominio, objetos de valor Dinero, RangoFechas e Intervalo
 │   │   │   ├── middlewares/           # autenticado, verificarOrigen, participanteActivo, accesoSaldos, soloAdmin, validar, manejarErrores
 │   │   │   └── modulos/
 │   │   │       ├── auth/              # registro, sesiones, credenciales (P3)
@@ -154,7 +154,8 @@ El gateway de Socket.IO es otro adaptador de entrada, como el controlador, y usa
 │   │   │       ├── itinerario/        # cronograma y mapa (CU16, CU17)
 │   │   │       ├── chat/              # historial REST y gateway Socket.IO (CU19)
 │   │   │       └── gastos/            # gastos, deudas y pagos (CU20–CU23)
-│   │   │           # cada módulo: <modulo>.rutas.ts (rutas y controlador, que es delgado), casos-de-uso/, dominio/, infraestructura/
+│   │   │           # cada módulo: <modulo>.rutas.ts (rutas y controlador, que es delgado), casos-de-uso/ (un archivo por caso de uso),
+│   │   │           # dominio/ (un archivo por entidad y puertos.ts con las interfaces) e infraestructura/ (un archivo por implementación)
 │   │   └── test/
 │   │       ├── unitarias/             # casos de uso con repositorios en memoria
 │   │       ├── contratos/             # pruebas de contrato de cada interfaz
@@ -164,12 +165,15 @@ El gateway de Socket.IO es otro adaptador de entrada, como el controlador, y usa
 │       │   ├── main.ts                # crea la app e inyecta los clientes de API
 │       │   ├── App.vue
 │       │   ├── router/                # rutas y guardas de sesión, rol y acceso a saldos
-│       │   ├── vistas/                # una vista por pantalla (sección 7)
-│       │   ├── componentes/           # componentes de presentación por dominio
+│       │   ├── vistas/                # una vista por pantalla (sección 7), en una carpeta por área:
+│       │   │                          # sesion, viajes, alojamientos, actividades, itinerario, chat y gastos
+│       │   ├── componentes/           # componentes de presentación, en una carpeta por área (base, viajes, propuestas,
+│       │   │                          # actividades, itinerario, ubicacion, chat y gastos)
 │       │   ├── stores/                # stores de Pinia
 │       │   ├── clientes/              # interfaces de cliente de API y sus implementaciones HTTP y Socket.IO
-│       │   └── composables/           # lógica reutilizable de vistas (por ejemplo, el mapa)
-│       └── test/                      # pruebas de componentes con Vitest y Vue Test Utils
+│       │   ├── composables/           # lógica reutilizable de vistas (por ejemplo, el mapa)
+│       │   └── utiles/                # formato de montos y fechas, validación y otras funciones puras
+│       └── test/                      # pruebas con Vitest y Vue Test Utils, con las mismas carpetas que src/
 ├── packages/
 │   └── compartido/
 │       └── src/                       # esquemas Zod, tipos y enumerados estables
@@ -184,6 +188,8 @@ El gateway de Socket.IO es otro adaptador de entrada, como el controlador, y usa
 ├── PLAN.md
 └── LOG.md
 ```
+
+**Archivos.** Cada clase va en su propio archivo, con el nombre de la clase en minúscula inicial (`RepositorioViajesPrisma` está en `repositorioViajesPrisma.ts`). Las interfaces de un módulo quedan juntas en `dominio/puertos.ts`, porque son contratos cortos y juntas muestran de un vistazo qué necesita el dominio. Las funciones o tipos que usan varias clases van en un archivo con nombre descriptivo: `dependencias.ts`, `verificaciones.ts` o `filasPrisma.ts`.
 
 ## 3. Decisiones técnicas
 

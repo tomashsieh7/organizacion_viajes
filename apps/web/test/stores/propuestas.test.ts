@@ -1,10 +1,10 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
-import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../src/clientes/propuestas';
-import { usePropuestasStore } from '../src/stores/propuestas';
-import { useViajeStore } from '../src/stores/viaje';
-import { clienteAuthFalso, clienteViajesFalso, montaje } from './soporte/clientesFalsos';
+import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../../src/clientes/propuestas';
+import { usePropuestasStore } from '../../src/stores/propuestas';
+import { useViajeStore } from '../../src/stores/viajes';
+import { clienteAuthFalso, clienteViajesFalso, montaje } from '../soporte/clientesFalsos';
 
 describe('usePropuestasStore', () => {
   it('propone en el viaje abierto aunque no se haya cargado la lista antes', async () => {

@@ -1,9 +1,14 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import ParticipantesVista from '../src/vistas/ParticipantesVista.vue';
-import { useSesionStore } from '../src/stores/sesion';
-import { useViajeStore } from '../src/stores/viaje';
-import { clienteAuthFalso, clienteViajesFalso, detalle, montaje } from './soporte/clientesFalsos';
+import ParticipantesVista from '../../../src/vistas/viajes/ParticipantesVista.vue';
+import { useSesionStore } from '../../../src/stores/sesion';
+import { useViajeStore } from '../../../src/stores/viajes';
+import {
+  clienteAuthFalso,
+  clienteViajesFalso,
+  detalle,
+  montaje,
+} from '../../soporte/clientesFalsos';
 
 const push = vi.fn();
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));

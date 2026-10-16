@@ -1,10 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ResumenViaje } from '@viajes/compartido';
-import DialogoNuevoViaje from '../src/componentes/viajes/DialogoNuevoViaje.vue';
-import { useViajeStore } from '../src/stores/viaje';
-import ViajesVista from '../src/vistas/ViajesVista.vue';
-import { clienteAuthFalso, clienteViajesFalso, montaje } from './soporte/clientesFalsos';
+import DialogoNuevoViaje from '../../../src/componentes/viajes/DialogoNuevoViaje.vue';
+import { useViajeStore } from '../../../src/stores/viajes';
+import ViajesVista from '../../../src/vistas/viajes/ViajesVista.vue';
+import { clienteAuthFalso, clienteViajesFalso, montaje } from '../../soporte/clientesFalsos';
 
 const push = vi.fn();
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));

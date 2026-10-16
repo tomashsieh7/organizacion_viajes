@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import AvisoSinActividades from '../componentes/itinerario/AvisoSinActividades.vue';
-import MapaActividades from '../componentes/itinerario/MapaActividades.vue';
-import PanelActividad from '../componentes/itinerario/PanelActividad.vue';
-import CalendarioViaje from '../componentes/itinerario/CalendarioViaje.vue';
-import { useMapaDelDia } from '../composables/useMapaDelDia';
-import { useViajeStore } from '../stores/viaje';
-import { hoyDelDispositivo } from '../utiles/fechas';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import AvisoSinActividades from '../../componentes/itinerario/AvisoSinActividades.vue';
+import MapaActividades from '../../componentes/itinerario/MapaActividades.vue';
+import PanelActividad from '../../componentes/itinerario/PanelActividad.vue';
+import CalendarioViaje from '../../componentes/itinerario/CalendarioViaje.vue';
+import { useMapaDelDia } from '../../composables/useMapaDelDia';
+import { useViajeStore } from '../../stores/viajes';
+import { hoyDelDispositivo } from '../../utiles/fechas';
 
 const viaje = useViajeStore();
 const route = useRoute();

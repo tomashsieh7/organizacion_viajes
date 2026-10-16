@@ -1,12 +1,12 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import type { Component } from 'vue';
-import { CLIENTE_GASTOS } from '../src/clientes/gastos';
-import { CLIENTE_PROPUESTAS } from '../src/clientes/propuestas';
-import ActividadesVista from '../src/vistas/ActividadesVista.vue';
-import AlojamientosVista from '../src/vistas/AlojamientosVista.vue';
-import GastosVista from '../src/vistas/GastosVista.vue';
-import ViajesVista from '../src/vistas/ViajesVista.vue';
+import { CLIENTE_GASTOS } from '../../src/clientes/gastos';
+import { CLIENTE_PROPUESTAS } from '../../src/clientes/propuestas';
+import ActividadesVista from '../../src/vistas/actividades/ActividadesVista.vue';
+import AlojamientosVista from '../../src/vistas/alojamientos/AlojamientosVista.vue';
+import GastosVista from '../../src/vistas/gastos/GastosVista.vue';
+import ViajesVista from '../../src/vistas/viajes/ViajesVista.vue';
 import {
   abrirViaje,
   clienteAuthFalso,
@@ -14,7 +14,7 @@ import {
   clienteViajesFalso,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../soporte/clientesFalsos';
 
 /** Una carga que la prueba resuelve o rechaza cuando quiere. */
 function cargaPendiente() {

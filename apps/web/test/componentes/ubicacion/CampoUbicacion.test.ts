@@ -1,7 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import CampoUbicacion, { type ValorUbicacion } from '../src/componentes/mapa/CampoUbicacion.vue';
-import { BUSCADOR_UBICACIONES, type BuscadorUbicaciones } from '../src/clientes/ubicaciones';
+import CampoUbicacion, {
+  type ValorUbicacion,
+} from '../../../src/componentes/ubicacion/CampoUbicacion.vue';
+import { BUSCADOR_UBICACIONES, type BuscadorUbicaciones } from '../../../src/clientes/ubicaciones';
 
 const sinPunto: ValorUbicacion = { ubicacion: '', latitud: null, longitud: null };
 

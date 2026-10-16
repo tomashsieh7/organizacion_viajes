@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { esquemaViajeNuevo } from '@viajes/compartido';
-import { erroresDeValidacion } from '../src/utiles/formularios';
+import { erroresDeValidacion } from '../../src/utiles/formularios';
 
 describe('erroresDeValidacion', () => {
   it('deja un mensaje por campo a partir de un safeParse fallido', () => {

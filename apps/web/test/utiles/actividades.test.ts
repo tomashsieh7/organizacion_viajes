@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { agruparOpciones } from '../src/utiles/actividades';
-import { formatearDuracion, formatearHorario } from '../src/utiles/formato';
-import { actividad } from './soporte/clientesFalsos';
+import { agruparOpciones } from '../../src/utiles/actividades';
+import { formatearDuracion, formatearHorario } from '../../src/utiles/formato';
+import { actividad } from '../soporte/clientesFalsos';
 
 describe('agruparOpciones (P9)', () => {
   it('anida cada alternativa debajo de su original, respetando el orden', () => {
@@ -40,7 +40,7 @@ describe('formato de actividades', () => {
 
 describe('fechas', () => {
   it('toma la fecha local del dispositivo', async () => {
-    const { hoyDelDispositivo, diasEntre, nombreDelDia } = await import('../src/utiles/fechas');
+    const { hoyDelDispositivo, diasEntre, nombreDelDia } = await import('../../src/utiles/fechas');
     expect(hoyDelDispositivo(new Date(2026, 11, 11, 23, 59))).toBe('2026-12-11');
     expect(diasEntre('2026-12-30', '2027-01-02')).toEqual([
       '2026-12-30',

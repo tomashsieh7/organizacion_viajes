@@ -1,8 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import RegistroVista from '../src/vistas/RegistroVista.vue';
-import { ErrorDeApi } from '../src/clientes/http';
-import { clienteAuthFalso, clienteViajesFalso, montaje } from './soporte/clientesFalsos';
+import RegistroVista from '../../../src/vistas/sesion/RegistroVista.vue';
+import { ErrorDeApi } from '../../../src/clientes/http';
+import { clienteAuthFalso, clienteViajesFalso, montaje } from '../../soporte/clientesFalsos';
 
 const push = vi.fn();
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));

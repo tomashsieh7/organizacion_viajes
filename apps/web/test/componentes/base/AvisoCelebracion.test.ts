@@ -1,10 +1,10 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
-import AvisoCelebracion from '../src/componentes/base/AvisoCelebracion.vue';
-import AnilloProgreso from '../src/componentes/viaje/AnilloProgreso.vue';
-import IconoLinea from '../src/componentes/base/IconoLinea.vue';
-import { DURACION_CELEBRACION_MS, useCelebracion } from '../src/composables/useCelebracion';
+import AvisoCelebracion from '../../../src/componentes/base/AvisoCelebracion.vue';
+import AnilloProgreso from '../../../src/componentes/viajes/AnilloProgreso.vue';
+import IconoLinea from '../../../src/componentes/base/IconoLinea.vue';
+import { DURACION_CELEBRACION_MS, useCelebracion } from '../../../src/composables/useCelebracion';
 
 afterEach(() => {
   useCelebracion().cerrar();

@@ -1,11 +1,11 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
-import { CLIENTE_CHAT } from '../src/clientes/chat';
-import { ErrorDeApi } from '../src/clientes/http';
-import { useChatStore } from '../src/stores/chat';
-import { useSesionStore } from '../src/stores/sesion';
-import { useViajeStore } from '../src/stores/viaje';
+import { CLIENTE_CHAT } from '../../src/clientes/chat';
+import { ErrorDeApi } from '../../src/clientes/http';
+import { useChatStore } from '../../src/stores/chat';
+import { useSesionStore } from '../../src/stores/sesion';
+import { useViajeStore } from '../../src/stores/viajes';
 import {
   ANA,
   clienteAuthFalso,
@@ -14,7 +14,7 @@ import {
   detalle,
   mensaje,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../soporte/clientesFalsos';
 
 let falso: ReturnType<typeof clienteChatFalso>;
 let chat: ReturnType<typeof useChatStore>;

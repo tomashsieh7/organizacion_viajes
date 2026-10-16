@@ -1,8 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../src/clientes/propuestas';
-import { useCelebracion } from '../src/composables/useCelebracion';
-import ActividadesVista from '../src/vistas/ActividadesVista.vue';
+import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../../../src/clientes/propuestas';
+import { useCelebracion } from '../../../src/composables/useCelebracion';
+import ActividadesVista from '../../../src/vistas/actividades/ActividadesVista.vue';
 import {
   abrirViaje,
   actividad,
@@ -11,8 +11,8 @@ import {
   detalle,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
-import { ErrorDeApi } from '../src/clientes/http';
+} from '../../soporte/clientesFalsos';
+import { ErrorDeApi } from '../../../src/clientes/http';
 
 async function montar(cliente: Partial<ClientePropuestas>, miRol: 'ADMIN' | 'VIAJERO' = 'ADMIN') {
   const opciones = montaje(

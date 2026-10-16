@@ -1,14 +1,14 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Cronograma } from '@viajes/compartido';
-import { CLIENTE_ITINERARIO } from '../src/clientes/itinerario';
-import CronogramaVista from '../src/vistas/CronogramaVista.vue';
+import { CLIENTE_ITINERARIO } from '../../../src/clientes/itinerario';
+import CronogramaVista from '../../../src/vistas/itinerario/CronogramaVista.vue';
 import {
   abrirViaje,
   clienteAuthFalso,
   clienteViajesFalso,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 const replace = vi.fn(async (destino: { query: Record<string, string> }) => {
   consulta = destino.query;

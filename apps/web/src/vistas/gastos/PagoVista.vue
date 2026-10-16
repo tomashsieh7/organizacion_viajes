@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import CampoFormulario from '../componentes/base/CampoFormulario.vue';
-import IconoLinea from '../componentes/base/IconoLinea.vue';
-import AvisoExcedeDeuda from '../componentes/gastos/AvisoExcedeDeuda.vue';
-import { ErrorDeApi, mensajeDeError } from '../clientes/http';
-import { useCelebracion } from '../composables/useCelebracion';
-import { useGastosStore } from '../stores/gastos';
-import { useViajeStore } from '../stores/viaje';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
+import IconoLinea from '../../componentes/base/IconoLinea.vue';
+import AvisoExcedeDeuda from '../../componentes/gastos/AvisoExcedeDeuda.vue';
+import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
+import { useCelebracion } from '../../composables/useCelebracion';
+import { useGastosStore } from '../../stores/gastos';
+import { useViajeStore } from '../../stores/viajes';
 import {
   aUnidadMinima,
   formatearDia,
@@ -17,7 +17,7 @@ import {
   formatearMonto,
   nombreVisible,
   simboloMoneda,
-} from '../utiles/formato';
+} from '../../utiles/formato';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();

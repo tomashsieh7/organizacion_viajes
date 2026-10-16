@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ClienteChatSocketIO } from '../src/clientes/chat';
-import { alPerderSesion } from '../src/clientes/http';
+import { ClienteChatSocketIO } from '../../src/clientes/chat';
+import { alPerderSesion } from '../../src/clientes/http';
 
 // Un socket falso cuyo servidor rechaza todo con la respuesta indicada.
 const respuesta = {

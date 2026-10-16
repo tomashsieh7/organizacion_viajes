@@ -7,12 +7,12 @@ import {
   esContrasenaComun,
   esquemaRegistro,
 } from '@viajes/compartido';
-import CampoFormulario from '../componentes/base/CampoFormulario.vue';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import { ErrorDeApi, mensajeDeError } from '../clientes/http';
-import { useSesionStore } from '../stores/sesion';
-import { useValidacion } from '../composables/useValidacion';
-import { problemasSegun } from '../utiles/formularios';
+import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
+import { useSesionStore } from '../../stores/sesion';
+import { useValidacion } from '../../composables/useValidacion';
+import { problemasSegun } from '../../utiles/formularios';
 
 const sesion = useSesionStore();
 const router = useRouter();

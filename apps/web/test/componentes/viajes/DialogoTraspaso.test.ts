@@ -1,14 +1,14 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import DialogoTraspaso from '../src/componentes/viajes/DialogoTraspaso.vue';
-import { useViajeStore } from '../src/stores/viaje';
+import DialogoTraspaso from '../../../src/componentes/viajes/DialogoTraspaso.vue';
+import { useViajeStore } from '../../../src/stores/viajes';
 import {
   abrirViaje,
   clienteAuthFalso,
   clienteViajesFalso,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 async function montar(transferirAdministracion = vi.fn(async () => undefined)) {
   const opciones = montaje(clienteAuthFalso(), clienteViajesFalso({ transferirAdministracion }));

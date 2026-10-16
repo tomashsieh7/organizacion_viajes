@@ -1,8 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import type { AlojamientoVista } from '@viajes/compartido';
-import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../src/clientes/propuestas';
-import AlojamientosVista from '../src/vistas/AlojamientosVista.vue';
+import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../../../src/clientes/propuestas';
+import AlojamientosVista from '../../../src/vistas/alojamientos/AlojamientosVista.vue';
 import {
   abrirViaje,
   clienteAuthFalso,
@@ -10,7 +10,7 @@ import {
   detalle,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 function alojamiento(
   id: string,

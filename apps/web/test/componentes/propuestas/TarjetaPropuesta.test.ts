@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import type { EstadoPropuesta, PropuestaVista } from '@viajes/compartido';
-import TarjetaPropuesta from '../src/componentes/propuestas/TarjetaPropuesta.vue';
+import TarjetaPropuesta from '../../../src/componentes/propuestas/TarjetaPropuesta.vue';
 
 const ARS = { codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 };
 

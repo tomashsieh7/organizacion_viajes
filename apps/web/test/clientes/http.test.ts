@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ClienteAuthHttp } from '../src/clientes/auth';
-import { ClienteChatSocketIO } from '../src/clientes/chat';
-import { ClienteGastosHttp } from '../src/clientes/gastos';
-import { alPerderSesion, ErrorDeApi, pedir } from '../src/clientes/http';
-import { ClienteItinerarioHttp } from '../src/clientes/itinerario';
-import { ClientePropuestasHttp } from '../src/clientes/propuestas';
-import { ClienteViajesHttp } from '../src/clientes/viajes';
+import { ClienteAuthHttp } from '../../src/clientes/auth';
+import { ClienteChatSocketIO } from '../../src/clientes/chat';
+import { ClienteGastosHttp } from '../../src/clientes/gastos';
+import { alPerderSesion, ErrorDeApi, pedir } from '../../src/clientes/http';
+import { ClienteItinerarioHttp } from '../../src/clientes/itinerario';
+import { ClientePropuestasHttp } from '../../src/clientes/propuestas';
+import { ClienteViajesHttp } from '../../src/clientes/viajes';
 
 /** Reemplaza `fetch` por uno que responde siempre lo indicado y registra cada pedido. */
 function responder(estado: number, cuerpo?: unknown) {

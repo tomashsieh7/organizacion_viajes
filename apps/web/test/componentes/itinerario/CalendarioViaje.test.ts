@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
-import CalendarioViaje from '../src/componentes/itinerario/CalendarioViaje.vue';
+import CalendarioViaje from '../../../src/componentes/itinerario/CalendarioViaje.vue';
 
 function montar(props: Partial<InstanceType<typeof CalendarioViaje>['$props']> = {}) {
   return mount(CalendarioViaje, {

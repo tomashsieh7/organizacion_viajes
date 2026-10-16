@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import type { Participante } from '@viajes/compartido';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import DialogoModal from '../componentes/base/DialogoModal.vue';
-import DialogoSalir from '../componentes/viajes/DialogoSalir.vue';
-import DialogoTraspaso from '../componentes/viajes/DialogoTraspaso.vue';
-import FormularioAgregarViajero from '../componentes/viajes/FormularioAgregarViajero.vue';
-import ListaParticipantes from '../componentes/viajes/ListaParticipantes.vue';
-import { mensajeDeError } from '../clientes/http';
-import { useCarga } from '../composables/useCarga';
-import { useSesionStore } from '../stores/sesion';
-import { useViajeStore } from '../stores/viaje';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import DialogoModal from '../../componentes/base/DialogoModal.vue';
+import DialogoSalir from '../../componentes/viajes/DialogoSalir.vue';
+import DialogoTraspaso from '../../componentes/viajes/DialogoTraspaso.vue';
+import FormularioAgregarViajero from '../../componentes/viajes/FormularioAgregarViajero.vue';
+import ListaParticipantes from '../../componentes/viajes/ListaParticipantes.vue';
+import { mensajeDeError } from '../../clientes/http';
+import { useCarga } from '../../composables/useCarga';
+import { useSesionStore } from '../../stores/sesion';
+import { useViajeStore } from '../../stores/viajes';
 
 const store = useViajeStore();
 const sesion = useSesionStore();

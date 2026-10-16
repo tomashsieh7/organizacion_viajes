@@ -2,13 +2,13 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { esquemaInicioSesion } from '@viajes/compartido';
-import CampoFormulario from '../componentes/base/CampoFormulario.vue';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import { mensajeDeError } from '../clientes/http';
-import { useSesionStore } from '../stores/sesion';
-import { useValidacion } from '../composables/useValidacion';
-import { problemasSegun } from '../utiles/formularios';
-import { destinoTrasIngresar } from '../utiles/navegacion';
+import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import { mensajeDeError } from '../../clientes/http';
+import { useSesionStore } from '../../stores/sesion';
+import { useValidacion } from '../../composables/useValidacion';
+import { problemasSegun } from '../../utiles/formularios';
+import { destinoTrasIngresar } from '../../utiles/navegacion';
 
 const sesion = useSesionStore();
 const router = useRouter();

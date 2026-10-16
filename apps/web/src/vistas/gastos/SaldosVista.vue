@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import EstadoVacio from '../componentes/base/EstadoVacio.vue';
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
-import FilaSaldo from '../componentes/gastos/FilaSaldo.vue';
-import { useCarga } from '../composables/useCarga';
-import { useGastosStore } from '../stores/gastos';
-import { useSesionStore } from '../stores/sesion';
-import { useViajeStore } from '../stores/viaje';
-import { formatearMonto } from '../utiles/formato';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../../componentes/base/EstadoVacio.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
+import FilaSaldo from '../../componentes/gastos/FilaSaldo.vue';
+import { useCarga } from '../../composables/useCarga';
+import { useGastosStore } from '../../stores/gastos';
+import { useSesionStore } from '../../stores/sesion';
+import { useViajeStore } from '../../stores/viajes';
+import { formatearMonto } from '../../utiles/formato';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();

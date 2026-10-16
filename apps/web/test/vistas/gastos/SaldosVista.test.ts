@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { CLIENTE_GASTOS } from '../src/clientes/gastos';
-import SaldosVista from '../src/vistas/SaldosVista.vue';
+import { CLIENTE_GASTOS } from '../../../src/clientes/gastos';
+import SaldosVista from '../../../src/vistas/gastos/SaldosVista.vue';
 import {
   abrirViaje,
   clienteAuthFalso,
@@ -9,7 +9,7 @@ import {
   clienteViajesFalso,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 let consulta: Record<string, string> = {};
 vi.mock('vue-router', () => ({ useRoute: () => ({ query: consulta }) }));

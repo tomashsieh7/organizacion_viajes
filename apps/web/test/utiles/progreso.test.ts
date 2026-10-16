@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AlojamientoVista } from '@viajes/compartido';
-import { calcularProgreso, cuentaRegresiva } from '../src/utiles/progreso';
-import { actividad } from './soporte/clientesFalsos';
+import { calcularProgreso, cuentaRegresiva } from '../../src/utiles/progreso';
+import { actividad } from '../soporte/clientesFalsos';
 
 const viaje = {
   fechaInicio: '2026-12-10',

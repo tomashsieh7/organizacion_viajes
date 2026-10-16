@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import ListaParticipantes from '../src/componentes/viajes/ListaParticipantes.vue';
-import { TOMAS } from './soporte/clientesFalsos';
+import ListaParticipantes from '../../../src/componentes/viajes/ListaParticipantes.vue';
+import { TOMAS } from '../../soporte/clientesFalsos';
 
 const participantes = [
   { usuarioId: 'ana', nombre: 'Ana', apodo: null, rol: 'ADMIN' as const },

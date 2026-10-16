@@ -1,14 +1,14 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../src/clientes/propuestas';
-import { ErrorDeApi } from '../src/clientes/http';
-import AlojamientoFormularioVista from '../src/vistas/AlojamientoFormularioVista.vue';
+import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../../../src/clientes/propuestas';
+import { ErrorDeApi } from '../../../src/clientes/http';
+import AlojamientoFormularioVista from '../../../src/vistas/alojamientos/AlojamientoFormularioVista.vue';
 import {
   abrirViaje,
   clienteAuthFalso,
   clienteViajesFalso,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 const push = vi.fn();
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));

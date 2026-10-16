@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import MapaSelector from '../src/componentes/mapa/MapaSelector.vue';
+import MapaSelector from '../../../src/componentes/ubicacion/MapaSelector.vue';
 
 // Leaflet se reemplaza por un doble que registra el marcador y permite simular un clic.
 const leaflet = vi.hoisted(() => ({

@@ -13,7 +13,7 @@ import {
 import { CLIENTE_AUTH, type ClienteAuth } from '../../src/clientes/auth';
 import { CLIENTE_VIAJES, type ClienteViajes } from '../../src/clientes/viajes';
 import { ErrorDeApi } from '../../src/clientes/http';
-import { useViajeStore } from '../../src/stores/viaje';
+import { useViajeStore } from '../../src/stores/viajes';
 import type { ClienteChat, ConexionChat, OyentesChat } from '../../src/clientes/chat';
 import type { ClienteGastos } from '../../src/clientes/gastos';
 import { vi } from 'vitest';

@@ -2,15 +2,17 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { LARGOS_MAXIMOS, esquemaAlojamientoNuevo } from '@viajes/compartido';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import CampoFormulario from '../componentes/base/CampoFormulario.vue';
-import CampoUbicacion, { type ValorUbicacion } from '../componentes/mapa/CampoUbicacion.vue';
-import { ErrorDeApi, mensajeDeError } from '../clientes/http';
-import { usePropuestasStore } from '../stores/propuestas';
-import { useViajeStore } from '../stores/viaje';
-import { aUnidadMinima } from '../utiles/formato';
-import { useValidacion } from '../composables/useValidacion';
-import { MONTO_INVALIDO, problemasSegun } from '../utiles/formularios';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
+import CampoUbicacion, {
+  type ValorUbicacion,
+} from '../../componentes/ubicacion/CampoUbicacion.vue';
+import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
+import { usePropuestasStore } from '../../stores/propuestas';
+import { useViajeStore } from '../../stores/viajes';
+import { aUnidadMinima } from '../../utiles/formato';
+import { useValidacion } from '../../composables/useValidacion';
+import { MONTO_INVALIDO, problemasSegun } from '../../utiles/formularios';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();

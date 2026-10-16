@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import ListaMensajes from '../src/componentes/chat/ListaMensajes.vue';
-import type { MensajeEnPantalla } from '../src/stores/chat';
-import { mensaje } from './soporte/clientesFalsos';
+import ListaMensajes from '../../../src/componentes/chat/ListaMensajes.vue';
+import type { MensajeEnPantalla } from '../../../src/stores/chat';
+import { mensaje } from '../../soporte/clientesFalsos';
 
 const a = (id: string, autor: string, enviadoEn: Date): MensajeEnPantalla => ({
   ...mensaje(id, autor, `texto ${id}`),

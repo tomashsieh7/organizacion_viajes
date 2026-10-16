@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import IconoLinea, { type NombreIcono } from '../componentes/base/IconoLinea.vue';
-import { useCarga } from '../composables/useCarga';
-import { useChatStore } from '../stores/chat';
-import { useViajeStore } from '../stores/viaje';
-import { hoyDelDispositivo } from '../utiles/fechas';
-import { formatearRango } from '../utiles/formato';
-import { cuentaRegresiva } from '../utiles/progreso';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import IconoLinea, { type NombreIcono } from '../../componentes/base/IconoLinea.vue';
+import { useCarga } from '../../composables/useCarga';
+import { useChatStore } from '../../stores/chat';
+import { useViajeStore } from '../../stores/viajes';
+import { hoyDelDispositivo } from '../../utiles/fechas';
+import { formatearRango } from '../../utiles/formato';
+import { cuentaRegresiva } from '../../utiles/progreso';
 
 const store = useViajeStore();
 const chat = useChatStore();

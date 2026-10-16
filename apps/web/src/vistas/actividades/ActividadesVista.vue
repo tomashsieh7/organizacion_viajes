@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import IconoLinea from '../componentes/base/IconoLinea.vue';
+import IconoLinea from '../../componentes/base/IconoLinea.vue';
 import { computed, onMounted, ref } from 'vue';
 import type { AccionSobrePropuesta, ConflictoHorario, ValorVoto } from '@viajes/compartido';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import EstadoVacio from '../componentes/base/EstadoVacio.vue';
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
-import AvisoSuperposicion from '../componentes/actividades/AvisoSuperposicion.vue';
-import ListaAlternativas from '../componentes/actividades/ListaAlternativas.vue';
-import TarjetaActividad from '../componentes/actividades/TarjetaActividad.vue';
-import { ErrorDeApi, mensajeDeError } from '../clientes/http';
-import { useCarga } from '../composables/useCarga';
-import { useCelebracion } from '../composables/useCelebracion';
-import { usePropuestasStore } from '../stores/propuestas';
-import { useViajeStore } from '../stores/viaje';
-import { agruparOpciones } from '../utiles/actividades';
-import { NOMBRES_ESTADO } from '../utiles/formato';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../../componentes/base/EstadoVacio.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
+import AvisoSuperposicion from '../../componentes/actividades/AvisoSuperposicion.vue';
+import ListaAlternativas from '../../componentes/actividades/ListaAlternativas.vue';
+import TarjetaActividad from '../../componentes/actividades/TarjetaActividad.vue';
+import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
+import { useCarga } from '../../composables/useCarga';
+import { useCelebracion } from '../../composables/useCelebracion';
+import { usePropuestasStore } from '../../stores/propuestas';
+import { useViajeStore } from '../../stores/viajes';
+import { agruparOpciones } from '../../utiles/actividades';
+import { NOMBRES_ESTADO } from '../../utiles/formato';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();

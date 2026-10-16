@@ -1,12 +1,12 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import IngresoVista from '../src/vistas/IngresoVista.vue';
+import IngresoVista from '../../../src/vistas/sesion/IngresoVista.vue';
 import {
   clienteAuthFalso,
   clienteViajesFalso,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 const push = vi.fn();
 let query: Record<string, string> = {};

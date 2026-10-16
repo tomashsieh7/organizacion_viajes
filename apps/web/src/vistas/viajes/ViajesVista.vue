@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import EstadoVacio from '../componentes/base/EstadoVacio.vue';
-import IconoLinea from '../componentes/base/IconoLinea.vue';
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
-import DialogoNuevoViaje from '../componentes/viajes/DialogoNuevoViaje.vue';
-import { useCarga } from '../composables/useCarga';
-import { useViajeStore } from '../stores/viaje';
-import { hoyDelDispositivo } from '../utiles/fechas';
-import { formatearRango } from '../utiles/formato';
-import { cuentaRegresiva } from '../utiles/progreso';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../../componentes/base/EstadoVacio.vue';
+import IconoLinea from '../../componentes/base/IconoLinea.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
+import DialogoNuevoViaje from '../../componentes/viajes/DialogoNuevoViaje.vue';
+import { useCarga } from '../../composables/useCarga';
+import { useViajeStore } from '../../stores/viajes';
+import { hoyDelDispositivo } from '../../utiles/fechas';
+import { formatearRango } from '../../utiles/formato';
+import { cuentaRegresiva } from '../../utiles/progreso';
 
 const store = useViajeStore();
 const router = useRouter();

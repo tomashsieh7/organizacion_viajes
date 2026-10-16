@@ -8,17 +8,19 @@ import {
   type ConflictoHorario,
   type DatosActividadNueva,
 } from '@viajes/compartido';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import CampoFormulario from '../componentes/base/CampoFormulario.vue';
-import AvisoSuperposicion from '../componentes/actividades/AvisoSuperposicion.vue';
-import CampoFechaHora from '../componentes/actividades/CampoFechaHora.vue';
-import CampoUbicacion, { type ValorUbicacion } from '../componentes/mapa/CampoUbicacion.vue';
-import { ErrorDeApi, mensajeDeError } from '../clientes/http';
-import { usePropuestasStore } from '../stores/propuestas';
-import { useViajeStore } from '../stores/viaje';
-import { aUnidadMinima, formatearDuracion, formatearHorario } from '../utiles/formato';
-import { useValidacion } from '../composables/useValidacion';
-import { MONTO_INVALIDO, problemasSegun } from '../utiles/formularios';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
+import AvisoSuperposicion from '../../componentes/actividades/AvisoSuperposicion.vue';
+import CampoFechaHora from '../../componentes/actividades/CampoFechaHora.vue';
+import CampoUbicacion, {
+  type ValorUbicacion,
+} from '../../componentes/ubicacion/CampoUbicacion.vue';
+import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
+import { usePropuestasStore } from '../../stores/propuestas';
+import { useViajeStore } from '../../stores/viajes';
+import { aUnidadMinima, formatearDuracion, formatearHorario } from '../../utiles/formato';
+import { useValidacion } from '../../composables/useValidacion';
+import { MONTO_INVALIDO, problemasSegun } from '../../utiles/formularios';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();

@@ -1,14 +1,14 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
-import { useSesionStore } from '../src/stores/sesion';
+import { useSesionStore } from '../../src/stores/sesion';
 import {
   ANA,
   clienteAuthFalso,
   clienteViajesFalso,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../soporte/clientesFalsos';
 
 /** Monta un componente vacío para que el store se cree con los clientes inyectados. */
 function storeCon(yo: () => Promise<typeof ANA | null>) {

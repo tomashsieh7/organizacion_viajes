@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
 import { computed, inject, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Cronograma } from '@viajes/compartido';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import CalendarioViaje from '../componentes/itinerario/CalendarioViaje.vue';
-import DiaCronograma from '../componentes/itinerario/DiaCronograma.vue';
-import { CLIENTE_ITINERARIO } from '../clientes/itinerario';
-import { useCarga } from '../composables/useCarga';
-import { useViajeStore } from '../stores/viaje';
-import { diaInicial, hoyDelDispositivo } from '../utiles/fechas';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import CalendarioViaje from '../../componentes/itinerario/CalendarioViaje.vue';
+import DiaCronograma from '../../componentes/itinerario/DiaCronograma.vue';
+import { CLIENTE_ITINERARIO } from '../../clientes/itinerario';
+import { useCarga } from '../../composables/useCarga';
+import { useViajeStore } from '../../stores/viajes';
+import { diaInicial, hoyDelDispositivo } from '../../utiles/fechas';
 
 const cliente = inject(CLIENTE_ITINERARIO);
 if (!cliente) throw new Error('Falta inyectar ClienteItinerario');

@@ -1,9 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { CLIENTE_CHAT } from '../src/clientes/chat';
-import { useChatStore } from '../src/stores/chat';
-import { useSesionStore } from '../src/stores/sesion';
-import ChatVista from '../src/vistas/ChatVista.vue';
+import { CLIENTE_CHAT } from '../../../src/clientes/chat';
+import { useChatStore } from '../../../src/stores/chat';
+import { useSesionStore } from '../../../src/stores/sesion';
+import ChatVista from '../../../src/vistas/chat/ChatVista.vue';
 import {
   ANA,
   abrirViaje,
@@ -13,7 +13,7 @@ import {
   errorDeApi,
   mensaje,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 describe('ChatVista', () => {
   it('muestra el historial, distingue los propios y envía con Enter', async () => {

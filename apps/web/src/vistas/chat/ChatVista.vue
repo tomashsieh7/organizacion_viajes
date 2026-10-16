@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { watch } from 'vue';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
-import CampoMensaje from '../componentes/chat/CampoMensaje.vue';
-import ListaMensajes from '../componentes/chat/ListaMensajes.vue';
-import { useCarga } from '../composables/useCarga';
-import { useChatStore } from '../stores/chat';
-import { useSesionStore } from '../stores/sesion';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
+import CampoMensaje from '../../componentes/chat/CampoMensaje.vue';
+import ListaMensajes from '../../componentes/chat/ListaMensajes.vue';
+import { useCarga } from '../../composables/useCarga';
+import { useChatStore } from '../../stores/chat';
+import { useSesionStore } from '../../stores/sesion';
 
 const chat = useChatStore();
 const sesion = useSesionStore();

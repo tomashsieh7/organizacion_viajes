@@ -1,9 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GastoVista, PagoDeActividad } from '@viajes/compartido';
-import { CLIENTE_GASTOS } from '../src/clientes/gastos';
-import { useSesionStore } from '../src/stores/sesion';
-import GastosVista from '../src/vistas/GastosVista.vue';
+import { CLIENTE_GASTOS } from '../../../src/clientes/gastos';
+import { useSesionStore } from '../../../src/stores/sesion';
+import GastosVista from '../../../src/vistas/gastos/GastosVista.vue';
 import {
   ANA,
   abrirViaje,
@@ -11,7 +11,7 @@ import {
   clienteGastosFalso,
   clienteViajesFalso,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 const ana = { id: 'ana', nombre: 'Ana', apodo: null };
 const gasto = (id: string, creadoEn: Date): GastoVista => ({

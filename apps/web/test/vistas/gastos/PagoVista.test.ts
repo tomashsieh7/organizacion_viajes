@@ -1,18 +1,18 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import type { DeudaVista } from '@viajes/compartido';
-import { CLIENTE_GASTOS, type ClienteGastos } from '../src/clientes/gastos';
-import { ErrorDeApi } from '../src/clientes/http';
-import { useGastosStore } from '../src/stores/gastos';
-import { useCelebracion } from '../src/composables/useCelebracion';
-import PagoVista from '../src/vistas/PagoVista.vue';
+import { CLIENTE_GASTOS, type ClienteGastos } from '../../../src/clientes/gastos';
+import { ErrorDeApi } from '../../../src/clientes/http';
+import { useGastosStore } from '../../../src/stores/gastos';
+import { useCelebracion } from '../../../src/composables/useCelebracion';
+import PagoVista from '../../../src/vistas/gastos/PagoVista.vue';
 import {
   abrirViaje,
   clienteAuthFalso,
   clienteGastosFalso,
   clienteViajesFalso,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { viajeId: 'v1', acreedorId: 'ana' } }),

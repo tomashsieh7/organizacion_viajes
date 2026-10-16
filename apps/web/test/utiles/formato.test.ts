@@ -7,7 +7,7 @@ import {
   formatearMonto,
   formatearRango,
   simboloMoneda,
-} from '../src/utiles/formato';
+} from '../../src/utiles/formato';
 
 describe('aUnidadMinima', () => {
   it('interpreta montos escritos en castellano', () => {

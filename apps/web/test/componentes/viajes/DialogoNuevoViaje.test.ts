@@ -1,8 +1,13 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import DialogoNuevoViaje from '../src/componentes/viajes/DialogoNuevoViaje.vue';
-import { ErrorDeApi } from '../src/clientes/http';
-import { clienteAuthFalso, clienteViajesFalso, detalle, montaje } from './soporte/clientesFalsos';
+import DialogoNuevoViaje from '../../../src/componentes/viajes/DialogoNuevoViaje.vue';
+import { ErrorDeApi } from '../../../src/clientes/http';
+import {
+  clienteAuthFalso,
+  clienteViajesFalso,
+  detalle,
+  montaje,
+} from '../../soporte/clientesFalsos';
 
 const ARS = { codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 };
 

@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { defineComponent, h, nextTick, reactive } from 'vue';
-import { useValidacion } from '../src/composables/useValidacion';
+import { useValidacion } from '../../src/composables/useValidacion';
 
 /** Formulario mínimo con dos campos obligatorios. */
 function montar() {

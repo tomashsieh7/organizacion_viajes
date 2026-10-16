@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import MapaActividades from '../src/componentes/itinerario/MapaActividades.vue';
+import MapaActividades from '../../../src/componentes/itinerario/MapaActividades.vue';
 import type { ActividadDelItinerario } from '@viajes/compartido';
 
 // Leaflet se reemplaza por un doble que registra lo que se dibuja.

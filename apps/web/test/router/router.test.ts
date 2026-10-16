@@ -1,13 +1,13 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { defineComponent, h } from 'vue';
-import { crearRouter } from '../src/router';
+import { crearRouter } from '../../src/router';
 import {
   clienteAuthFalso,
   clienteViajesFalso,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../soporte/clientesFalsos';
 
 /** Monta una aplicación mínima con el router real y el cliente de autenticación indicado. */
 async function navegar(destino: string, autenticado: boolean) {

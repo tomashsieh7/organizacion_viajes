@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import AvisoMensaje from '../src/componentes/base/AvisoMensaje.vue';
-import { useCarga } from '../src/composables/useCarga';
-import { errorDeApi } from './soporte/clientesFalsos';
+import AvisoMensaje from '../../src/componentes/base/AvisoMensaje.vue';
+import { useCarga } from '../../src/composables/useCarga';
+import { errorDeApi } from '../soporte/clientesFalsos';
 
 describe('useCarga', () => {
   it('marca la carga como terminada y sin error cuando sale bien', async () => {

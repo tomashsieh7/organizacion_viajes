@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import type { GastoVista, PagoDeActividad } from '@viajes/compartido';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import EstadoVacio from '../componentes/base/EstadoVacio.vue';
-import IconoLinea from '../componentes/base/IconoLinea.vue';
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
-import FilaPago from '../componentes/gastos/FilaPago.vue';
-import TarjetaGasto from '../componentes/gastos/TarjetaGasto.vue';
-import { useCarga } from '../composables/useCarga';
-import { useGastosStore } from '../stores/gastos';
-import { useSesionStore } from '../stores/sesion';
-import { useViajeStore } from '../stores/viaje';
-import { etiquetaDelDia, formatearMonto } from '../utiles/formato';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../../componentes/base/EstadoVacio.vue';
+import IconoLinea from '../../componentes/base/IconoLinea.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
+import FilaPago from '../../componentes/gastos/FilaPago.vue';
+import TarjetaGasto from '../../componentes/gastos/TarjetaGasto.vue';
+import { useCarga } from '../../composables/useCarga';
+import { useGastosStore } from '../../stores/gastos';
+import { useSesionStore } from '../../stores/sesion';
+import { useViajeStore } from '../../stores/viajes';
+import { etiquetaDelDia, formatearMonto } from '../../utiles/formato';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();

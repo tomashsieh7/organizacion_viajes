@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import SelectorDeudores from '../src/componentes/gastos/SelectorDeudores.vue';
+import SelectorDeudores from '../../../src/componentes/gastos/SelectorDeudores.vue';
 
 const participantes = [
   { usuarioId: 'ana', nombre: 'Ana', apodo: null, rol: 'ADMIN' as const },

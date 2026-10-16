@@ -7,19 +7,19 @@ import {
   type DatosGastoNuevo,
   type ModoDivision,
 } from '@viajes/compartido';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import CampoFormulario from '../componentes/base/CampoFormulario.vue';
-import SelectorDeudores from '../componentes/gastos/SelectorDeudores.vue';
-import SelectorModoDivision from '../componentes/gastos/SelectorModoDivision.vue';
-import SelectorPagador from '../componentes/gastos/SelectorPagador.vue';
-import TablaPartes from '../componentes/gastos/TablaPartes.vue';
-import { ErrorDeApi, mensajeDeError } from '../clientes/http';
-import { useGastosStore } from '../stores/gastos';
-import { useSesionStore } from '../stores/sesion';
-import { useViajeStore } from '../stores/viaje';
-import { aUnidadMinima, formatearMonto, simboloMoneda } from '../utiles/formato';
-import { useValidacion } from '../composables/useValidacion';
-import { MONTO_INVALIDO, problemasSegun } from '../utiles/formularios';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
+import SelectorDeudores from '../../componentes/gastos/SelectorDeudores.vue';
+import SelectorModoDivision from '../../componentes/gastos/SelectorModoDivision.vue';
+import SelectorPagador from '../../componentes/gastos/SelectorPagador.vue';
+import TablaPartes from '../../componentes/gastos/TablaPartes.vue';
+import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
+import { useGastosStore } from '../../stores/gastos';
+import { useSesionStore } from '../../stores/sesion';
+import { useViajeStore } from '../../stores/viajes';
+import { aUnidadMinima, formatearMonto, simboloMoneda } from '../../utiles/formato';
+import { useValidacion } from '../../composables/useValidacion';
+import { MONTO_INVALIDO, problemasSegun } from '../../utiles/formularios';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();

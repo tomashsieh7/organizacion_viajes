@@ -5,7 +5,7 @@ import { CLIENTE_CHAT, type ConexionChat } from '../clientes/chat';
 import { mensajeDeError } from '../clientes/http';
 import { idTemporal } from '../utiles/idTemporal';
 import { useSesionStore } from './sesion';
-import { useViajeStore } from './viaje';
+import { useViajeStore } from './viajes';
 
 export interface MensajeEnPantalla extends MensajeVista {
   /** Los propios quedan pendientes hasta que el servidor los confirma. */

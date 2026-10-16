@@ -3,7 +3,7 @@ import {
   BuscadorNominatim,
   type BuscadorUbicaciones,
   type Ubicacion,
-} from '../src/clientes/ubicaciones';
+} from '../../src/clientes/ubicaciones';
 
 /** Contrato de BuscadorUbicaciones (D8): lo cumplen la implementación falsa y el adaptador de Nominatim. */
 function probarContrato(nombre: string, crear: () => BuscadorUbicaciones) {

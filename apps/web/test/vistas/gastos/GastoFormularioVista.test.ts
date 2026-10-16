@@ -1,9 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CLIENTE_GASTOS, type ClienteGastos } from '../src/clientes/gastos';
-import { ErrorDeApi } from '../src/clientes/http';
-import { useSesionStore } from '../src/stores/sesion';
-import GastoFormularioVista from '../src/vistas/GastoFormularioVista.vue';
+import { CLIENTE_GASTOS, type ClienteGastos } from '../../../src/clientes/gastos';
+import { ErrorDeApi } from '../../../src/clientes/http';
+import { useSesionStore } from '../../../src/stores/sesion';
+import GastoFormularioVista from '../../../src/vistas/gastos/GastoFormularioVista.vue';
 import {
   ANA,
   abrirViaje,
@@ -11,7 +11,7 @@ import {
   clienteGastosFalso,
   clienteViajesFalso,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 const push = vi.fn();
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));

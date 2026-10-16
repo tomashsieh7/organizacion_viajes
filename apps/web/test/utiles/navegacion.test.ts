@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { destinoTrasIngresar } from '../src/utiles/navegacion';
+import { destinoTrasIngresar } from '../../src/utiles/navegacion';
 
 describe('destinoTrasIngresar', () => {
   it('vuelve a la ruta interna que se pidió', () => {

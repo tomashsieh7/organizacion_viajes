@@ -1,10 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ActividadVista, AlojamientoVista } from '@viajes/compartido';
-import { CLIENTE_PROPUESTAS } from '../src/clientes/propuestas';
-import { useCelebracion } from '../src/composables/useCelebracion';
-import ResumenVista from '../src/vistas/ResumenVista.vue';
-import { diasEntre } from '../src/utiles/fechas';
+import { CLIENTE_PROPUESTAS } from '../../../src/clientes/propuestas';
+import { useCelebracion } from '../../../src/composables/useCelebracion';
+import ResumenVista from '../../../src/vistas/viajes/ResumenVista.vue';
+import { diasEntre } from '../../../src/utiles/fechas';
 import {
   abrirViaje,
   actividad,
@@ -13,7 +13,7 @@ import {
   detalle,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 async function montar(
   datos: { alojamientos?: AlojamientoVista[]; actividades?: ActividadVista[] } = {},

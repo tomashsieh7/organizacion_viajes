@@ -1,15 +1,15 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../src/clientes/propuestas';
-import { ErrorDeApi } from '../src/clientes/http';
-import ActividadFormularioVista from '../src/vistas/ActividadFormularioVista.vue';
+import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../../../src/clientes/propuestas';
+import { ErrorDeApi } from '../../../src/clientes/http';
+import ActividadFormularioVista from '../../../src/vistas/actividades/ActividadFormularioVista.vue';
 import {
   abrirViaje,
   actividad,
   clienteAuthFalso,
   clienteViajesFalso,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 const push = vi.fn();
 let parametros: Record<string, string> = {};

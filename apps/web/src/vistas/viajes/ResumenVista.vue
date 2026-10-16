@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import IconoLinea, { type NombreIcono } from '../componentes/base/IconoLinea.vue';
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
-import AnilloProgreso from '../componentes/viaje/AnilloProgreso.vue';
-import ListaHitos from '../componentes/viaje/ListaHitos.vue';
-import { useCarga } from '../composables/useCarga';
-import { useCelebracion } from '../composables/useCelebracion';
-import { usePropuestasStore } from '../stores/propuestas';
-import { useViajeStore } from '../stores/viaje';
-import { nombreDelDia } from '../utiles/fechas';
-import { calcularProgreso, type ClaveHito } from '../utiles/progreso';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import IconoLinea, { type NombreIcono } from '../../componentes/base/IconoLinea.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
+import AnilloProgreso from '../../componentes/viajes/AnilloProgreso.vue';
+import ListaHitos from '../../componentes/viajes/ListaHitos.vue';
+import { useCarga } from '../../composables/useCarga';
+import { useCelebracion } from '../../composables/useCelebracion';
+import { usePropuestasStore } from '../../stores/propuestas';
+import { useViajeStore } from '../../stores/viajes';
+import { nombreDelDia } from '../../utiles/fechas';
+import { calcularProgreso, type ClaveHito } from '../../utiles/progreso';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();

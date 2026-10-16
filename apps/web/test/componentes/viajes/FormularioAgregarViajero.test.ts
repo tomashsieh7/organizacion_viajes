@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import FormularioAgregarViajero from '../src/componentes/viajes/FormularioAgregarViajero.vue';
+import FormularioAgregarViajero from '../../../src/componentes/viajes/FormularioAgregarViajero.vue';
 import {
   TOMAS,
   abrirViaje,
@@ -8,7 +8,7 @@ import {
   clienteViajesFalso,
   errorDeApi,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 async function montar(agregarViajero = vi.fn(async () => TOMAS)) {
   const opciones = montaje(clienteAuthFalso(), clienteViajesFalso({ agregarViajero }));

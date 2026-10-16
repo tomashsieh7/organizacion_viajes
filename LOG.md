@@ -1849,3 +1849,27 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Lo que parece muerto y no lo es:** `e2e/soporte/prepararBase.ts`, `pg`, `@types/pg` y `@prisma/client` (falsos positivos de knip); la columna `verificada_en`, reservada para la verificación de email (PLAN.md, extensiones) y presente en el diagrama de clases; y las exportaciones que usa el propio código además de las pruebas.
 - **Sin hallazgos:** clases CSS, restos del Release 5, rutas de la API, métodos de los clientes, props y código comentado.
 - **Verificación:** lint, 354 pruebas de la API y 235 de la web en verde.
+
+## 2026-10-15 20:56 — Merge del PR #35
+
+- Con la autorización del usuario ("Si"), el PR #35 ("Sacar código muerto") se mergeó a `main` en `2ba4ba9`, fijando la cabeza verificada `e811e43`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-15 20:56 — Reorganización de carpetas y una clase por archivo
+
+- **Pedido del usuario:** "Hay que cambiar la organización y nombres de las carpetas y archivos para que sea más intuitivo saber dónde está cada cosa y cómo están conectadas", y "no pueden haber dos entidades en un mismo archivo, deben estar separadas". Debe ser intuitivo para el usuario, que está aprendiendo el código.
+- **Diagramas:** `docs/diagramas.drawio` tiene casos de uso, diagramas de actividad, el modelo conceptual y el mapa de historias; ninguno define carpetas, así que el cambio no los contradice. Viaje y Membresía, que el modelo conceptual muestra como entidades distintas, quedaron en archivos separados.
+- **Decisiones del usuario:** web organizada por tipo con una carpeta por área; archivos de clases con minúscula inicial, como el resto del servidor; las interfaces de cada módulo siguen juntas en `dominio/puertos.ts`; `apps/api/src/compartido` pasa a `comun` para no confundirse con `packages/compartido`.
+- **Servidor:**
+  - las 78 clases quedaron una por archivo: de 75 a 129 archivos en `src`;
+  - los archivos con varias clases (`casosDeUso<Módulo>.ts`, `infraestructura/prisma.ts`, `repositoriosPrisma.ts`, `adaptadores.ts`, `reglasDeResolucion.ts`, `division.ts`) se dividieron; `viaje.ts` se separó en `viaje.ts` y `membresia.ts`, y `socketIO.ts` en `gatewayChat.ts` y `notificadorViajeSocketIO.ts`;
+  - lo que usan varias clases quedó en archivos con nombre descriptivo: `dependencias.ts`, `verificaciones.ts`, `modificarViaje.ts`, `cargarViaje.ts`, `exigirParticipante.ts`, `cuentaExistente.ts`, `esConfirmacionDeActividad.ts`, `estrategiaDivision.ts` y `filasPrisma.ts`;
+  - tres archivos de una sola clase tomaron el nombre de su clase: `consultaItinerarioPrisma.ts`, `participacionSegunViajes.ts` y `propuestasConAgendaBloqueadaPrimero.ts`.
+- **Web:**
+  - `vistas/` tiene una carpeta por área (`sesion`, `viajes`, `alojamientos`, `actividades`, `itinerario`, `chat` y `gastos`);
+  - `componentes/viaje` se unió a `componentes/viajes` y `componentes/mapa` pasó a `componentes/ubicacion`, porque tiene el selector de ubicación de los formularios y no el mapa del itinerario;
+  - `stores/viaje.ts` pasó a `stores/viajes.ts`, como su cliente;
+  - `test/` copia las carpetas de `src/`.
+- **Cómo se hizo:** con `git mv` para conservar la historia y un script con el compilador de TypeScript, fuera del repositorio, que separó cada declaración con solo los imports que usa, exportó los ayudantes compartidos y reescribió los imports de todos los archivos, incluidos los `import()` del router y los `vi.mock()`. El código de las clases no cambió.
+- **Verificación:** lint y tipos, 354 pruebas de la API, 235 de la web, 13 e2e, build de producción y las búsquedas de capas de `docs/auditoria.md`; knip solo informa los falsos positivos conocidos.
+- **Documentación:** PLAN.md 2.4 (estructura y regla de archivos) y la ruta de `docs/auditoria.md`.
+- **Rama `claude/release-5-mensajeria`:** traerla ahora implica rehacer sus cambios sobre la estructura nueva.

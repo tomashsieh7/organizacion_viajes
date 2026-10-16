@@ -1,16 +1,16 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MapaDelDia } from '@viajes/compartido';
-import { CLIENTE_ITINERARIO, type ClienteItinerario } from '../src/clientes/itinerario';
-import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../src/clientes/propuestas';
-import MapaVista from '../src/vistas/MapaVista.vue';
+import { CLIENTE_ITINERARIO, type ClienteItinerario } from '../../../src/clientes/itinerario';
+import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../../../src/clientes/propuestas';
+import MapaVista from '../../../src/vistas/itinerario/MapaVista.vue';
 import {
   abrirViaje,
   actividad,
   clienteAuthFalso,
   clienteViajesFalso,
   montaje,
-} from './soporte/clientesFalsos';
+} from '../../soporte/clientesFalsos';
 
 const replace = vi.fn();
 let consulta: Record<string, string> = {};

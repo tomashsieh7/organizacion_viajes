@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import DialogoModal from '../src/componentes/base/DialogoModal.vue';
+import DialogoModal from '../../../src/componentes/base/DialogoModal.vue';
 
 describe('DialogoModal', () => {
   it('toma el foco al abrirse, se cierra con Escape y devuelve el foco al cerrarse', async () => {

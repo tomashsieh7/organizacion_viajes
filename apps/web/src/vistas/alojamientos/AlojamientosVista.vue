@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import type { AccionSobrePropuesta, ValorVoto } from '@viajes/compartido';
-import AvisoMensaje from '../componentes/base/AvisoMensaje.vue';
-import EstadoVacio from '../componentes/base/EstadoVacio.vue';
-import IconoLinea from '../componentes/base/IconoLinea.vue';
-import SiluetaCarga from '../componentes/base/SiluetaCarga.vue';
-import TarjetaPropuesta from '../componentes/propuestas/TarjetaPropuesta.vue';
-import { mensajeDeError } from '../clientes/http';
-import { useCarga } from '../composables/useCarga';
-import { useCelebracion } from '../composables/useCelebracion';
-import { usePropuestasStore } from '../stores/propuestas';
-import { useViajeStore } from '../stores/viaje';
-import { diasEntre } from '../utiles/fechas';
-import { formatearRango, NOMBRES_ESTADO } from '../utiles/formato';
+import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
+import EstadoVacio from '../../componentes/base/EstadoVacio.vue';
+import IconoLinea from '../../componentes/base/IconoLinea.vue';
+import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
+import TarjetaPropuesta from '../../componentes/propuestas/TarjetaPropuesta.vue';
+import { mensajeDeError } from '../../clientes/http';
+import { useCarga } from '../../composables/useCarga';
+import { useCelebracion } from '../../composables/useCelebracion';
+import { usePropuestasStore } from '../../stores/propuestas';
+import { useViajeStore } from '../../stores/viajes';
+import { diasEntre } from '../../utiles/fechas';
+import { formatearRango, NOMBRES_ESTADO } from '../../utiles/formato';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
