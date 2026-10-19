@@ -1873,3 +1873,13 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Verificación:** lint y tipos, 354 pruebas de la API, 235 de la web, 13 e2e, build de producción y las búsquedas de capas de `docs/auditoria.md`; knip solo informa los falsos positivos conocidos.
 - **Documentación:** PLAN.md 2.4 (estructura y regla de archivos) y la ruta de `docs/auditoria.md`.
 - **Rama `claude/release-5-mensajeria`:** traerla ahora implica rehacer sus cambios sobre la estructura nueva.
+
+## 2026-10-19 16:51 — Merge del PR #36
+
+- Con la autorización del usuario ("Si"), el PR #36 ("Reorganización de carpetas y una clase por archivo") se mergeó a `main` en `f8feb06`, fijando la cabeza verificada `b03868c`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-19 16:51 — Regla 7.1 de CLAUDE.md: qué va en cada mensaje
+
+- **Pedido del usuario:** agregar a CLAUDE.md la regla sobre el contenido de los mensajes al terminar un cambio, como la próxima extensión numerada, sin modificar lo escrito y consultando cualquier contradicción.
+- **Contradicción consultada:** la sección 1 pide resumir "qué se cambió" en un cambio menor. El usuario decidió que se entiende como qué cambia para quien usa el sistema, así que la sección 1 quedó igual.
+- **Cambio:** CLAUDE.md suma la subsección 7.1 "Qué va en cada mensaje".
