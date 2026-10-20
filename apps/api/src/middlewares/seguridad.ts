@@ -72,3 +72,28 @@ export function limiteDeRegistro(porHora: number): RequestHandler {
     handler: demasiadosIntentos,
   });
 }
+
+/**
+ * D6: al agregar viajeros, cada persona puede probar hasta 20 emails sin cuenta por hora. Así
+ * nadie puede averiguar en masa qué emails están registrados, que es lo que el ingreso no
+ * revela (RN-S3). Solo cuentan las respuestas 404 `USUARIO_NO_REGISTRADO`.
+ */
+export function limiteDeEmailsSinCuenta(): RequestHandler {
+  return rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 20,
+    skipSuccessfulRequests: true,
+    requestWasSuccessful: (_req, res) => res.statusCode !== 404,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    keyGenerator: (req) => `usuario:${req.usuarioId ?? ''}`,
+    handler: (_req, _res, next) =>
+      next(
+        new ErrorDeDominio(
+          'DEMASIADOS_INTENTOS',
+          'DEMASIADOS_EMAILS_SIN_CUENTA',
+          'Probaste demasiados emails sin cuenta; esperá un rato y volvé a probar',
+        ),
+      ),
+  });
+}

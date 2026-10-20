@@ -391,6 +391,9 @@ label {
 /* Etiquetas e insignias: el color acompaña al texto, nunca lo reemplaza. */
 .etiqueta {
   display: inline-block;
+  /* Junto a un título largo, la etiqueta no se achica ni se parte en letras sueltas. */
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 0.8125rem;
   line-height: 1.4;
   padding: 0 var(--esp-2);

@@ -5,7 +5,7 @@ import type { ConsultaViajes } from '../dominio/puertos.js';
 import { Viaje } from '../dominio/viaje.js';
 import type { DependenciasViajes } from './dependencias.js';
 
-/** CU01. */
+/** CU01. Si el mismo formulario reintenta, devuelve el viaje que ya creó. */
 export class CrearViaje {
   constructor(
     private readonly deps: DependenciasViajes,
@@ -21,7 +21,7 @@ export class CrearViaje {
       );
     }
     const viaje = Viaje.crear({
-      id: randomUUID(),
+      id: datos.id ?? randomUUID(),
       nombre: datos.nombre,
       destino: datos.destino,
       fechaInicio: datos.fechaInicio,
@@ -30,7 +30,16 @@ export class CrearViaje {
       creadorId,
       ahora: this.deps.reloj.ahora(),
     });
-    await this.deps.unidad.ejecutar((repos) => repos.viajes.guardar(viaje));
+    await this.deps.unidad.ejecutar(async (repos) => {
+      // Un reintento del mismo formulario trae el mismo id: el viaje ya existe y no se duplica.
+      // Con el id de un viaje ajeno no se toca nada, porque guardar lo sobrescribiría.
+      const existente = await repos.viajes.obtenerParaModificar(viaje.id);
+      if (existente?.creadoPorId === creadorId) return;
+      if (existente) {
+        throw new ErrorDeDominio('CONFLICTO', 'VIAJE_EXISTENTE', 'Ya existe un viaje con ese id');
+      }
+      await repos.viajes.guardar(viaje);
+    });
     return viaje.id;
   }
 }

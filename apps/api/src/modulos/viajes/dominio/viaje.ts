@@ -79,6 +79,10 @@ export class Viaje {
     return this.datos.id;
   }
 
+  get creadoPorId(): string {
+    return this.datos.creadoPorId;
+  }
+
   get monedaCodigo(): string {
     return this.datos.monedaCodigo;
   }

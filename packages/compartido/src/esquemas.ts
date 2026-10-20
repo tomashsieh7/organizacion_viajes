@@ -5,11 +5,21 @@ const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 /** Día calendario `YYYY-MM-DD` que existe (por ejemplo, rechaza el 30 de febrero). */
 export const esquemaFecha = z
   .string()
+  .min(1, { message: 'Elegí una fecha', abort: true })
   .regex(FECHA, 'Usá el formato AAAA-MM-DD')
   .refine((v) => {
     const d = new Date(`${v}T00:00:00Z`);
     return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
   }, 'La fecha no existe');
+
+/** RN-X7: primer y último día que puede tener un viaje, para que un año mal tipeado se note. */
+export const FECHA_MINIMA_VIAJE = '2000-01-01';
+export const FECHA_MAXIMA_VIAJE = '2100-12-31';
+
+const fechaDeViaje = esquemaFecha.refine(
+  (v) => v >= FECHA_MINIMA_VIAJE && v <= FECHA_MAXIMA_VIAJE,
+  'Elegí una fecha entre el año 2000 y el 2100',
+);
 
 /**
  * RN-X7: último día que puede tener un viaje que empieza en `fecha`, un año después. Un 29 de
@@ -42,15 +52,24 @@ export const LARGOS_MAXIMOS = {
 const hasta = (n: number) => `Puede tener hasta ${n} caracteres`;
 
 /**
- * RN-S7: caracteres de control (como el nulo o el salto de línea) y los que invierten la
+ * RN-S7 y RN-X8: caracteres de control (como el nulo o el salto de línea) y los que invierten la
  * dirección del texto, con los que un nombre puede verse como otro.
  */
 const PROHIBIDOS = /[\p{Cc}\u202A-\u202E\u2066-\u2069]/u;
-const sinCaracteresProhibidos = (v: string) => !PROHIBIDOS.test(v);
-const CARACTERES_PROHIBIDOS = 'Tiene caracteres que no se pueden usar';
+export const sinCaracteresProhibidos = (v: string) => !PROHIBIDOS.test(v);
+export const CARACTERES_PROHIBIDOS = 'Tiene caracteres que no se pueden usar';
 
-/** RN-S7: tiene al menos una letra, número, signo o símbolo (los emojis entre ellos). */
+/** RN-S7 y RN-X8: tiene al menos una letra, número, signo o símbolo (los emojis entre ellos). */
 const seVe = (v: string) => /[\p{L}\p{N}\p{P}\p{S}]/u.test(v);
+
+/** RN-S7 y RN-X8: texto obligatorio de una línea, que se ve y no tiene caracteres prohibidos. */
+const textoDeUnaLinea = (largoMaximo: number, siFalta: string) =>
+  z
+    .string()
+    .trim()
+    .max(largoMaximo, hasta(largoMaximo))
+    .refine(sinCaracteresProhibidos, CARACTERES_PROHIBIDOS)
+    .refine(seVe, siFalta);
 
 export const esquemaEmail = z
   .string()
@@ -65,12 +84,7 @@ export const esquemaRegistro = z.object({
     .string()
     .min(CONTRASENA_MIN, `La contraseña debe tener al menos ${CONTRASENA_MIN} caracteres`)
     .max(CONTRASENA_MAX, `La contraseña puede tener hasta ${CONTRASENA_MAX} caracteres`),
-  nombre: z
-    .string()
-    .trim()
-    .max(LARGOS_MAXIMOS.nombrePersona, hasta(LARGOS_MAXIMOS.nombrePersona))
-    .refine(sinCaracteresProhibidos, CARACTERES_PROHIBIDOS)
-    .refine(seVe, 'Ingresá tu nombre'),
+  nombre: textoDeUnaLinea(LARGOS_MAXIMOS.nombrePersona, 'Ingresá tu nombre'),
   apodo: z
     .string()
     .trim()
@@ -92,18 +106,15 @@ export type DatosInicioSesion = z.input<typeof esquemaInicioSesion>;
 
 export const esquemaViajeNuevo = z
   .object({
-    nombre: z
-      .string()
-      .trim()
-      .min(1, 'Ingresá un nombre')
-      .max(LARGOS_MAXIMOS.nombreViaje, hasta(LARGOS_MAXIMOS.nombreViaje)),
-    destino: z
-      .string()
-      .trim()
-      .min(1, 'Ingresá un destino')
-      .max(LARGOS_MAXIMOS.destino, hasta(LARGOS_MAXIMOS.destino)),
-    fechaInicio: esquemaFecha,
-    fechaFin: esquemaFecha,
+    /**
+     * Identificador que genera el formulario: si la respuesta se pierde y la persona reintenta,
+     * el servidor reconoce el viaje ya creado y no lo duplica.
+     */
+    id: z.uuid().optional(),
+    nombre: textoDeUnaLinea(LARGOS_MAXIMOS.nombreViaje, 'Ingresá un nombre'),
+    destino: textoDeUnaLinea(LARGOS_MAXIMOS.destino, 'Ingresá un destino'),
+    fechaInicio: fechaDeViaje,
+    fechaFin: fechaDeViaje,
     monedaCodigo: z.string().length(3, 'Elegí una moneda'),
   })
   .refine((v) => v.fechaInicio <= v.fechaFin, {

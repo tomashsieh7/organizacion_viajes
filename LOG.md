@@ -1954,3 +1954,37 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Pendiente para otras funcionalidades:** el carácter nulo también responde 500 en el nombre del viaje y seguramente en otros textos; se revisa cuando le toque a cada una.
 - **Documentación:** PLAN.md (RN-S1, RN-S2, RN-S4, RN-S5 y RN-S7 nueva), `docs/api.md` y `docs/auditoria.md`.
 - **Verificación:** lint, cobertura con sus mínimos, 367 pruebas de la API, 240 de la web y 15 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-20 18:30 — Merge del PR #39
+
+- Con la autorización del usuario ("Si"), el PR #39 ("Registro, ingreso y sesión: límites por persona, cierre que corta el chat y entradas seguras") se mergeó a `main` en `4588cdb`, fijando la cabeza verificada `9caab85`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+- **Después del merge:** a pedido del usuario se probó en un navegador real la pérdida de conexión con el chat abierto: sin internet 6 segundos, el servidor caído y vuelto a levantar, y una recarga. En ningún caso se perdió la sesión ni apareció el aviso, y el chat se reconectó y siguió recibiendo mensajes.
+
+## 2026-10-20 19:30 — Testing intensivo de crear grupo y agregar viajeros
+
+- **Pedido del usuario:** seguir con la funcionalidad 2 con la regla 7.2. El usuario eligió corregir todos los hallazgos ("Todas") y aprobó el plan, con el rango de años de 2000 a 2100.
+- **Probado sin hallazgos:**
+  - 300 altas, bajas y salidas al azar comparadas con un modelo: lista de participantes, cantidad y lista de grupos de cada persona, sin diferencias;
+  - 59 altas simultáneas sin errores, y el mismo email diez veces a la vez entra una sola;
+  - 40 grupos creados a la vez, y la lista de 200 grupos en 7 ms;
+  - permisos de agregar;
+  - doble clic en «Crear viaje», «Atrás» conservando lo cargado, y pantallas a 360 px.
+- **Hallazgos y arreglos:**
+  1. **Nombre y destino del viaje.** El carácter nulo daba 500, y se aceptaban textos invisibles, saltos de línea e inversión del texto. Regla nueva RN-X8 con la misma validación que RN-S7, que pasa a `textoDeUnaLinea` en el esquema compartido; en el diálogo, el país marca sus propios caracteres prohibidos.
+  2. **Viaje duplicado al perderse la respuesta.** El formulario genera un UUID por intento (`uuidAlAzar`, con `getRandomValues` para que funcione por la red local). `CrearViaje` devuelve el viaje si ya existe con ese id y la misma persona, y responde 409 `VIAJE_EXISTENTE` si es de otra, porque el `upsert` de `guardar` lo sobrescribiría.
+  3. **Enumeración de emails al agregar viajeros** (300 en 1,6 s). `limiteDeEmailsSinCuenta`: 20 respuestas 404 por hora y por persona, con 429 `DEMASIADOS_EMAILS_SIN_CUENTA` (D6). Como el limitador cuenta los pedidos en curso, más de 20 altas en el mismo instante también se frenan; desde la pantalla no pasa, porque se agrega de a una.
+  4. **Etiqueta «Admin» partida letra por letra** a 360 px junto a un nombre largo. `.etiqueta` no se achica ni se parte.
+  5. **Fecha vacía** decía «La fecha no existe». `esquemaFecha` responde «Elegí una fecha».
+  6. **Años absurdos:** RN-X7 suma que las fechas del viaje van de 2000 a 2100, con esos topes en los selectores.
+- **Testing intensivo de los arreglos:**
+  - el mismo id enviado 20 veces por quien crea y 5 por otra persona, todo a la vez, deja un solo viaje intacto (20 respuestas 201 y 5 respuestas 409);
+  - bordes de 2000 y 2100;
+  - el límite corta en el email sin cuenta número 21, también a la vez;
+  - estados de error del diálogo en celular.
+  - Cada prueba nueva falla sin su arreglo en las de punta a punta; las de la API y la web prueban comportamiento que antes no existía.
+- **Revisión pedida por el usuario antes del commit:**
+  - crear un grupo abriendo la app por la IP de la red, sin `crypto.randomUUID` (contexto no seguro): el identificador se genera igual y el chat funciona; los rechazos de websocket en la consola eran del proxy del entorno y no aparecen sin él;
+  - alojamientos con fechas borradas muestra «Elegí una fecha».
+  - El usuario confirmó que las pruebas de regresión de cada arreglo, en las partes 1 y 2, eran las que pedía.
+- **Documentación:** PLAN.md (RN-X7, RN-X8 nueva, CU01, CU02 y D6) y `docs/api.md`.
+- **Verificación:** lint, cobertura con sus mínimos, 371 pruebas de la API, 243 de la web y 16 e2e en verde; knip solo informa los falsos positivos conocidos.

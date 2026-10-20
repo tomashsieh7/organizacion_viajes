@@ -80,7 +80,61 @@ describe('CU01: crear viaje y consultarlo', () => {
     ]);
     expect((await crear('2028-02-29', '2029-02-28')).status).toBe(201);
     expect((await crear('2028-02-29', '2029-03-01')).status).toBe(400);
-    expect((await crear('9999-01-01', '9999-12-31')).status).toBe(201);
+    expect((await crear('2100-06-01', '2100-12-31')).status).toBe(201);
+  });
+
+  it('RN-X7: las fechas van del año 2000 al 2100, así un año mal tipeado se nota', async () => {
+    const crear = (fechaInicio: string, fechaFin: string) =>
+      ana.c.post('/api/viajes', { ...nuevoViaje, fechaInicio, fechaFin });
+    for (const [inicio, fin, campo] of [
+      ['0026-12-10', '0026-12-16', 'fechaInicio'],
+      ['1999-12-31', '2000-01-05', 'fechaInicio'],
+      ['2100-12-30', '2101-01-02', 'fechaFin'],
+    ] as const) {
+      const r = await crear(inicio, fin);
+      expect(r.status).toBe(400);
+      expect(r.body.error.detalles).toContainEqual({
+        campo,
+        mensaje: 'Elegí una fecha entre el año 2000 y el 2100',
+      });
+    }
+    expect((await crear('2000-01-01', '2000-01-05')).status).toBe(201);
+  });
+
+  it('RN-X8: nombre y destino sin caracteres de control ni invisibles del todo', async () => {
+    for (const extra of [
+      { nombre: 'Viaje\u0000' },
+      { destino: 'Bari\u0000' },
+      { nombre: '\u200b\u200b' },
+      { destino: '\u200b' },
+      { nombre: 'Viaje\na Bariloche' },
+      { nombre: 'Viaje\u202Eabc' },
+    ]) {
+      const r = await ana.c.post('/api/viajes', { ...nuevoViaje, ...extra });
+      expect(r.status, JSON.stringify(extra)).toBe(400);
+      expect(r.body.error.codigo).toBe('VALIDACION');
+    }
+    const conEmoji = await ana.c.post('/api/viajes', { ...nuevoViaje, nombre: 'Bariloche 🏔️' });
+    expect(conEmoji.status).toBe(201);
+  });
+
+  it('CU01: reintentar con el mismo id devuelve el viaje ya creado y no lo duplica', async () => {
+    const id = '3f1c2b9a-7d4e-4a10-9c2b-5e6f7a8b9c0d';
+    const intentos = await Promise.all(
+      Array.from({ length: 5 }, () => tomas.c.post('/api/viajes', { ...nuevoViaje, id })),
+    );
+    expect(intentos.map((r) => r.status)).toEqual([201, 201, 201, 201, 201]);
+    expect(intentos.map((r) => r.body.viaje.id)).toEqual([id, id, id, id, id]);
+    expect(await db.viaje.count({ where: { creadoPorId: tomas.id } })).toBe(1);
+    expect(await db.membresia.count({ where: { viajeId: id } })).toBe(1);
+
+    // Con el id de un viaje ajeno no se toca nada.
+    const ajeno = await luis.c.post('/api/viajes', { ...nuevoViaje, nombre: 'Otro', id: viajeId });
+    expect(ajeno.status).toBe(409);
+    expect(ajeno.body.error.codigo).toBe('VIAJE_EXISTENTE');
+    const original = await db.viaje.findUniqueOrThrow({ where: { id: viajeId } });
+    expect(original).toMatchObject({ nombre: 'Bariloche 2026', creadoPorId: ana.id });
+    expect(await db.membresia.count({ where: { viajeId, usuarioId: luis.id } })).toBe(0);
   });
 
   it('lista monedas y exige sesión', async () => {
@@ -121,6 +175,28 @@ describe('CU02: agregar viajero', () => {
     expect([repetido.status, repetido.body.error.codigo]).toEqual([409, 'YA_ES_PARTICIPANTE']);
     const noAdmin = await tomas.c.post(url('/participantes'), { email: 'luis@mail.com' });
     expect([noAdmin.status, noAdmin.body.error.codigo]).toEqual([403, 'SOLO_ADMIN']);
+  });
+});
+
+describe('D6: límite de emails sin cuenta al agregar viajeros', () => {
+  it('cada persona prueba hasta 20 emails sin cuenta por hora; los registrados no cuentan', async () => {
+    const agregar = (email: string) => ana.c.post(url('/participantes'), { email });
+    for (let i = 0; i < 19; i++) expect((await agregar(`nadie${i}@mail.com`)).status).toBe(404);
+    expect((await agregar('tomas@mail.com')).status).toBe(201);
+    expect((await agregar('tomas@mail.com')).status).toBe(409);
+    expect((await agregar('nadie19@mail.com')).status).toBe(404);
+    const bloqueado = await agregar('nadie20@mail.com');
+    expect(bloqueado.status).toBe(429);
+    expect(bloqueado.body.error).toMatchObject({
+      codigo: 'DEMASIADOS_EMAILS_SIN_CUENTA',
+      mensaje: 'Probaste demasiados emails sin cuenta; esperá un rato y volvé a probar',
+    });
+    // El límite es de cada persona: otro Admin sigue pudiendo agregar.
+    const otroViaje = (await tomas.c.post('/api/viajes', nuevoViaje)).body.viaje.id;
+    const deTomas = await tomas.c.post(`/api/viajes/${otroViaje}/participantes`, {
+      email: 'nadie@mail.com',
+    });
+    expect(deTomas.status).toBe(404);
   });
 });
 

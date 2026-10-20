@@ -99,4 +99,10 @@ test('Con nombres, títulos y montos largos tampoco se desborda nada en celular'
     );
     expect(desborde, `desborde horizontal en ${ruta}`).toBe(0);
   }
+
+  // Junto al nombre largo del grupo, la etiqueta «Admin» queda en una línea, sin partirse.
+  await ana.page.setViewportSize({ width: 360, height: 740 });
+  await ana.page.goto('/viajes');
+  const etiqueta = ana.page.locator('.etiqueta', { hasText: 'Admin' }).first();
+  expect((await etiqueta.boundingBox())!.height).toBeLessThan(30);
 });
