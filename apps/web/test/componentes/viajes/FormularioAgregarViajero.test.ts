@@ -31,6 +31,7 @@ describe('FormularioAgregarViajero (CU02)', () => {
     await agregar(formulario, 'no-es-un-email');
     expect(agregarViajero).not.toHaveBeenCalled();
     expect(formulario.text()).toContain('Ingresá un email válido');
+    expect(formulario.find('#agregar-email').attributes('maxlength')).toBe('254');
   });
 
   it('agrega al viajero, lo confirma y limpia el campo', async () => {

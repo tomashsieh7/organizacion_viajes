@@ -1,4 +1,4 @@
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import { ErrorDeDominio } from '../comun/errores.js';
 import { esUuid } from '../comun/uuid.js';
 import type { ObtenerUsuarioDeSesion } from '../modulos/auth/casos-de-uso/obtenerUsuarioDeSesion.js';
@@ -7,11 +7,20 @@ import type { ConsultaViajes } from '../modulos/viajes/dominio/puertos.js';
 
 export const NOMBRE_COOKIE_SESION = 'sesion';
 
+/**
+ * Token de la cookie de sesión. `cookie-parser` convierte en objeto una cookie que empieza con
+ * `j:`; como el token siempre es texto, cualquier otra cosa se toma como si no hubiera sesión.
+ */
+export function tokenDeSesion(req: Request): string | undefined {
+  const valor: unknown = req.cookies?.[NOMBRE_COOKIE_SESION];
+  return typeof valor === 'string' ? valor : undefined;
+}
+
 /** Exige una sesión vigente y deja el usuario en `req.usuarioId`. */
 export function autenticado(obtenerUsuario: ObtenerUsuarioDeSesion): RequestHandler {
   return async (req, _res, next) => {
     try {
-      req.usuarioId = await obtenerUsuario.ejecutar(req.cookies?.[NOMBRE_COOKIE_SESION]);
+      req.usuarioId = await obtenerUsuario.ejecutar(tokenDeSesion(req));
       next();
     } catch (error) {
       next(error);

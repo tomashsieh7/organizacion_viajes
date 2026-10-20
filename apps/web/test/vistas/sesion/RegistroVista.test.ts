@@ -40,6 +40,27 @@ describe('RegistroVista', () => {
     expect(vista.text()).toContain('Esa contraseña es demasiado común; elegí otra');
   });
 
+  it('RN-S7: rechaza nombres invisibles o con caracteres de control sin llamar a la API', async () => {
+    const { vista, registrarse } = montar();
+    for (const [nombre, mensaje] of [
+      ['\u200b\u200b', 'Ingresá tu nombre'],
+      ['Ana\u0000', 'Tiene caracteres que no se pueden usar'],
+      ['Ana\u202Eetsil', 'Tiene caracteres que no se pueden usar'],
+    ]) {
+      await vista.find('#nombre').setValue(nombre);
+      await vista.find('form').trigger('submit');
+      expect(vista.find('#nombre-error').text()).toContain(mensaje);
+    }
+    await vista.find('#apodo').setValue('\u200b');
+    await vista.find('form').trigger('submit');
+    expect(vista.find('#apodo-error').text()).toContain('Usá letras, números o símbolos');
+    expect(registrarse).not.toHaveBeenCalled();
+  });
+
+  it('el email admite hasta 254 caracteres', () => {
+    expect(montar().vista.find('#email').attributes('maxlength')).toBe('254');
+  });
+
   it('con datos válidos crea la cuenta y lleva a la lista de viajes', async () => {
     const { vista, registrarse } = montar();
     await completar(vista, 'una-clave-segura');

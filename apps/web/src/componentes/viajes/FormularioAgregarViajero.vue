@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { esquemaAgregarViajero } from '@viajes/compartido';
+import { LARGOS_MAXIMOS, esquemaAgregarViajero } from '@viajes/compartido';
 import AvisoMensaje from '../base/AvisoMensaje.vue';
 import { mensajeDeError } from '../../clientes/http';
 import { useViajeStore } from '../../stores/viajes';
@@ -36,7 +36,13 @@ async function agregar() {
   <form class="agregar" novalidate @submit.prevent="agregar">
     <label for="agregar-email">Agregar a alguien registrado, por su email</label>
     <div class="fila">
-      <input id="agregar-email" v-model="email" type="email" placeholder="persona@mail.com" />
+      <input
+        id="agregar-email"
+        v-model="email"
+        type="email"
+        :maxlength="LARGOS_MAXIMOS.email"
+        placeholder="persona@mail.com"
+      />
       <button type="submit" class="boton boton--principal" :disabled="enviando">Agregar</button>
     </div>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>

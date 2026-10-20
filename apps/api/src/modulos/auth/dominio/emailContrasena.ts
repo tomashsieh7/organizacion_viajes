@@ -17,6 +17,13 @@ export function normalizarEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/**
+ * RN-S1: una letra con tilde puede llegar como un solo carácter o como la letra más la tilde,
+ * según el dispositivo. Se lleva siempre a la primera forma (NFC) para que la misma contraseña
+ * sirva desde cualquier lado.
+ */
+const unificar = (contrasena: string) => contrasena.normalize('NFC');
+
 const credencialesInvalidas = () =>
   new ErrorDeDominio(
     'NO_AUTENTICADO',
@@ -36,14 +43,15 @@ export class EmailContrasena {
 
   /** RN-S1 y RN-S2: rechaza contraseñas comunes y guarda el email normalizado. */
   async registrar(datos: DatosRegistroEmail): Promise<Cuenta> {
-    if (esContrasenaComun(datos.password)) {
+    const password = unificar(datos.password);
+    if (esContrasenaComun(password)) {
       throw new ErrorDeDominio(
         'VALIDACION',
         'CONTRASENA_COMUN',
         'Esa contraseña es demasiado común; elegí otra',
       );
     }
-    const secretoHash = await this.hasheador.hashear(datos.password);
+    const secretoHash = await this.hasheador.hashear(password);
     try {
       return await this.cuentas.crear({
         nombre: datos.nombre,
@@ -71,7 +79,7 @@ export class EmailContrasena {
   async autenticar(datos: DatosEmailContrasena): Promise<string> {
     const credencial = await this.cuentas.buscarCredencial(this.tipo, normalizarEmail(datos.email));
     const hash = credencial?.secretoHash ?? (await this.obtenerHashFicticio());
-    const valida = await this.hasheador.verificar(hash, datos.password);
+    const valida = await this.hasheador.verificar(hash, unificar(datos.password));
     if (!credencial || !valida) throw credencialesInvalidas();
     return credencial.usuarioId;
   }

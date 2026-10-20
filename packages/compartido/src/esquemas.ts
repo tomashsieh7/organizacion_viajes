@@ -26,14 +26,10 @@ export function unAnioDespues(fecha: string): string {
 export const CONTRASENA_MIN = 8;
 export const CONTRASENA_MAX = 128;
 
-export const esquemaEmail = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .pipe(z.email('Ingresá un email válido'));
-
 /** Largos máximos de los textos; la web los usa también como `maxlength` de cada campo. */
 export const LARGOS_MAXIMOS = {
+  // El máximo que admite una dirección de email (RFC 5321).
+  email: 254,
   nombrePersona: 80,
   apodo: 40,
   nombreViaje: 80,
@@ -45,6 +41,24 @@ export const LARGOS_MAXIMOS = {
 
 const hasta = (n: number) => `Puede tener hasta ${n} caracteres`;
 
+/**
+ * RN-S7: caracteres de control (como el nulo o el salto de línea) y los que invierten la
+ * dirección del texto, con los que un nombre puede verse como otro.
+ */
+const PROHIBIDOS = /[\p{Cc}\u202A-\u202E\u2066-\u2069]/u;
+const sinCaracteresProhibidos = (v: string) => !PROHIBIDOS.test(v);
+const CARACTERES_PROHIBIDOS = 'Tiene caracteres que no se pueden usar';
+
+/** RN-S7: tiene al menos una letra, número, signo o símbolo (los emojis entre ellos). */
+const seVe = (v: string) => /[\p{L}\p{N}\p{P}\p{S}]/u.test(v);
+
+export const esquemaEmail = z
+  .string()
+  .trim()
+  .max(LARGOS_MAXIMOS.email, hasta(LARGOS_MAXIMOS.email))
+  .toLowerCase()
+  .pipe(z.email('Ingresá un email válido'));
+
 export const esquemaRegistro = z.object({
   email: esquemaEmail,
   password: z
@@ -54,9 +68,16 @@ export const esquemaRegistro = z.object({
   nombre: z
     .string()
     .trim()
-    .min(1, 'Ingresá tu nombre')
-    .max(LARGOS_MAXIMOS.nombrePersona, hasta(LARGOS_MAXIMOS.nombrePersona)),
-  apodo: z.string().trim().max(LARGOS_MAXIMOS.apodo, hasta(LARGOS_MAXIMOS.apodo)).optional(),
+    .max(LARGOS_MAXIMOS.nombrePersona, hasta(LARGOS_MAXIMOS.nombrePersona))
+    .refine(sinCaracteresProhibidos, CARACTERES_PROHIBIDOS)
+    .refine(seVe, 'Ingresá tu nombre'),
+  apodo: z
+    .string()
+    .trim()
+    .max(LARGOS_MAXIMOS.apodo, hasta(LARGOS_MAXIMOS.apodo))
+    .refine(sinCaracteresProhibidos, CARACTERES_PROHIBIDOS)
+    .refine((v) => v === '' || seVe(v), 'Usá letras, números o símbolos, o dejalo vacío')
+    .optional(),
 });
 export type DatosRegistro = z.input<typeof esquemaRegistro>;
 

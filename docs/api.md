@@ -37,9 +37,9 @@ Referencia completa de la API del MVP, revisada al cierre de F9. El diseño est�
 
 | Método y ruta | Cuerpo | Respuesta | Errores específicos |
 |---|---|---|---|
-| `POST /api/auth/registro` | `{ email, password, nombre, apodo? }`; contraseña de 8 a 128 caracteres | `201 { usuario }` y cookie de sesión | 400 `CONTRASENA_COMUN`, 409 `EMAIL_EN_USO`, 429 (10 registros por hora por IP) |
-| `POST /api/auth/sesion` | `{ email, password }` | `200 { usuario }` y cookie de sesión | 401 `CREDENCIALES_INVALIDAS` (mismo mensaje exista o no el email), 429 tras 5 intentos fallidos por email o por IP en 15 minutos |
-| `DELETE /api/auth/sesion` | — | `204` y borra la cookie; la sesión queda revocada | — |
+| `POST /api/auth/registro` | `{ email, password, nombre, apodo? }`; email de hasta 254 caracteres; contraseña de 8 a 128 caracteres; nombre y apodo sin caracteres de control ni invisibles del todo (RN-S7) | `201 { usuario }` y cookie de sesión | 400 `CONTRASENA_COMUN`, 409 `EMAIL_EN_USO`, 429 (10 registros por hora por IP) |
+| `POST /api/auth/sesion` | `{ email, password }` | `200 { usuario }` y cookie de sesión | 401 `CREDENCIALES_INVALIDAS` (mismo mensaje exista o no el email), 429 tras 5 intentos fallidos por email o por IP en 15 minutos. La IP es la que informa el proxy de la web en `X-Forwarded-For`, que solo se acepta si el pedido llega desde la misma máquina |
+| `DELETE /api/auth/sesion` | — | `204` y borra la cookie; la sesión queda revocada y se cortan sus conexiones de Socket.IO | — |
 | `GET /api/auth/yo` | — | `200 { usuario }` | 401 |
 
 `usuario` es `{ id, nombre, apodo }`.
@@ -124,7 +124,7 @@ Cada mensaje es `{ id, viajeId, autor: { id, nombre, apodo }, contenido, enviado
 
 ### Socket.IO
 
-Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exige el encabezado `Origin` de la aplicación y la cookie de sesión, y los rechaza con `ORIGEN_NO_PERMITIDO` o `NO_AUTENTICADO` en el error de conexión. Además, cada evento vuelve a validar la sesión: si se cerró o venció, responde `NO_AUTENTICADO` y corta la conexión.
+Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exige el encabezado `Origin` de la aplicación y la cookie de sesión, y los rechaza con `ORIGEN_NO_PERMITIDO` o `NO_AUTENTICADO` en el error de conexión. Al cerrarse una sesión, el servidor corta en el momento las conexiones abiertas con ella; el cliente recibe la desconexión con motivo `io server disconnect` y vuelve al ingreso. Además, cada evento vuelve a validar la sesión: si venció, responde `NO_AUTENTICADO` y corta la conexión.
 
 | Evento | Sentido | Carga | Confirmación y reglas |
 |---|---|---|---|

@@ -23,6 +23,7 @@ export function conectarTiempoReal(servidor: ServidorHttp, c: Contenedor): Serve
     origenPermitido: c.config.ORIGEN_WEB,
     nombreCookie: NOMBRE_COOKIE_SESION,
     usuarioDeSesion: (token) => c.auth.obtenerUsuarioDeSesion.ejecutar(token),
+    hashDeToken: c.auth.hashDeToken,
     unirse: c.chat.unirse,
     enviar: c.chat.enviar,
   });

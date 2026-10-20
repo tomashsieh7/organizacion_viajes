@@ -69,6 +69,10 @@ class ConexionSocketIO implements ConexionChat {
       oyentes.membresiaFinalizada(a);
     });
     socket.on('viaje:admin-cambiado', (a) => oyentes.adminCambiado(a));
+    // El servidor solo corta la conexión cuando la sesión se cerró o venció (RN-S5).
+    socket.on('disconnect', (motivo) => {
+      if (motivo === 'io server disconnect') avisarSiSePerdioLaSesion('NO_AUTENTICADO');
+    });
     socket.io.on('reconnect', async () => {
       for (const v of this.viajes) await this.unirse(v).catch(() => this.viajes.delete(v));
       oyentes.reconectado();

@@ -23,6 +23,7 @@ describe('IngresoVista', () => {
     await vista.find('form').trigger('submit');
     expect(ingresar).not.toHaveBeenCalled();
     expect(vista.text()).toContain('Ingresá un email válido');
+    expect(vista.find('#email').attributes('maxlength')).toBe('254');
   });
 
   it('muestra el mensaje de la API cuando las credenciales no son válidas', async () => {

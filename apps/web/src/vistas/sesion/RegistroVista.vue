@@ -75,6 +75,7 @@ async function enviar() {
         <input
           id="email"
           v-model="datos.email"
+          :maxlength="LARGOS_MAXIMOS.email"
           name="email"
           type="email"
           autocomplete="email"

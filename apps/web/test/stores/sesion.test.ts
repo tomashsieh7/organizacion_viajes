@@ -11,11 +11,14 @@ import {
 } from '../soporte/clientesFalsos';
 
 /** Monta un componente vacío para que el store se cree con los clientes inyectados. */
-function storeCon(yo: () => Promise<typeof ANA | null>) {
+function storeCon(
+  yo: () => Promise<typeof ANA | null>,
+  cerrarSesion: () => Promise<void> = async () => {},
+) {
   let store!: ReturnType<typeof useSesionStore>;
   mount(
     defineComponent({ setup: () => ((store = useSesionStore()), () => h('div')) }),
-    montaje(clienteAuthFalso({ yo }), clienteViajesFalso()),
+    montaje(clienteAuthFalso({ yo, cerrarSesion }), clienteViajesFalso()),
   );
   return store;
 }
@@ -46,9 +49,24 @@ describe('useSesionStore', () => {
     const yo = vi.fn().mockResolvedValue(ANA);
     const store = storeCon(yo);
     await store.cargar();
-    store.perder();
+    expect(store.perder()).toBe(true);
+    expect(store.perder()).toBe(false);
     await store.cargar();
     expect(store.autenticado).toBe(false);
     expect(yo).toHaveBeenCalledTimes(1);
+  });
+
+  it('RN-S5: cerrar la sesión a propósito no cuenta como perderla, aunque el chat se corte antes', async () => {
+    let responder!: () => void;
+    const store = storeCon(
+      vi.fn().mockResolvedValue(ANA),
+      () => new Promise<void>((listo) => (responder = listo)),
+    );
+    await store.cargar();
+    const cierre = store.cerrarSesion();
+    expect(store.perder()).toBe(false);
+    responder();
+    await cierre;
+    expect(store.autenticado).toBe(false);
   });
 });
