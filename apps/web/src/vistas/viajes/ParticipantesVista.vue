@@ -7,7 +7,7 @@ import DialogoSalir from '../../componentes/viajes/DialogoSalir.vue';
 import DialogoTraspaso from '../../componentes/viajes/DialogoTraspaso.vue';
 import FormularioAgregarViajero from '../../componentes/viajes/FormularioAgregarViajero.vue';
 import ListaParticipantes from '../../componentes/viajes/ListaParticipantes.vue';
-import { mensajeDeError } from '../../clientes/http';
+import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { useCarga } from '../../composables/useCarga';
 import { useSesionStore } from '../../stores/sesion';
 import { useViajeStore } from '../../stores/viajes';
@@ -35,7 +35,12 @@ async function confirmarEliminacion() {
       ? `Se eliminó a ${p.nombre}. Tenía deudas pendientes: se conservó su historial de gastos y deudas.`
       : `Se eliminó a ${p.nombre}.`;
   } catch (e) {
-    error.value = mensajeDeError(e);
+    // Si la respuesta se perdió, la baja pudo haberse hecho igual: la lista se vuelve a pedir
+    // para mostrar cómo quedó. Si ya no participaba, no es un error para quien eliminaba.
+    if (e instanceof ErrorDeApi && e.codigo === 'NO_ENCONTRADO') {
+      aviso.value = `${p.nombre} ya no está en el grupo.`;
+    } else error.value = mensajeDeError(e);
+    await store.refrescar().catch(() => undefined);
   } finally {
     aEliminar.value = null;
     eliminando.value = false;
