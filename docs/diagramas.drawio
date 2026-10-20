@@ -947,7 +947,7 @@
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="pool_border" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=light-dark(#000000,#FFFFFF);" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="20" y="30" width="860" height="1470" />
+          <mxGeometry as="geometry" x="20" y="30" width="860" height="1750" />
         </mxCell>
         <mxCell id="lane_title_0" value="Viajero" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=14;strokeColor=light-dark(#000000,#FFFFFF);" vertex="1" parent="1">
           <mxGeometry as="geometry" x="20" y="30" width="300" height="30" />
@@ -958,7 +958,7 @@
         <mxCell id="lane_sep_1" style="endArrow=none;html=1;strokeColor=light-dark(#000000,#FFFFFF);" edge="1" parent="1">
           <mxGeometry as="geometry" relative="1">
             <mxPoint x="320" y="30" as="sourcePoint" />
-            <mxPoint x="320" y="1500" as="targetPoint" />
+            <mxPoint x="320" y="1780" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="sal-1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=light-dark(#000000,#FFFFFF);" vertex="1" parent="1">
@@ -998,31 +998,31 @@
           <mxGeometry as="geometry" x="585" y="780" width="30" height="30" />
         </mxCell>
         <mxCell id="sal-12" value="Confirma la salida" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="60" y="820" width="220" height="60" />
+          <mxGeometry as="geometry" x="60" y="1100" width="220" height="60" />
         </mxCell>
         <mxCell id="sal-13" value="Transfiere la administración&lt;br&gt;al sucesor, si lo eligió" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="490" y="900" width="220" height="60" />
+          <mxGeometry as="geometry" x="490" y="1180" width="220" height="60" />
         </mxCell>
         <mxCell id="sal-14" value="Conserva su historial y retira sus&lt;br&gt;votos en propuestas pendientes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="490" y="990" width="220" height="60" />
+          <mxGeometry as="geometry" x="490" y="1270" width="220" height="60" />
         </mxCell>
         <mxCell id="sal-15" value="Registra su salida del viaje" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="490" y="1080" width="220" height="60" />
+          <mxGeometry as="geometry" x="490" y="1360" width="220" height="60" />
         </mxCell>
         <mxCell id="sal-16" value="¿tiene saldos pendientes&lt;br&gt;a favor o en contra?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="490" y="1170" width="220" height="80" />
+          <mxGeometry as="geometry" x="490" y="1450" width="220" height="80" />
         </mxCell>
         <mxCell id="sal-17" value="Le deja acceso solo a la&lt;br&gt;sección de saldos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="650" y="1290" width="200" height="60" />
+          <mxGeometry as="geometry" x="650" y="1570" width="200" height="60" />
         </mxCell>
         <mxCell id="sal-18" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="585" y="1380" width="30" height="30" />
+          <mxGeometry as="geometry" x="585" y="1660" width="30" height="30" />
         </mxCell>
         <mxCell id="sal-19" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=light-dark(#000000,#FFFFFF);" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="155" y="1430" width="30" height="30" />
+          <mxGeometry as="geometry" x="155" y="1710" width="30" height="30" />
         </mxCell>
         <mxCell id="sal-19_inner" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=light-dark(#000000,#FFFFFF);" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="162" y="1437" width="16" height="16" />
+          <mxGeometry as="geometry" x="162" y="1717" width="16" height="16" />
         </mxCell>
         <mxCell id="sal-20" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-1" target="sal-2">
           <mxGeometry as="geometry" relative="1" />
@@ -1081,17 +1081,13 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="sal-32" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-11" target="sal-12">
-          <mxGeometry as="geometry" relative="1">
-            <Array as="points">
-              <mxPoint x="170" y="795" />
-            </Array>
-          </mxGeometry>
+        <mxCell id="sal-32" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-11" target="sal-41">
+          <mxGeometry as="geometry" relative="1" />
         </mxCell>
         <mxCell id="sal-33" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-12" target="sal-13">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="600" y="850" />
+              <mxPoint x="600" y="1130" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -1107,7 +1103,7 @@
         <mxCell id="sal-37" value="sí" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-16" target="sal-17">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="750" y="1210" />
+              <mxPoint x="750" y="1490" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -1117,15 +1113,48 @@
         <mxCell id="sal-39" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-17" target="sal-18">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="750" y="1395" />
+              <mxPoint x="750" y="1675" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="sal-40" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-18" target="sal-19">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="400" y="1395" />
-              <mxPoint x="400" y="1445" />
+              <mxPoint x="400" y="1675" />
+              <mxPoint x="400" y="1725" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sal-41" value="¿le deben plata?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="490" y="840" width="220" height="80" />
+        </mxCell>
+        <mxCell id="sal-42" value="Muestra cuánto le deben y que&lt;br&gt;lo sigue viendo en saldos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="960" width="200" height="60" />
+        </mxCell>
+        <mxCell id="sal-43" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="585" y="1050" width="30" height="30" />
+        </mxCell>
+        <mxCell id="sal-44" value="sí" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-41" target="sal-42">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="750" y="880" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sal-45" value="no" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-41" target="sal-43">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="sal-46" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-42" target="sal-43">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="750" y="1065" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sal-47" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="sal-43" target="sal-12">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="170" y="1065" />
             </Array>
           </mxGeometry>
         </mxCell>

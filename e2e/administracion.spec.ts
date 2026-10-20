@@ -57,3 +57,26 @@ test('RN-E4: a quien el Admin quita con el viaje abierto vuelve a la lista con u
   await tomas.page.getByRole('link', { name: '← Volver a mis grupos' }).click();
   await expect(tomas.page).toHaveURL(/\/viajes$/);
 });
+
+test('CU03: si se pierde la respuesta al eliminar, la lista muestra que la persona ya no está', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const carla = await nuevoViajero(browser, 'Carla');
+  const viajeId = await viajeCon(ana, carla);
+  const p = ana.page;
+  let primera = true;
+  // El servidor elimina a Carla, pero la respuesta no llega, como con mala señal.
+  await p.route(`**/participantes/${carla.id}`, async (r) => {
+    if (r.request().method() !== 'DELETE' || !primera) return r.continue();
+    primera = false;
+    await r.fetch();
+    await r.abort('connectionreset');
+  });
+  await p.goto(`/viajes/${viajeId}/participantes`);
+  await p.getByRole('button', { name: 'Eliminar a Carla' }).click();
+  await p.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click();
+  await expect(p.getByText('No se pudo contactar al servidor')).toBeVisible();
+  await expect(p.getByRole('button', { name: 'Eliminar a Carla' })).toHaveCount(0);
+  await expect(p.locator('li', { hasText: 'Carla' })).toHaveCount(0);
+});

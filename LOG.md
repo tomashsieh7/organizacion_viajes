@@ -1988,3 +1988,25 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - El usuario confirmó que las pruebas de regresión de cada arreglo, en las partes 1 y 2, eran las que pedía.
 - **Documentación:** PLAN.md (RN-X7, RN-X8 nueva, CU01, CU02 y D6) y `docs/api.md`.
 - **Verificación:** lint, cobertura con sus mínimos, 371 pruebas de la API, 243 de la web y 16 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-20 19:02 — Merge del PR #40
+
+- Con la autorización del usuario ("Si"), el PR #40 ("Crear grupo y agregar viajeros: textos válidos, sin duplicados, límite de emails y fechas razonables") se mergeó a `main` en `35e8346`, fijando la cabeza verificada `4dbcfbb`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-20 20:10 — Testing intensivo de eliminar participantes, salir y traspaso
+
+- **Pedido del usuario:** seguir con la funcionalidad 3 con la regla 7.2. El usuario eligió corregir los dos hallazgos, aprobó el plan y eligió mostrar también lo que le deben a quien sale (opción A), que agrega un paso al diagrama "Saliendo del grupo".
+- **Probado sin hallazgos:**
+  - permisos y bordes de eliminar, salir y transferir;
+  - ocho repeticiones de cuatro carreras: traspaso mientras el elegido sale, salida del Admin con sucesor mientras el sucesor sale, eliminar mientras la persona sale, paga y le anotan un gasto, y traspaso mientras el Admin sale con otro sucesor. Siempre quedó un Admin activo y la invariante de saldos se cumplió;
+  - 30 salidas simultáneas con un traspaso;
+  - acceso solo a saldos tras la baja con saldos a favor o en contra, y su pérdida al quedar en cero;
+  - traspaso visto en vivo en otra pestaña y por el nuevo Admin;
+  - salida con la respuesta perdida, que el aviso en tiempo real resuelve;
+  - pantallas a 360 px.
+- **Hallazgos y arreglos:**
+  1. **`DialogoSalir` usaba la deuda cargada al abrir el viaje.** Con un gasto anotado después, no la mostraba, y tampoco avisaba cuando a quien sale le deben. Ahora consulta los saldos con `useGastosStore().cargarDeudas()` al abrirse, no deja confirmar hasta tenerlos (con «Reintentar» si fallan) y muestra lo que debe y lo que le deben (RN-E7).
+  2. **Eliminar con la respuesta perdida dejaba a la persona en la lista**, y reintentar decía «Esa persona no participa del viaje». `ParticipantesVista` vuelve a pedir la lista ante cualquier error, y si la respuesta es `NO_ENCONTRADO` avisa que la persona ya no está en el grupo.
+- **Testing intensivo de los arreglos:** el diálogo en celular con saldos lentos (botón desactivado mientras consulta), con deuda y saldo a favor a la vez, y con un Admin que sale con deuda eligiendo sucesor. Cada prueba nueva falla sin su arreglo.
+- **Documentación:** PLAN.md (RN-E7 y la pantalla de participantes). Con la confirmación del usuario, `docs/diagramas.drawio` (página "Saliendo del grupo") suma la decisión «¿le deben plata?» y la acción «Muestra cuánto le deben y que lo sigue viendo en saldos» antes de «Confirma la salida»; el resto de la página baja 280 px. Se editó el XML de esa página a mano, porque el archivo tiene varias páginas y la conversión del skill de diagramas lo reescribiría entero.
+- **Verificación:** lint, cobertura con sus mínimos, 371 pruebas de la API, 247 de la web y 17 e2e en verde.
