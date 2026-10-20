@@ -67,6 +67,9 @@ describe('DialogoNuevoViaje (CU01)', () => {
     await pasoUno(dialogo);
     await pasoDos(dialogo);
     expect(crear).toHaveBeenCalledWith({
+      id: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      ),
       nombre: 'Bariloche 2026',
       destino: 'Bariloche, Argentina',
       fechaInicio: '2026-12-10',
@@ -88,6 +91,57 @@ describe('DialogoNuevoViaje (CU01)', () => {
     await flushPromises();
     expect(dialogo.text()).toContain('Un viaje puede durar hasta un año');
     expect(crear).not.toHaveBeenCalled();
+  });
+
+  it('las fechas vacías piden elegir una, y los campos solo ofrecen del año 2000 al 2100', async () => {
+    const { dialogo } = montar();
+    await flushPromises();
+    await pasoUno(dialogo);
+    await dialogo.find('form').trigger('submit');
+    expect(dialogo.find('#viaje-inicio-error').text()).toContain('Elegí una fecha');
+    expect(dialogo.find('#viaje-fin-error').text()).toContain('Elegí una fecha');
+    expect(dialogo.find('#viaje-inicio').attributes()).toMatchObject({
+      min: '2000-01-01',
+      max: '2100-12-31',
+    });
+    await dialogo.find('#viaje-inicio').setValue('2100-06-01');
+    expect(dialogo.find('#viaje-fin').attributes('max')).toBe('2100-12-31');
+    await dialogo.find('#viaje-inicio').setValue('0026-12-10');
+    await dialogo.find('form').trigger('submit');
+    expect(dialogo.find('#viaje-inicio-error').text()).toContain(
+      'Elegí una fecha entre el año 2000 y el 2100',
+    );
+  });
+
+  it('RN-X8: un carácter prohibido en el país se marca en el país', async () => {
+    const { dialogo, crear } = montar();
+    await flushPromises();
+    await pasoUno(dialogo, 'Argentina\u202E');
+    expect(dialogo.find('#viaje-pais-error').text()).toContain(
+      'Tiene caracteres que no se pueden usar',
+    );
+    expect(dialogo.find('#viaje-ciudad-error').exists()).toBe(false);
+    await dialogo.find('#viaje-nombre').setValue('\u200b');
+    await dialogo.find('form').trigger('submit');
+    expect(dialogo.find('#viaje-nombre-error').text()).toContain('Ingresá un nombre');
+    expect(crear).not.toHaveBeenCalled();
+  });
+
+  it('si la respuesta de crear se pierde, el reintento manda el mismo id', async () => {
+    const crear = vi
+      .fn()
+      .mockRejectedValueOnce(new ErrorDeApi(0, 'SIN_CONEXION', 'No se pudo contactar al servidor'))
+      .mockResolvedValueOnce(detalle('ADMIN'));
+    const { dialogo } = montar(crear);
+    await flushPromises();
+    await pasoUno(dialogo);
+    await pasoDos(dialogo);
+    expect(dialogo.text()).toContain('No se pudo contactar al servidor');
+    await dialogo.find('form').trigger('submit');
+    await flushPromises();
+    expect(dialogo.text()).toContain('Paso 3 de 3');
+    const [primero, segundo] = crear.mock.calls.map((c) => (c[0] as { id: string }).id);
+    expect(segundo).toBe(primero);
   });
 
   it('sin país, el destino es solo la ciudad', async () => {

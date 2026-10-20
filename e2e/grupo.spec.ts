@@ -1,4 +1,4 @@
-import { expect, nuevoViajero, test } from './soporte/fixtures.js';
+import { api, expect, nuevoViajero, test } from './soporte/fixtures.js';
 
 test('CU01 y CU02: registrarse, crear un grupo de viaje y agregar a un viajero', async ({
   page,
@@ -44,4 +44,33 @@ test('CU01 y CU02: registrarse, crear un grupo de viaje y agregar a un viajero',
   // El viajero agregado ve el grupo en su lista.
   await tomas.page.goto('/viajes');
   await expect(tomas.page.getByText('Bariloche 2026')).toBeVisible();
+});
+
+test('CU01: si la respuesta de crear se pierde y se reintenta, queda un solo grupo', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const p = ana.page;
+  let primera = true;
+  // El servidor crea el viaje, pero la respuesta no llega, como con mala señal.
+  await p.route('**/api/viajes', async (r) => {
+    if (r.request().method() !== 'POST' || !primera) return r.continue();
+    primera = false;
+    await r.fetch();
+    await r.abort('connectionreset');
+  });
+  await p.goto('/viajes');
+  await p.getByRole('button', { name: 'Nuevo grupo' }).click();
+  await p.fill('#viaje-nombre', 'Con mala señal');
+  await p.fill('#viaje-ciudad', 'Bariloche');
+  await p.getByRole('button', { name: 'Siguiente' }).click();
+  await p.fill('#viaje-inicio', '2026-12-10');
+  await p.fill('#viaje-fin', '2026-12-16');
+  await p.getByRole('button', { name: 'Crear viaje' }).click();
+  await expect(p.getByText('No se pudo contactar al servidor')).toBeVisible();
+  await p.getByRole('button', { name: 'Crear viaje' }).click();
+  await expect(p.getByText('Paso 3 de 3')).toBeVisible();
+
+  const { viajes } = await api<{ viajes: { nombre: string }[] }>(ana, 'GET', '/viajes');
+  expect(viajes.filter((v) => v.nombre === 'Con mala señal')).toHaveLength(1);
 });

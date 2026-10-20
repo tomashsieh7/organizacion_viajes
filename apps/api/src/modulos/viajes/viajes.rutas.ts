@@ -7,6 +7,7 @@ import {
   type RespuestaBaja,
 } from '@viajes/compartido';
 import { parametroUuid, soloAdmin } from '../../middlewares/acceso.js';
+import { limiteDeEmailsSinCuenta } from '../../middlewares/seguridad.js';
 import { validar } from '../../middlewares/validar.js';
 import type { AgregarViajero } from './casos-de-uso/agregarViajero.js';
 import type { ConsultarViajes } from './casos-de-uso/consultarViajes.js';
@@ -74,12 +75,22 @@ export function rutasDelViaje(deps: Omit<DependenciasRutasViajes, 'autenticado'>
     res.json({ participantes: await deps.consultar.participantes(viajeId(req)) });
   });
 
-  viaje.post('/participantes', soloAdmin, validar(esquemaAgregarViajero), async (req, res) => {
-    const nuevoId = await deps.agregarViajero.ejecutar(viajeId(req), usuario(req), req.body.email);
-    res
-      .status(201)
-      .json({ participante: await deps.consultar.participante(viajeId(req), nuevoId) });
-  });
+  viaje.post(
+    '/participantes',
+    soloAdmin,
+    limiteDeEmailsSinCuenta(),
+    validar(esquemaAgregarViajero),
+    async (req, res) => {
+      const nuevoId = await deps.agregarViajero.ejecutar(
+        viajeId(req),
+        usuario(req),
+        req.body.email,
+      );
+      res
+        .status(201)
+        .json({ participante: await deps.consultar.participante(viajeId(req), nuevoId) });
+    },
+  );
 
   viaje.delete(
     '/participantes/:usuarioId',

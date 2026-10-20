@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import {
+  CARACTERES_PROHIBIDOS,
+  FECHA_MAXIMA_VIAJE,
+  FECHA_MINIMA_VIAJE,
   LARGOS_MAXIMOS,
   esquemaViajeNuevo,
+  sinCaracteresProhibidos,
   unAnioDespues,
   type DatosViajeNuevo,
 } from '@viajes/compartido';
@@ -14,6 +18,7 @@ import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { useViajeStore } from '../../stores/viajes';
 import { useValidacion } from '../../composables/useValidacion';
 import { problemasSegun } from '../../utiles/formularios';
+import { uuidAlAzar } from '../../utiles/idTemporal';
 
 /**
  * CU01 en tres pasos: dónde, cuándo y con quién. El viaje se crea al terminar el segundo; el
@@ -30,10 +35,12 @@ const LARGO_PAIS = LARGOS_MAXIMOS.destino - LARGO_CIUDAD - 2;
 
 /** Los campos que se validan en cada paso; el destino se carga como ciudad y país. */
 const CAMPOS: Record<1 | 2, string[]> = {
-  1: ['nombre', 'ciudad'],
+  1: ['nombre', 'ciudad', 'pais'],
   2: ['fechaInicio', 'fechaFin', 'monedaCodigo'],
 };
 
+/** Identifica este intento de crear el viaje: si la respuesta se pierde, reintentar no lo duplica. */
+const idDelViaje = uuidAlAzar();
 const paso = ref<Paso>(1);
 const titulo = ref<HTMLElement | null>(null);
 const viajeId = ref('');
@@ -48,6 +55,7 @@ const datos = reactive({
 
 /** Lo que recibe la API: el destino es "Ciudad, País", o solo la ciudad si no hay país. */
 const viajeNuevo = computed<DatosViajeNuevo>(() => ({
+  id: idDelViaje,
   nombre: datos.nombre,
   destino: [datos.ciudad.trim(), datos.pais.trim()].filter(Boolean).join(', '),
   fechaInicio: datos.fechaInicio,
@@ -55,13 +63,23 @@ const viajeNuevo = computed<DatosViajeNuevo>(() => ({
   monedaCodigo: datos.monedaCodigo,
 }));
 
-/** Los errores del destino se muestran en la ciudad, que es el campo obligatorio. */
-const aCampos = (errores: Record<string, string>) =>
-  Object.fromEntries(
+/**
+ * Los errores del destino se muestran en la ciudad, que es el campo obligatorio, salvo los
+ * caracteres prohibidos del país, que se marcan en el país (RN-X8).
+ */
+const aCampos = (errores: Record<string, string>) => {
+  const porCampo = Object.fromEntries(
     Object.entries(errores).map(([c, m]) =>
       c === 'destino' ? ['ciudad', datos.ciudad.trim() ? m : 'Ingresá la ciudad'] : [c, m],
     ),
   );
+  if (!sinCaracteresProhibidos(datos.pais)) {
+    porCampo['pais'] = CARACTERES_PROHIBIDOS;
+    if (sinCaracteresProhibidos(datos.ciudad) && porCampo['ciudad'] === CARACTERES_PROHIBIDOS)
+      delete porCampo['ciudad'];
+  }
+  return porCampo;
+};
 
 const { errores, alSalir, validarTodo, aria } = useValidacion(() => {
   if (paso.value === 3) return {};
@@ -74,6 +92,13 @@ const { errores, alSalir, validarTodo, aria } = useValidacion(() => {
 }, datos);
 const error = ref('');
 const enviando = ref(false);
+
+/** RN-X7: hasta un año después del inicio, sin pasar el último día admitido. */
+const ultimoDiaPosible = computed(() => {
+  if (!datos.fechaInicio) return FECHA_MAXIMA_VIAJE;
+  const unAnio = unAnioDespues(datos.fechaInicio);
+  return unAnio < FECHA_MAXIMA_VIAJE ? unAnio : FECHA_MAXIMA_VIAJE;
+});
 
 onMounted(() => store.cargarMonedas().catch((e) => (error.value = mensajeDeError(e))));
 
@@ -155,9 +180,10 @@ function cerrar() {
               autocomplete="off"
             />
           </CampoFormulario>
-          <CampoFormulario id="viaje-pais" etiqueta="País (opcional)">
+          <CampoFormulario id="viaje-pais" etiqueta="País (opcional)" :error="errores['pais']">
             <input
               id="viaje-pais"
+              v-bind="aria('pais', 'viaje-pais')"
               v-model="datos.pais"
               :maxlength="LARGO_PAIS"
               name="pais"
@@ -177,6 +203,8 @@ function cerrar() {
               v-model="datos.fechaInicio"
               name="fechaInicio"
               type="date"
+              :min="FECHA_MINIMA_VIAJE"
+              :max="FECHA_MAXIMA_VIAJE"
             />
           </CampoFormulario>
           <CampoFormulario id="viaje-fin" etiqueta="Hasta" :error="errores['fechaFin']">
@@ -186,8 +214,8 @@ function cerrar() {
               v-model="datos.fechaFin"
               name="fechaFin"
               type="date"
-              :min="datos.fechaInicio"
-              :max="datos.fechaInicio ? unAnioDespues(datos.fechaInicio) : undefined"
+              :min="datos.fechaInicio || FECHA_MINIMA_VIAJE"
+              :max="ultimoDiaPosible"
             />
           </CampoFormulario>
         </div>
