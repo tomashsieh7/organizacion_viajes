@@ -150,6 +150,15 @@ describe('CU20: anotar gasto', () => {
     expect(await db.gasto.count()).toBe(0);
   });
 
+  it('un gasto que haría superar el monto máximo a una deuda se rechaza sin guardar nada', async () => {
+    const maximo = Number.MAX_SAFE_INTEGER;
+    expect((await gasto(ana.c, { monto: maximo, deudores: [tomas.id] })).status).toBe(201);
+    const r = await gasto(ana.c, { monto: maximo, deudores: [tomas.id] });
+    expect([r.status, r.body.error.codigo]).toEqual([422, 'MONTO_DEMASIADO_GRANDE']);
+    expect(await db.gasto.count()).toBe(1);
+    expect(await deudas(tomas.c, 'deudor')).toEqual([['Ana', maximo]]);
+  });
+
   it('D18: gastos simultáneos sobre el mismo par dejan el saldo correcto', async () => {
     const respuestas = await Promise.all([
       gasto(ana.c, { monto: 300, deudores: [tomas.id] }),
@@ -189,6 +198,21 @@ describe('CU20: anotar gasto', () => {
       const respuestas = await Promise.all([anotar(ana.c, tomas.id), anotar(tomas.c, ana.id)]);
       expect(respuestas.map((r) => r.status)).toEqual([201, 201]);
     }
+  });
+
+  it('D18: muchos gastos simultáneos se guardan todos, aunque superen las conexiones a la base', async () => {
+    // Con más transacciones que conexiones, una consulta fuera de la transacción trababa el pool
+    // hasta que vencían todas.
+    const respuestas = await Promise.all(
+      Array.from({ length: 30 }, (_, i) =>
+        gasto([ana, tomas, luis][i % 3]!.c, {
+          monto: 1000 + i,
+          deudores: [ana.id, tomas.id, luis.id],
+        }),
+      ),
+    );
+    expect(respuestas.filter((r) => r.status !== 201)).toEqual([]);
+    expect(await db.gasto.count()).toBe(30);
   });
 
   it('D18: una baja simultánea con un gasto nunca deja al dado de baja con una deuda no registrada', async () => {

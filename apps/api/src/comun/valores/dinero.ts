@@ -28,12 +28,24 @@ export class Dinero {
 
   sumar(otro: Dinero): Dinero {
     this.exigirMismaMoneda(otro);
-    return Dinero.de(this.monto + otro.monto, this.moneda);
+    return Dinero.resultado(this.monto + otro.monto, this.moneda);
   }
 
   restar(otro: Dinero): Dinero {
     this.exigirMismaMoneda(otro);
-    return Dinero.de(this.monto - otro.monto, this.moneda);
+    return Dinero.resultado(this.monto - otro.monto, this.moneda);
+  }
+
+  /** Resultado de una operación: si pasa el máximo exacto, el error lo dice en lugar de "entero". */
+  private static resultado(monto: number, moneda: string): Dinero {
+    if (!Number.isSafeInteger(monto)) {
+      throw new ErrorDeDominio(
+        'REGLA_DE_NEGOCIO',
+        'MONTO_DEMASIADO_GRANDE',
+        'El resultado supera el monto máximo que se puede registrar',
+      );
+    }
+    return new Dinero(monto, moneda);
   }
 
   esPositivo(): boolean {

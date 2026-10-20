@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
-import { LARGOS_MAXIMOS, esquemaViajeNuevo, type DatosViajeNuevo } from '@viajes/compartido';
+import {
+  LARGOS_MAXIMOS,
+  esquemaViajeNuevo,
+  unAnioDespues,
+  type DatosViajeNuevo,
+} from '@viajes/compartido';
 import CampoFormulario from '../base/CampoFormulario.vue';
 import AvisoMensaje from '../base/AvisoMensaje.vue';
 import DialogoModal from '../base/DialogoModal.vue';
@@ -182,6 +187,7 @@ function cerrar() {
               name="fechaFin"
               type="date"
               :min="datos.fechaInicio"
+              :max="datos.fechaInicio ? unAnioDespues(datos.fechaInicio) : undefined"
             />
           </CampoFormulario>
         </div>

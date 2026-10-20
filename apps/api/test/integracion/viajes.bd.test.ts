@@ -69,6 +69,20 @@ describe('CU01: crear viaje y consultarlo', () => {
     ]);
   });
 
+  it('RN-X7: un viaje dura hasta un año, también desde un 29 de febrero', async () => {
+    const crear = (fechaInicio: string, fechaFin: string) =>
+      ana.c.post('/api/viajes', { ...nuevoViaje, fechaInicio, fechaFin });
+    expect((await crear('2026-12-10', '2027-12-10')).status).toBe(201);
+    const largo = await crear('2026-12-10', '2027-12-11');
+    expect([largo.status, largo.body.error.detalles]).toEqual([
+      400,
+      [{ campo: 'fechaFin', mensaje: 'Un viaje puede durar hasta un año' }],
+    ]);
+    expect((await crear('2028-02-29', '2029-02-28')).status).toBe(201);
+    expect((await crear('2028-02-29', '2029-03-01')).status).toBe(400);
+    expect((await crear('9999-01-01', '9999-12-31')).status).toBe(201);
+  });
+
   it('lista monedas y exige sesión', async () => {
     expect(
       (await ana.c.get('/api/monedas')).body.monedas.map((m: { codigo: string }) => m.codigo),

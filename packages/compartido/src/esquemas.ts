@@ -11,6 +11,18 @@ export const esquemaFecha = z
     return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
   }, 'La fecha no existe');
 
+/**
+ * RN-X7: último día que puede tener un viaje que empieza en `fecha`, un año después. Un 29 de
+ * febrero pasa al 28, porque el año siguiente no es bisiesto.
+ */
+export function unAnioDespues(fecha: string): string {
+  const [anio, mes, dia] = fecha.split('-').map(Number) as [number, number, number];
+  // Las fechas tienen cuatro dígitos: después de 9999 no hay fecha válida con la que comparar.
+  if (anio >= 9999) return '9999-12-31';
+  const d = mes === 2 && dia === 29 ? 28 : dia;
+  return `${anio + 1}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
 export const CONTRASENA_MIN = 8;
 export const CONTRASENA_MAX = 128;
 
@@ -75,6 +87,10 @@ export const esquemaViajeNuevo = z
   })
   .refine((v) => v.fechaInicio <= v.fechaFin, {
     message: 'La fecha de inicio no puede ser posterior a la de fin',
+    path: ['fechaFin'],
+  })
+  .refine((v) => v.fechaFin <= unAnioDespues(v.fechaInicio), {
+    message: 'Un viaje puede durar hasta un año',
     path: ['fechaFin'],
   });
 export type DatosViajeNuevo = z.input<typeof esquemaViajeNuevo>;

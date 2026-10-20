@@ -1883,3 +1883,38 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Pedido del usuario:** agregar a CLAUDE.md la regla sobre el contenido de los mensajes al terminar un cambio, como la próxima extensión numerada, sin modificar lo escrito y consultando cualquier contradicción.
 - **Contradicción consultada:** la sección 1 pide resumir "qué se cambió" en un cambio menor. El usuario decidió que se entiende como qué cambia para quien usa el sistema, así que la sección 1 quedó igual.
 - **Cambio:** CLAUDE.md suma la subsección 7.1 "Qué va en cada mensaje".
+
+## 2026-10-20 14:48 — Merge del PR #37
+
+- Con la autorización del usuario ("hace el commit"), el PR #37 ("CLAUDE.md: regla 7.1 sobre qué va en cada mensaje") se mergeó a `main` en `dfdce3f`, fijando la cabeza verificada `75e8089`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-20 14:48 — Testing intensivo del sistema
+
+- **Pedido del usuario:** "ahora quiero que hagas testing intensivo del sistema", en cuatro frentes elegidos por el usuario: uso real en el navegador, dinero y saldos, seguridad y permisos, y concurrencia y carga. Hallazgos en lista para elegir; quedan en el repositorio solo las pruebas que protegen contra un problema real.
+- **Dinero y saldos:** seis secuencias al azar de 150 operaciones (306 gastos, 140 pagos, 41 bajas, 37 salidas, 56 reingresos, 26 traspasos y unos 200 rechazos esperados), comparadas después de cada paso con un modelo propio de saldos, con la invariante de `invarianteSaldos.ts`, el acceso de cada persona y `miDeudaPendiente`. Sin diferencias.
+- **Seguridad:** matriz de 20 rutas por 6 tipos de persona, cruces de identificadores entre viajes, Origin, cookies, hash de contraseñas, bloqueo por intentos, campos extra y entradas maliciosas. Sin hallazgos.
+- **Concurrencia y carga:** votos, resoluciones, traspasos, registros y altas simultáneas correctos; chat con 25 conexiones y 200 mensajes sin pérdidas; lecturas con 100 personas a la vez con p95 de 635 ms.
+- **Navegador:** recorridos por rol en escritorio y celular, dobles envíos, vuelta atrás, montos con formatos raros, emojis y HTML, agregar participantes e intentos de ingreso. Sin hallazgos.
+- **Hallazgos:**
+  1. muchos gastos simultáneos fallaban con 500, también entre viajes distintos (15 en un viaje: 11 fallidos; 30 en 30 viajes: todos);
+  2. un cuerpo de más de 100 KB respondía 500;
+  3. una deuda que pasaba el máximo daba "El monto debe ser un número entero";
+  4. un viaje podía durar décadas.
+
+## 2026-10-20 14:48 — Regla 7.2 de CLAUDE.md y arreglo de los hallazgos
+
+- **Pedido del usuario:** "Cada vez que creemos o modifiquemos una funcionalidad, debemos hacer testing intensivo para que no se nos pase ningún bug por alto. Añadilo como reglas de Claude", con un texto general para usar el archivo en otros proyectos; después, "Hace todo": subir la regla, revisar lo hecho contra ella y arreglar los hallazgos.
+- **Cómo se aplicaron las reglas la vez anterior (26 de septiembre):** la regla queda en el repositorio, se revisa lo existente contra ella y, si choca con algo decidido antes, prevalece la nueva.
+- **CLAUDE.md:** subsección 7.2 "Testing intensivo". No contradice las reglas existentes.
+- **Arreglo 1:** `AnotarGasto` verificaba la categoría con una consulta fuera de la transacción, que pedía otra conexión mientras la transacción retenía bloqueos; con más gastos simultáneos que conexiones (10), el pool se trababa hasta que vencían todas a los 5 s. La verificación pasa antes de abrir la transacción, porque el catálogo no cambia. Prueba nueva en `gastos.bd.test.ts` con 30 gastos simultáneos, que falla sin el arreglo. `docs/auditoria.md` suma el control de consultas dentro de `unidad.ejecutar`.
+- **Arreglo 2:** `manejarErrores` responde 413 `PEDIDO_DEMASIADO_GRANDE` ("El pedido es demasiado grande") y no lo registra como error.
+- **Arreglo 3:** `Dinero.sumar` y `restar` responden 422 `MONTO_DEMASIADO_GRANDE` ("El resultado supera el monto máximo que se puede registrar").
+- **Arreglo 4:** regla nueva RN-X7: un viaje dura hasta un año (desde un 29 de febrero, hasta el 28). Está en el esquema compartido `viajeNuevo` con `unAnioDespues`, y el selector de la fecha de fin no ofrece días posteriores. El usuario no indicó el límite; se usó el de la propuesta, un año.
+- **Testing intensivo de los arreglos (regla 7.2):**
+  - 150 gastos simultáneos en un viaje y 40 en viajes distintos se guardan todos; una mezcla de gastos válidos, categorías y deudores inválidos y pagos mantiene la invariante;
+  - la escritura sostenida con 20 personas pasó de 5 gastos por segundo, p50 de 8 s y 40 errores a 94 por segundo, p50 de 213 ms y sin errores;
+  - 413 en todas las rutas probadas;
+  - bordes de RN-X7 por la API y en el navegador, en escritorio y celular.
+  - Encontró un error propio: con años de cuatro cifras la comparación como texto fallaba en 9999; se corrigió y se sumó a la prueba de RN-X7.
+- **Documentación:** PLAN.md (RN-X7 y CU01), `docs/api.md` (413, `MONTO_DEMASIADO_GRANDE` y la duración del viaje) y `docs/auditoria.md`.
+- **Verificación:** lint, 359 pruebas de la API, 236 de la web y 13 e2e en verde; knip solo informa los falsos positivos conocidos.

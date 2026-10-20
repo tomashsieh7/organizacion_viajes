@@ -77,6 +77,19 @@ describe('DialogoNuevoViaje (CU01)', () => {
     expect(dialogo.emitted('creado')).toBeUndefined();
   });
 
+  it('RN-X7: no deja crear un viaje de más de un año y el calendario no ofrece fechas después', async () => {
+    const { dialogo, crear } = montar();
+    await flushPromises();
+    await pasoUno(dialogo);
+    await dialogo.find('#viaje-inicio').setValue('2026-12-10');
+    expect(dialogo.find('#viaje-fin').attributes('max')).toBe('2027-12-10');
+    await dialogo.find('#viaje-fin').setValue('2062-12-16');
+    await dialogo.find('form').trigger('submit');
+    await flushPromises();
+    expect(dialogo.text()).toContain('Un viaje puede durar hasta un año');
+    expect(crear).not.toHaveBeenCalled();
+  });
+
   it('sin país, el destino es solo la ciudad', async () => {
     const { dialogo, crear } = montar();
     await flushPromises();
