@@ -29,8 +29,7 @@ app.use(router);
 // Si la sesión vence o se cierra en otra pestaña, se vuelve al ingreso recordando dónde se estaba.
 alPerderSesion(() => {
   const sesion = useSesionStore(pinia);
-  if (!sesion.autenticado) return;
-  sesion.perder();
+  if (!sesion.perder()) return;
   void router.push({
     path: '/ingresar',
     query: { volver: router.currentRoute.value.fullPath, motivo: 'sesion' },

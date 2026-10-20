@@ -163,17 +163,41 @@ describe('CU19 por Socket.IO', () => {
     });
   });
 
-  it('valida el contenido y deja de aceptar eventos cuando se cierra la sesión', async () => {
+  it('valida el contenido y deja de aceptar eventos cuando vence la sesión', async () => {
     const a = await unido(ana);
     expect(
       await a.socket.emitWithAck('chat:enviar', { viajeId, contenido: '   ', idTemporal: 'x' }),
     ).toMatchObject({ ok: false, error: { codigo: 'VALIDACION' } });
-    await ana.c.delete('/api/auth/sesion');
+    await db.sesion.updateMany({ where: { usuarioId: ana.id }, data: { expiraEn: new Date(0) } });
     expect(
       await a.socket.emitWithAck('chat:enviar', { viajeId, contenido: 'hola', idTemporal: 'x' }),
     ).toMatchObject({ ok: false, error: { codigo: 'NO_AUTENTICADO' } });
     await esperar();
     expect(a.socket.connected).toBe(false);
+  });
+
+  it('RN-S5: cerrar sesión corta sus conexiones, que dejan de recibir mensajes, y no las de otra sesión', async () => {
+    const a = await unido(ana);
+    const otra = cliente(app);
+    const ingreso = await otra.post('/api/auth/sesion', {
+      email: 'ana@mail.com',
+      password: 'una-clave-segura',
+    });
+    const cookie = String((ingreso.headers['set-cookie'] as unknown as string[])[0]).split(';')[0]!;
+    const a2 = await unido({ ...ana, cookie });
+    const t = await unido(tomas);
+    const enLaCerrada = recibidos<MensajeVista>(a.socket, 'chat:mensaje');
+    const enLaOtra = recibidos<MensajeVista>(a2.socket, 'chat:mensaje');
+
+    await ana.c.delete('/api/auth/sesion');
+    await esperar();
+    expect(a.socket.connected).toBe(false);
+    expect(a2.socket.connected).toBe(true);
+
+    await t.socket.emitWithAck('chat:enviar', { viajeId, contenido: 'después', idTemporal: 'y' });
+    await esperar();
+    expect(enLaCerrada).toEqual([]);
+    expect(enLaOtra.map((m) => m.contenido)).toEqual(['después']);
   });
 
   it('rechaza más de 10 mensajes en 10 segundos por conexión', async () => {

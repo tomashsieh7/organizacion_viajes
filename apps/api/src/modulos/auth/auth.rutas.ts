@@ -1,6 +1,6 @@
 import { Router, type CookieOptions, type Response } from 'express';
 import { esquemaInicioSesion, esquemaRegistro, type RespuestaUsuario } from '@viajes/compartido';
-import { NOMBRE_COOKIE_SESION } from '../../middlewares/acceso.js';
+import { NOMBRE_COOKIE_SESION, tokenDeSesion } from '../../middlewares/acceso.js';
 import { limiteDeRegistro, limitesDeIngreso } from '../../middlewares/seguridad.js';
 import { validar } from '../../middlewares/validar.js';
 import type { RequestHandler } from 'express';
@@ -58,7 +58,7 @@ export function rutasAuth(deps: DependenciasRutasAuth): Router {
   });
 
   router.delete('/sesion', async (req, res) => {
-    await deps.cerrarSesion.ejecutar(req.cookies?.[NOMBRE_COOKIE_SESION]);
+    await deps.cerrarSesion.ejecutar(tokenDeSesion(req));
     res.clearCookie(NOMBRE_COOKIE_SESION, opcionesCookie());
     res.status(204).end();
   });

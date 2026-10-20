@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { BusDeEventosEnMemoria } from '../../src/comun/eventos.js';
 import type { Reloj } from '../../src/comun/reloj.js';
 import { IniciarSesion } from '../../src/modulos/auth/casos-de-uso/iniciarSesion.js';
 import { Registrarse } from '../../src/modulos/auth/casos-de-uso/registrarse.js';
@@ -43,10 +44,12 @@ let hasheador: HasheadorFalso;
 let reloj: Reloj & { t: number };
 let proveedor: EmailContrasena;
 let sesiones: ServicioDeSesiones;
+let eventos: BusDeEventosEnMemoria;
 
 beforeEach(() => {
   base = baseVacia();
   hasheador = new HasheadorFalso();
+  eventos = new BusDeEventosEnMemoria();
   reloj = {
     t: Date.parse('2026-09-24T12:00:00Z'),
     ahora() {
@@ -59,6 +62,7 @@ beforeEach(() => {
     new TokensFalsos(),
     reloj,
     7 * DIA,
+    eventos,
   );
 });
 
@@ -116,6 +120,18 @@ describe('EmailContrasena (P3)', () => {
       cuenta.usuarioId,
     );
   });
+
+  it('RN-S1: la misma contraseña con tildes sirve aunque llegue escrita de otra forma', async () => {
+    const cuenta = await proveedor.registrar({
+      email: 'ana@mail.com',
+      password: 'canción-segura'.normalize('NFD'),
+      nombre: 'Ana',
+    });
+    const conTildeJunta = 'canción-segura'.normalize('NFC');
+    expect(await proveedor.autenticar({ email: 'ana@mail.com', password: conTildeJunta })).toBe(
+      cuenta.usuarioId,
+    );
+  });
 });
 
 describe('ServicioDeSesiones (RN-S5)', () => {
@@ -151,6 +167,16 @@ describe('ServicioDeSesiones (RN-S5)', () => {
       `h(${nueva.token})`,
     ]);
     expect(vencida.token).not.toBe(vigente.token);
+  });
+
+  it('al revocar avisa que la sesión se cerró, para cortar sus conexiones', async () => {
+    const avisos: unknown[] = [];
+    eventos.suscribir('auth.sesion-cerrada', (e) => {
+      avisos.push(e);
+    });
+    const { token } = await sesiones.crear('u1');
+    await sesiones.revocar(token);
+    expect(avisos).toEqual([{ tipo: 'auth.sesion-cerrada', tokenHash: `h(${token})` }]);
   });
 });
 

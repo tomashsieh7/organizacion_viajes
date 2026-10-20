@@ -652,12 +652,13 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
-| RN-S1 | La contraseña tiene entre 8 y 128 caracteres y no puede estar en la lista de contraseñas comunes; se guarda con argon2id. | Esquema `registro` y `EmailContrasena` | 400 `VALIDACION`, 400 `CONTRASENA_COMUN` |
-| RN-S2 | El email se normaliza (minúsculas, sin espacios) antes de guardarlo y de buscarlo. | `EmailContrasena` | — |
+| RN-S1 | La contraseña tiene entre 8 y 128 caracteres y no puede estar en la lista de contraseñas comunes; se guarda con argon2id. Antes de guardarla y de verificarla se lleva a la forma Unicode NFC, así una letra con tilde vale lo mismo desde cualquier dispositivo. | Esquema `registro` y `EmailContrasena` | 400 `VALIDACION`, 400 `CONTRASENA_COMUN` |
+| RN-S2 | El email se normaliza (minúsculas, sin espacios) antes de guardarlo y de buscarlo, y tiene hasta 254 caracteres. | `EmailContrasena` y esquema `email` | 400 `VALIDACION` |
 | RN-S3 | Un ingreso fallido responde con el mismo mensaje y el mismo tiempo, exista o no el email (se compara contra un hash ficticio cuando el email no existe). | `IniciarSesion` | 401 `CREDENCIALES_INVALIDAS` |
-| RN-S4 | Tras 5 ingresos fallidos por email o por IP en 15 minutos, se bloquean nuevos intentos por ese período; el registro tiene su propio límite. | Middleware de límite de pedidos | 429 `DEMASIADOS_INTENTOS` |
-| RN-S5 | La sesión es un token aleatorio de 256 bits; la base guarda solo su hash y su vencimiento, y cerrar sesión la revoca. Al crear una sesión se borran las vencidas o revocadas del mismo usuario, así la tabla no crece sin límite. | `IniciarSesion`, `CerrarSesion`, `autenticado`, `ServicioDeSesiones` | 401 `NO_AUTENTICADO` |
+| RN-S4 | Tras 5 ingresos fallidos por email o por IP en 15 minutos, se bloquean nuevos intentos por ese período; el registro tiene su propio límite. La IP es la de cada persona: la API toma la que informa el proxy de la web (`X-Forwarded-For`) solo cuando el pedido llega desde la misma máquina. | Middleware de límite de pedidos | 429 `DEMASIADOS_INTENTOS` |
+| RN-S5 | La sesión es un token aleatorio de 256 bits; la base guarda solo su hash y su vencimiento, y cerrar sesión la revoca y corta las conexiones del chat abiertas con ella. Una cookie que no es texto se toma como sesión inexistente. Al crear una sesión se borran las vencidas o revocadas del mismo usuario, así la tabla no crece sin límite. | `IniciarSesion`, `CerrarSesion`, `autenticado`, `ServicioDeSesiones` | 401 `NO_AUTENTICADO` |
 | RN-S6 | Toda petición que modifica datos y todo handshake de Socket.IO deben venir del origen de la aplicación. | `verificarOrigen` | 403 `ORIGEN_NO_PERMITIDO` |
+| RN-S7 | El nombre y el apodo de una persona no pueden tener caracteres de control (como el nulo o el salto de línea) ni los que invierten la dirección del texto, y tienen que tener al menos una letra, número, signo o símbolo visible. | Esquema `registro` | 400 `VALIDACION` |
 
 ## 7. Pantallas Vue
 

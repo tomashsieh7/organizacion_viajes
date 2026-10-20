@@ -114,10 +114,10 @@ grep -rn "from '" apps/api/src/modulos/*/casos-de-uso | grep -E "infraestructura
 - **Cookies y origen:**
   - la cookie de sesión es `httpOnly` y `sameSite`, y también `secure` en producción;
   - `verificarOrigen` y el handshake de Socket.IO exigen el `Origin` de la aplicación.
-- **Abuso:** el límite de registros por hora sigue activo.
+- **Abuso:** el límite de registros por hora sigue activo, y los límites por IP siguen contando por persona (`trust proxy` solo para `loopback`, y el proxy de Vite con `xfwd`).
 - **Credenciales:** los parámetros de argon2 y el hash ficticio de RN-S3 siguen vigentes.
 - **Secretos y logs:** no hay secretos en el repo, y `console.error` no imprime datos personales ni tokens.
-- **Tiempo real:** Socket.IO revalida la sesión en cada evento.
+- **Tiempo real:** Socket.IO revalida la sesión en cada evento, y cerrar sesión corta las conexiones abiertas con ella.
 
 ## 8. Pruebas
 

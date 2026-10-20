@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { esquemaInicioSesion } from '@viajes/compartido';
+import { LARGOS_MAXIMOS, esquemaInicioSesion } from '@viajes/compartido';
 import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
 import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
 import { mensajeDeError } from '../../clientes/http';
@@ -51,6 +51,7 @@ async function enviar() {
         <input
           id="email"
           v-model="datos.email"
+          :maxlength="LARGOS_MAXIMOS.email"
           name="email"
           type="email"
           autocomplete="email"

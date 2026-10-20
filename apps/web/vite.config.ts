@@ -22,9 +22,10 @@ export default defineConfig({
     port: 5173,
     // `npm run dev:red`: también atiende a la red local, para probar desde el celular.
     host: Boolean(process.env['WEB_EN_RED']),
-    // En desarrollo el navegador ve un único origen: Vite redirige la API y Socket.IO.
+    // En desarrollo el navegador ve un único origen: Vite redirige la API y Socket.IO. A la API
+    // le informa la dirección de cada persona (X-Forwarded-For) para los límites de intentos.
     proxy: {
-      '/api': API,
+      '/api': { target: API, xfwd: true },
       '/socket.io': { target: API, ws: true },
     },
   },

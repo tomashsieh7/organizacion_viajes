@@ -37,14 +37,27 @@ export const useSesionStore = defineStore('sesion', () => {
     cargada.value = true;
   }
 
-  /** El servidor avisó que la sesión ya no vale: se olvida el usuario sin volver a consultar. */
-  function perder() {
+  /** Mientras se cierra la sesión a pedido de la persona, el corte del chat no es una pérdida. */
+  let cerrando = false;
+
+  /**
+   * El servidor avisó que la sesión ya no vale: se olvida el usuario sin volver a consultar.
+   * Devuelve si había una sesión que perder, para avisarle a la persona solo en ese caso.
+   */
+  function perder(): boolean {
+    if (!usuario.value || cerrando) return false;
     usuario.value = null;
+    return true;
   }
 
   async function cerrarSesion() {
-    await cliente!.cerrarSesion();
-    usuario.value = null;
+    cerrando = true;
+    try {
+      await cliente!.cerrarSesion();
+      usuario.value = null;
+    } finally {
+      cerrando = false;
+    }
   }
 
   return { usuario, autenticado, cargar, ingresar, registrarse, perder, cerrarSesion };

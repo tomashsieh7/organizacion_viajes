@@ -10,6 +10,7 @@ import { ObtenerPerfil } from './modulos/auth/casos-de-uso/obtenerPerfil.js';
 import { ObtenerUsuarioDeSesion } from './modulos/auth/casos-de-uso/obtenerUsuarioDeSesion.js';
 import { Registrarse } from './modulos/auth/casos-de-uso/registrarse.js';
 import { EmailContrasena } from './modulos/auth/dominio/emailContrasena.js';
+import type { SesionCerrada } from './modulos/auth/dominio/eventos.js';
 import { ServicioDeSesiones } from './modulos/auth/dominio/servicioDeSesiones.js';
 import { GeneradorDeTokensCripto } from './modulos/auth/infraestructura/generadorDeTokensCripto.js';
 import { HasheadorArgon2 } from './modulos/auth/infraestructura/hasheadorArgon2.js';
@@ -34,7 +35,10 @@ import { UnirseAlChat } from './modulos/chat/casos-de-uso/unirseAlChat.js';
 import { ConsultaMensajesPrisma } from './modulos/chat/infraestructura/consultaMensajesPrisma.js';
 import { RepositorioMensajesPrisma } from './modulos/chat/infraestructura/repositorioMensajesPrisma.js';
 import { ParticipacionSegunViajes } from './modulos/chat/infraestructura/participacionSegunViajes.js';
-import type { EspacioChat } from './modulos/chat/infraestructura/gatewayChat.js';
+import {
+  cortarConexionesDeSesion,
+  type EspacioChat,
+} from './modulos/chat/infraestructura/gatewayChat.js';
 import { NotificadorViajeSocketIO } from './modulos/chat/infraestructura/notificadorViajeSocketIO.js';
 import { AnotarGasto } from './modulos/gastos/casos-de-uso/anotarGasto.js';
 import { ConsultarDeudas } from './modulos/gastos/casos-de-uso/consultarDeudas.js';
@@ -101,6 +105,7 @@ export interface Contenedor {
     cerrarSesion: CerrarSesion;
     obtenerPerfil: ObtenerPerfil;
     obtenerUsuarioDeSesion: ObtenerUsuarioDeSesion;
+    hashDeToken(token: string): string;
   };
   viajes: {
     crearViaje: CrearViaje;
@@ -135,7 +140,10 @@ export interface Contenedor {
     unirse: UnirseAlChat;
     enviar: EnviarMensaje;
     consultar: ConsultarMensajes;
-    /** Suscribe el notificador de Socket.IO a los eventos del viaje; se llama al abrir `/chat`. */
+    /**
+     * Suscribe el notificador de Socket.IO a los eventos del viaje y corta las conexiones de las
+     * sesiones que se cierran; se llama al abrir `/chat`.
+     */
     conectarNotificador(espacio: EspacioChat): void;
   };
   alojamientos: {
@@ -161,6 +169,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
     new GeneradorDeTokensCripto(),
     reloj,
     config.SESION_DIAS * 24 * 60 * 60 * 1000,
+    eventos,
   );
 
   // Viajes
@@ -233,6 +242,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       cerrarSesion: new CerrarSesion(sesiones),
       obtenerPerfil: new ObtenerPerfil(cuentas),
       obtenerUsuarioDeSesion: new ObtenerUsuarioDeSesion(sesiones),
+      hashDeToken: (token) => sesiones.hashDeToken(token),
     },
     viajes: {
       crearViaje: new CrearViaje(depsViajes, consultasViajes),
@@ -289,11 +299,15 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
         reloj,
       ),
       consultar: new ConsultarMensajes(consultaMensajes),
-      conectarNotificador: (espacio) =>
+      conectarNotificador: (espacio) => {
         new ReenviarEventosDelViaje(saldosPendientes).suscribir(
           eventos,
           new NotificadorViajeSocketIO(espacio),
-        ),
+        );
+        eventos.suscribir<SesionCerrada>('auth.sesion-cerrada', (e) =>
+          cortarConexionesDeSesion(espacio, e.tokenHash),
+        );
+      },
     },
     itinerario: {
       cronograma: new ConsultarCronograma(viajesSinBloqueo, consultaItinerario),

@@ -23,6 +23,10 @@ import { rutasDePropuestas } from './modulos/propuestas/propuestas.rutas.js';
 export function crearApp(c: Contenedor): Express {
   const app = express();
   app.disable('x-powered-by');
+  // La web llega por el proxy de Vite, en la misma máquina: solo a él se le cree la dirección
+  // que informa en X-Forwarded-For, así los límites de intentos (RN-S4) cuentan por persona y
+  // nadie puede inventarse otra dirección desde afuera.
+  app.set('trust proxy', 'loopback');
   app.use(helmet());
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());

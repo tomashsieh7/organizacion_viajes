@@ -1918,3 +1918,39 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - Encontró un error propio: con años de cuatro cifras la comparación como texto fallaba en 9999; se corrigió y se sumó a la prueba de RN-X7.
 - **Documentación:** PLAN.md (RN-X7 y CU01), `docs/api.md` (413, `MONTO_DEMASIADO_GRANDE` y la duración del viaje) y `docs/auditoria.md`.
 - **Verificación:** lint, 359 pruebas de la API, 236 de la web y 13 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-20 14:51 — Merge del PR #38
+
+- Con la autorización del usuario ("Hace todo"), el PR #38 ("Gastos simultáneos sin errores, pedidos grandes, monto máximo y viajes de hasta un año") se mergeó a `main` en `12a3810`, fijando la cabeza verificada `1167b14`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-20 18:20 — Testing intensivo de registro, ingreso y sesión
+
+- **Pedido del usuario:** "Vayamos de una a una con las funcionalidades haciendo testing intensivo", empezando por la 1 (registro, ingreso y sesión), con la regla 7.2. Hallazgos en lista para elegir; el usuario eligió "Corregí todos", con RN-S7 solo en nombre y apodo ("Por ahora solo en el nombre y apodo").
+- **Probado sin hallazgos:**
+  - normalización del email, contraseñas comunes y límites de 8 y 128 caracteres;
+  - diez registros simultáneos del mismo email crean una sola cuenta;
+  - los tiempos no revelan qué emails existen;
+  - cerrar sesión afecta solo a ese dispositivo, y una sesión vencida pide ingresar;
+  - después de ingresar se vuelve a la página pedida;
+  - el botón atrás tras cerrar sesión no muestra nada privado;
+  - las pantallas funcionan en un celular de 360 px;
+  - 100 ingresos simultáneos sin errores, con p50 de 527 ms.
+- **Hallazgos y arreglos:**
+  1. **Límite de intentos compartido.** Detrás del proxy de Vite todas las personas tenían la misma IP: cinco fallos de cualquiera bloqueaban a todos, y más de cinco ingresos a la vez daban 429. Vite manda `X-Forwarded-For` (`xfwd`) y la API lo acepta solo desde `loopback` (RN-S4). Comprobado con el proxy real desde dos direcciones, y falseando la cabecera desde la red, por el proxy y directo a la API.
+  2. **El chat seguía llegando a una pestaña con la sesión cerrada.**
+     - `ServicioDeSesiones.revocar` publica `auth.sesion-cerrada` en el bus de eventos.
+     - El gateway suma cada conexión a la sala de su sesión y la corta al recibir el evento.
+     - La web vuelve al ingreso cuando el servidor corta la conexión (RN-S5).
+     - La prueba e2e de sesión perdida a mitad de uso pasa a simular una sesión vencida, que es el caso que sigue notándose en el próximo pedido.
+  3. **Email muy largo.** Con más de unos 2.700 caracteres respondía 500 por el índice único. Ahora tiene un máximo de 254 caracteres, con `maxlength` en los tres campos de email (RN-S2).
+  4. **Nombre y apodo con caracteres de control.** El nulo daba 500, y se aceptaban nombres invisibles y la inversión del texto. Regla nueva RN-S7.
+  5. **Cookie `j:…`.** Respondía 500 porque `cookie-parser` la convierte en objeto. `tokenDeSesion` toma solo texto.
+  6. **Contraseñas con tildes.** NFD y NFC no coincidían. `EmailContrasena` unifica a NFC (RN-S1).
+- **Testing intensivo de los arreglos:**
+  - límites por persona a través del proxy real;
+  - cinco pestañas de una sesión y tres sesiones más del mismo usuario, con tres cierres simultáneos y envíos al mismo tiempo: se cortan solo las cinco, y la reconexión con la cookie cerrada se rechaza.
+  - Encontró un error propio: quien cerraba sesión desde un viaje podía ver «Tu sesión terminó» si la respuesta del cierre llegaba después del corte del chat. `useSesionStore.perder()` ignora el corte mientras se cierra la sesión a pedido y devuelve si había una sesión que perder; se sumó una prueba e2e con la respuesta demorada.
+  - Cada prueba nueva falla sin su arreglo.
+- **Pendiente para otras funcionalidades:** el carácter nulo también responde 500 en el nombre del viaje y seguramente en otros textos; se revisa cuando le toque a cada una.
+- **Documentación:** PLAN.md (RN-S1, RN-S2, RN-S4, RN-S5 y RN-S7 nueva), `docs/api.md` y `docs/auditoria.md`.
+- **Verificación:** lint, cobertura con sus mínimos, 367 pruebas de la API, 240 de la web y 15 e2e en verde; knip solo informa los falsos positivos conocidos.

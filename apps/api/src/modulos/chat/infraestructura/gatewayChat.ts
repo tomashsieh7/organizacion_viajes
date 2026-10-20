@@ -22,6 +22,14 @@ export const salaDelViaje = (viajeId: string) => `viaje:${viajeId}`;
 
 export const salaDelUsuario = (usuarioId: string) => `usuario:${usuarioId}`;
 
+/** Conexiones abiertas con una misma sesión, identificada por el hash de su token. */
+const salaDeLaSesion = (tokenHash: string) => `sesion:${tokenHash}`;
+
+/** RN-S5: al cerrarse una sesión se cortan sus conexiones, que dejan de recibir mensajes. */
+export function cortarConexionesDeSesion(espacio: EspacioChat, tokenHash: string): void {
+  espacio.in(salaDeLaSesion(tokenHash)).disconnectSockets(true);
+}
+
 /** Lee una cookie del encabezado `Cookie` del handshake. */
 function leerCookie(encabezado: string | undefined, nombre: string): string | undefined {
   for (const parte of (encabezado ?? '').split(';')) {
@@ -41,6 +49,7 @@ export interface DependenciasGatewayChat {
   origenPermitido: string;
   nombreCookie: string;
   usuarioDeSesion: (token: string | undefined) => Promise<string>;
+  hashDeToken: (token: string) => string;
   unirse: UnirseAlChat;
   enviar: EnviarMensaje;
 }
@@ -85,7 +94,10 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
       const token = leerCookie(socket.handshake.headers.cookie, deps.nombreCookie);
       socket.data.usuarioId = await deps.usuarioDeSesion(token);
       socket.data.token = token ?? '';
-      await socket.join(salaDelUsuario(socket.data.usuarioId));
+      await socket.join([
+        salaDelUsuario(socket.data.usuarioId),
+        salaDeLaSesion(deps.hashDeToken(socket.data.token)),
+      ]);
       next();
     } catch (error) {
       const codigo = error instanceof ErrorDeDominio ? error.codigo : 'ERROR_INTERNO';
