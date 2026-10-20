@@ -22,6 +22,8 @@ Referencia completa de la API del MVP, revisada al cierre de F9. El diseño est�
 | 404 | `NO_ENCONTRADO` | El recurso no existe o el identificador no es válido. |
 | 409 | Según el caso | Conflicto con el estado actual; por ejemplo, `TRANSICION_INVALIDA` o `SUPERPOSICION_HORARIA`. |
 | 422 | Según el caso | Los datos tienen buen formato pero violan una regla de negocio; por ejemplo, `FUERA_DEL_VIAJE` o `PAGO_EXCEDE_DEUDA`. |
+| 413 | `PEDIDO_DEMASIADO_GRANDE` | El cuerpo pasa los 100 KB. |
+| 422 | `MONTO_DEMASIADO_GRANDE` | Una suma de dinero, como el saldo entre dos personas, pasaría el monto máximo que se puede registrar. |
 | 429 | `DEMASIADOS_INTENTOS` | Se superó un límite de intentos. |
 | 500 | `ERROR_INTERNO` | Error inesperado (sin detalles). |
 
@@ -49,7 +51,7 @@ Todas requieren sesión. Las rutas bajo `/api/viajes/:viajeId` requieren además
 | Método y ruta | Quién | Cuerpo | Respuesta | Errores específicos |
 |---|---|---|---|---|
 | `GET /api/monedas` | Con sesión | — | `200 { monedas: [{ codigo, nombre, decimales }] }` | — |
-| `POST /api/viajes` | Con sesión (queda como Admin) | `{ nombre, destino, fechaInicio, fechaFin, monedaCodigo }` | `201 { viaje }` (detalle) | 400 si `fechaInicio > fechaFin`, 422 `MONEDA_INEXISTENTE` |
+| `POST /api/viajes` | Con sesión (queda como Admin) | `{ nombre, destino, fechaInicio, fechaFin, monedaCodigo }` | `201 { viaje }` (detalle) | 400 si `fechaInicio > fechaFin` o si el viaje dura más de un año (RN-X7), 422 `MONEDA_INEXISTENTE` |
 | `GET /api/viajes` | Con sesión | — | `200 { viajes: [{ id, nombre, destino, fechaInicio, fechaFin, monedaCodigo, miRol, miAcceso }] }`; incluye los viajes de los que se fue con saldos pendientes, con `miAcceso: "SOLO_SALDOS"` | — |
 | `GET /api/viajes/:viajeId` | Participante, o exparticipante con saldos pendientes | — | `200 { viaje: { id, nombre, destino, fechaInicio, fechaFin, moneda, miRol, miAcceso, miDeudaPendiente, cantidadParticipantes } }` | — |
 | `GET /api/viajes/:viajeId/participantes` | Participante | — | `200 { participantes: [{ usuarioId, nombre, apodo, rol }] }`, Admin primero | — |

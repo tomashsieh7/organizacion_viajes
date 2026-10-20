@@ -49,6 +49,17 @@ describe('Dinero', () => {
     expect(ars(10).menorEntre(ars(5)).monto).toBe(5);
   });
 
+  it('una suma o resta que pasa el máximo exacto se rechaza con su propio mensaje', () => {
+    const maximo = Dinero.de(Number.MAX_SAFE_INTEGER, 'ARS');
+    expect(() => maximo.sumar(ars(1))).toThrow(
+      expect.objectContaining({ codigo: 'MONTO_DEMASIADO_GRANDE' }),
+    );
+    expect(() => ars(-Number.MAX_SAFE_INTEGER).restar(ars(1))).toThrow(
+      expect.objectContaining({ codigo: 'MONTO_DEMASIADO_GRANDE' }),
+    );
+    expect(maximo.restar(ars(1)).monto).toBe(Number.MAX_SAFE_INTEGER - 1);
+  });
+
   it('RN-X6: no combina montos de monedas distintas', () => {
     expect(() => ars(10).sumar(Dinero.de(1, 'USD'))).toThrow(
       expect.objectContaining({ codigo: 'MONEDAS_DISTINTAS' }),

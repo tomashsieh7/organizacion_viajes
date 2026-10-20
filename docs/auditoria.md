@@ -95,6 +95,7 @@ grep -rn "from '" apps/api/src/modulos/*/casos-de-uso | grep -E "infraestructura
 ## 6. Correctitud y concurrencia
 
 - **Decisiones fuera de la transacción:** lecturas que deciden algo antes de abrirla. Buscar `obtener(` en `casos-de-uso/` fuera de `unidad.ejecutar`. Es el error que corrigió el PR #6 en gastos y pagos.
+- **Consultas dentro de la transacción:** dentro de `unidad.ejecutar` solo se usan los repositorios de la transacción. Una consulta inyectada aparte pide otra conexión mientras la transacción retiene bloqueos, y con más gastos simultáneos que conexiones traba el pool hasta que vencen todas (lo corrigió el arreglo de gastos simultáneos de octubre de 2026). Buscar `this.deps.` o `this.consultas` dentro de esos bloques.
 - **Bloqueos:** se toman siempre en el mismo orden (viaje, después propuestas, después deudas), con `FOR UPDATE` o `FOR SHARE` donde D18 lo exige.
 - **Efectos después de confirmar:** eventos y notificaciones nunca hacen fallar una respuesta que ya quedó guardada.
 - **Dinero:** enteros en la unidad mínima, con el reparto del resto de D16 y nunca `number` decimal.

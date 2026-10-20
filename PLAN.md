@@ -467,7 +467,7 @@ Ninguna tabla borra filas de `usuario` ni de `membresia`: las bajas son lógicas
 
 | CU | Método y ruta | Quién | Validaciones | Errores específicos |
 |---|---|---|---|---|
-| CU01 | `POST /api/viajes` | Cualquier usuario con sesión; queda como Admin | `nombre` y `destino` obligatorios, `fecha_inicio <= fecha_fin`, `moneda_codigo` existente | 400 `RANGO_FECHAS_INVALIDO`, 422 `MONEDA_INEXISTENTE` |
+| CU01 | `POST /api/viajes` | Cualquier usuario con sesión; queda como Admin | `nombre` y `destino` obligatorios, `fecha_inicio <= fecha_fin`, hasta un año de duración (RN-X7), `moneda_codigo` existente | 400 `RANGO_FECHAS_INVALIDO`, 422 `MONEDA_INEXISTENTE` |
 | — | `GET /api/monedas` | Con sesión | Lista de monedas disponibles | — |
 | — | `GET /api/viajes` | Con sesión | Viajes con membresía activa; desde F7 suma los viajes con acceso solo a saldos, marcados como tales | — |
 | — | `GET /api/viajes/:viajeId` | Participante (desde F7, `accesoSaldos`) | Datos del viaje con su moneda, rol de quien consulta, su deuda pendiente (para el aviso de RN-E7) y la cantidad de participantes | — |
@@ -646,6 +646,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | RN-X4 | La fecha de una actividad y el rango de un alojamiento caen dentro de `[fecha_inicio, fecha_fin]` del viaje; de la actividad se controla solo el día de inicio (P11). Los selectores de fecha solo ofrecen días del viaje. | `Viaje.contiene(fecha)` y `Viaje.contiene(rango)`; coordinan `ProponerActividad`, `ProponerAlternativa` y `ProponerAlojamiento` | 422 `FUERA_DEL_VIAJE` |
 | RN-X5 | Solo participantes activos envían mensajes al chat del viaje. | Caso de uso `EnviarMensaje` | confirmación con `NO_PARTICIPANTE` |
 | RN-X6 | Todos los montos de un viaje se expresan en su moneda, elegida al crearlo; no hay conversión (P16). | Objeto de valor `Dinero`, que lleva la moneda del viaje; `CrearViaje` y formateo en la interfaz | — |
+| RN-X7 | Un viaje dura hasta un año: la fecha de fin puede ser, como mucho, el mismo día del año siguiente (desde un 29 de febrero, el 28). Evita que un error al tipear el año cree un viaje de décadas. El selector de fecha no ofrece días posteriores. | Esquema `viajeNuevo` y `DialogoNuevoViaje` | 400 `VALIDACION` |
 
 ### 6.11 Seguridad de la autenticación
 

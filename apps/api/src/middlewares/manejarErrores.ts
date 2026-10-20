@@ -23,12 +23,11 @@ export const rutaNoEncontrada: RequestHandler = (req, _res, next) => {
   );
 };
 
-function esJsonMalformado(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    (error as { type?: unknown }).type === 'entity.parse.failed'
-  );
+/** Tipo de los errores que lanza `express.json` al leer el cuerpo, como `entity.too.large`. */
+function tipoDeErrorDelCuerpo(error: unknown): unknown {
+  return typeof error === 'object' && error !== null
+    ? (error as { type?: unknown }).type
+    : undefined;
 }
 
 /** Convierte cualquier error en una respuesta `{ error: { codigo, mensaje, detalles } }`. */
@@ -42,9 +41,14 @@ export const manejarErrores: ErrorRequestHandler = (error: unknown, _req, res, _
     estado = ESTADO_HTTP[error.categoria];
     cuerpo = { error: { codigo: error.codigo, mensaje: error.message } };
     if (error.detalles !== undefined) cuerpo.error.detalles = error.detalles;
-  } else if (esJsonMalformado(error)) {
+  } else if (tipoDeErrorDelCuerpo(error) === 'entity.parse.failed') {
     estado = 400;
     cuerpo = { error: { codigo: 'VALIDACION', mensaje: 'El cuerpo no es un JSON válido' } };
+  } else if (tipoDeErrorDelCuerpo(error) === 'entity.too.large') {
+    estado = 413;
+    cuerpo = {
+      error: { codigo: 'PEDIDO_DEMASIADO_GRANDE', mensaje: 'El pedido es demasiado grande' },
+    };
   } else {
     console.error(error);
   }

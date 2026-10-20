@@ -23,6 +23,15 @@ export class AnotarGasto {
     registradoPorId: string,
     datos: DatosGastoNuevo,
   ): Promise<string> {
+    // Antes de la transacción: el catálogo de categorías no cambia, y consultarlo adentro pediría
+    // otra conexión mientras esta retiene bloqueos, lo que traba el pool con muchos gastos a la vez.
+    if (!(await this.deps.categorias.existe(datos.categoriaId))) {
+      throw new ErrorDeDominio(
+        'REGLA_DE_NEGOCIO',
+        'CATEGORIA_INEXISTENTE',
+        'La categoría no existe',
+      );
+    }
     return this.deps.unidad.ejecutar(async (repos) => {
       // Dentro de la transacción, para que nadie se dé de baja mientras se le anota una deuda.
       const viaje = await repos.viajes.obtener(viajeId);
@@ -44,13 +53,6 @@ export class AnotarGasto {
           'DEUDOR_NO_PARTICIPANTE',
           'Todas las personas elegidas tienen que participar del viaje',
           { usuarios: ajenos },
-        );
-      }
-      if (!(await this.deps.categorias.existe(datos.categoriaId))) {
-        throw new ErrorDeDominio(
-          'REGLA_DE_NEGOCIO',
-          'CATEGORIA_INEXISTENTE',
-          'La categoría no existe',
         );
       }
       const ahora = this.deps.reloj.ahora();
