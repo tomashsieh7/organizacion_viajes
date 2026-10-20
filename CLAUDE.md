@@ -65,3 +65,14 @@ Sección reservada para nuevas instrucciones que surjan durante el uso. Cada ext
 ### 7.1 Qué va en cada mensaje
 
 Al terminar un cambio, el mensaje dice qué cambia para quien usa el sistema y nada más. Archivos, decisiones de implementación, desvíos del plan y resultados de pruebas solo aparecen si el usuario los pide, o si algo falló o quedó sin hacer. Las propuestas de mejora dicen qué falla, cómo se comprobó en una oración y qué se propone. No hay tope de largo, pero no se incluye nada que no sea de interés para el usuario. Todo lo que requiere una acción del usuario (avisos para otras personas, decisiones, aprobaciones) va al final, en un bloque titulado «Para vos».
+
+### 7.2 Testing intensivo
+
+Cada vez que se crea o modifica una funcionalidad, antes de darla por terminada se hace testing intensivo de lo que cambió, además de las pruebas habituales del proyecto. Se cubren los frentes que el cambio toca:
+
+- **Uso real:** recorrer la funcionalidad como cada tipo de usuario y en cada entorno donde se usa (por ejemplo, celular y escritorio), con dobles envíos, recargas, accesos directos y datos vacíos, muy largos o con formatos raros.
+- **Datos y cálculos:** secuencias largas y al azar de operaciones, comparando lo que el sistema guarda y calcula con un modelo propio de lo que debería dar.
+- **Seguridad y permisos:** cada tipo de usuario contra cada operación nueva o modificada, intentos de acceder a datos ajenos y entradas maliciosas o fuera de rango.
+- **Concurrencia y carga:** las mismas operaciones al mismo tiempo y con volumen, verificando que no haya errores ni datos inconsistentes.
+
+Los errores de lo que se está construyendo se corrigen como parte del cambio, cada uno con una prueba que lo reproduce y queda en el repositorio. Los problemas que aparezcan en otras partes del sistema se presentan como propuestas de mejora, según 7.1. Las pruebas exploratorias se borran al terminar.
