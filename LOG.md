@@ -2010,3 +2010,40 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Testing intensivo de los arreglos:** el diálogo en celular con saldos lentos (botón desactivado mientras consulta), con deuda y saldo a favor a la vez, y con un Admin que sale con deuda eligiendo sucesor. Cada prueba nueva falla sin su arreglo.
 - **Documentación:** PLAN.md (RN-E7 y la pantalla de participantes). Con la confirmación del usuario, `docs/diagramas.drawio` (página "Saliendo del grupo") suma la decisión «¿le deben plata?» y la acción «Muestra cuánto le deben y que lo sigue viendo en saldos» antes de «Confirma la salida»; el resto de la página baja 280 px. Se editó el XML de esa página a mano, porque el archivo tiene varias páginas y la conversión del skill de diagramas lo reescribiría entero.
 - **Verificación:** lint, cobertura con sus mínimos, 371 pruebas de la API, 247 de la web y 17 e2e en verde.
+
+## 2026-10-20 20:56 — Merge del PR #41
+
+- Con la autorización del usuario ("si"), el PR #41 ("Salir y eliminar: saldos al día al salir y lista actualizada si se pierde la respuesta") se mergeó a `main` en `13d3f80`, fijando la cabeza verificada `f6472c5`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-20 22:00 — Testing intensivo de alojamientos
+
+- **Pedido del usuario:** seguir con la funcionalidad 4 con la regla 7.2. El usuario eligió corregir todos los hallazgos ("todos") y aprobó el plan.
+- **Probado sin hallazgos:**
+  - precios con formatos raros y su conversión;
+  - fechas fuera del viaje y coordenadas incompletas o fuera de rango;
+  - campos extra ignorados;
+  - permisos de ex participantes y viajeros, y votar o resolver propuestas de otro viaje;
+  - matriz de transiciones;
+  - 400 votos y resoluciones al azar contra un modelo de estados, conteos y voto propio, sin diferencias;
+  - 30 votos simultáneos, y confirmar y denegar a la vez;
+  - 100 propuestas simultáneas y listas de 300 propuestas para 30 personas en 464 ms;
+  - doble clic al proponer;
+  - celular a 360 px.
+- **Hallazgos y arreglos:**
+  1. **Textos de las propuestas.** El carácter nulo en nombre, descripción o ubicación daba 500, y se aceptaban textos invisibles e inversión del texto. RN-X8 se extiende a las propuestas, con `textoDeVariasLineas` para la descripción (admite saltos de línea y tabulaciones). Como `baseDePropuesta` es común, también cubre la descripción y la ubicación de las actividades.
+  2. **Propuesta duplicada al perderse la respuesta.**
+     - El formulario manda un UUID por intento.
+     - `ProponerAlojamiento` devuelve la propuesta si ya existe con ese id, en el mismo viaje y de la misma persona, y responde 409 `PROPUESTA_EXISTENTE` si no.
+     - Ante dos envíos simultáneos, el segundo choca al insertar y vuelve a mirar.
+     - `RepositorioAlojamientos` suma `origen`.
+     - Actividades se revisa en su turno.
+  3. **Denegar y cancelar de un toque.** `TarjetaPropuesta` pide confirmación («¿Denegar «Cabaña»? No se puede deshacer.»), también en actividades. Confirmar sigue siendo de un toque.
+  4. **Tarjeta desactualizada.** Votar o resolver una propuesta que ya cambió de estado ahora recarga la lista ante un 409.
+  5. **Saltos de línea de la descripción.** Se muestran con `white-space: pre-line`.
+- **Testing intensivo de los arreglos:**
+  - cinco envíos simultáneos del mismo intento dejan una propuesta;
+  - el id de una propuesta ajena no la modifica;
+  - actividades con la tarjeta y la validación nuevas: rechazo del carácter nulo, descripción en dos líneas y confirmación al denegar.
+  - Cada prueba nueva falla sin su arreglo.
+- **Documentación:** PLAN.md (RN-X8, RN-R1 y CU05) y `docs/api.md`.
+- **Verificación:** lint, cobertura con sus mínimos, 373 pruebas de la API, 251 de la web y 19 e2e en verde.

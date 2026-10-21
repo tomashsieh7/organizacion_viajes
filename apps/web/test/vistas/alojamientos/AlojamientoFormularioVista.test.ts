@@ -55,6 +55,7 @@ describe('AlojamientoFormularioVista (CU05)', () => {
     const vista = await montar(proponer);
     await completar(vista);
     expect(proponer).toHaveBeenCalledWith('v1', {
+      id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       nombre: 'Hostel Patagonia',
       descripcion: 'Con desayuno',
       fechaDesde: '2026-12-10',

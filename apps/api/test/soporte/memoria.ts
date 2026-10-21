@@ -60,6 +60,7 @@ import type {
 import type {
   ConsultaAlojamientos,
   DetalleAlojamiento,
+  OrigenDePropuesta,
   RepositorioAlojamientos,
 } from '../../src/modulos/alojamientos/dominio/puertos.js';
 import { Propuesta, type DatosPropuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
@@ -450,6 +451,11 @@ export class RepositorioAlojamientosEnMemoria implements RepositorioAlojamientos
         fechaHasta: detalle.estadia.hasta,
       },
     });
+  }
+
+  async origen(propuestaId: string): Promise<OrigenDePropuesta | null> {
+    const p = this.base.propuestas.find((x) => x.datos.id === propuestaId)?.datos;
+    return p ? { viajeId: p.viajeId, autorId: p.autorId, tipo: p.tipo } : null;
   }
 }
 

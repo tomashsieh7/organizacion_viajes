@@ -88,6 +88,47 @@ describe('CU05: proponer alojamiento', () => {
     expect(sinCoordenadas.status).toBe(201);
   });
 
+  it('RN-X8: nombre, descripción y ubicación sin caracteres de control ni invisibles del todo', async () => {
+    for (const extra of [
+      { nombre: 'Hostel\u0000' },
+      { descripcion: 'Con\u0000 desayuno' },
+      { ubicacion: 'Mitre\u0000' },
+      { nombre: '\u200b' },
+      { ubicacion: '\u200b' },
+      { descripcion: '\u200b\n\u200b' },
+      { nombre: 'Hostel\u202Eaña' },
+      { ubicacion: 'Mitre\n100' },
+    ]) {
+      const r = await tomas.c.post(url('/alojamientos'), { ...hostel, ...extra });
+      expect(r.status, JSON.stringify(extra)).toBe(400);
+      expect(r.body.error.codigo).toBe('VALIDACION');
+    }
+    // La descripción admite saltos de línea y tabulaciones.
+    const r = await tomas.c.post(url('/alojamientos'), {
+      ...hostel,
+      descripcion: 'Con desayuno\n\tY cochera',
+    });
+    expect(r.status).toBe(201);
+    expect(r.body.alojamiento.descripcion).toBe('Con desayuno\n\tY cochera');
+  });
+
+  it('CU05: reintentar con el mismo id devuelve la propuesta ya creada y no la duplica', async () => {
+    const id = '5e1d2c3b-4a59-4687-9a0b-1c2d3e4f5a6b';
+    const intentos = await Promise.all(
+      Array.from({ length: 5 }, () => tomas.c.post(url('/alojamientos'), { ...hostel, id })),
+    );
+    expect(intentos.map((r) => r.status)).toEqual([201, 201, 201, 201, 201]);
+    expect(intentos.map((r) => r.body.alojamiento.id)).toEqual([id, id, id, id, id]);
+    expect(await db.propuesta.count({ where: { viajeId } })).toBe(1);
+
+    // Con el id de una propuesta de otra persona no se toca nada.
+    const ajena = await ana.c.post(url('/alojamientos'), { ...hostel, nombre: 'Otro', id });
+    expect(ajena.status).toBe(409);
+    expect(ajena.body.error.codigo).toBe('PROPUESTA_EXISTENTE');
+    const guardada = await db.alojamiento.findUniqueOrThrow({ where: { propuestaId: id } });
+    expect(guardada.nombre).toBe('Hostel Patagonia');
+  });
+
   it('filtra por estado y rechaza estados inválidos', async () => {
     const id = await proponer();
     await ana.c.post(url(`/propuestas/${id}/confirmar`));

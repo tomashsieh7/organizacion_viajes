@@ -493,7 +493,7 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 
 | CU | Método y ruta | Quién | Validaciones | Errores específicos |
 |---|---|---|---|---|
-| CU05 | `POST /api/viajes/:viajeId/alojamientos` | Participante | `nombre`, `descripcion` y `ubicacion` obligatorios; coordenadas opcionales; `fecha_desde <= fecha_hasta`, ambas dentro del viaje (P11); `precio >= 0` opcional (P8) | 400 `RANGO_FECHAS_INVALIDO`, 422 `FUERA_DEL_VIAJE` |
+| CU05 | `POST /api/viajes/:viajeId/alojamientos` | Participante | `nombre`, `descripcion` y `ubicacion` obligatorios (RN-X8); coordenadas opcionales; `fecha_desde <= fecha_hasta`, ambas dentro del viaje (P11); `precio >= 0` opcional (P8). El formulario manda un `id` propio del intento: si ya existe una propuesta con ese `id` de la misma persona en el viaje, se devuelve esa en lugar de crear otra | 400 `RANGO_FECHAS_INVALIDO`, 409 `PROPUESTA_EXISTENTE`, 422 `FUERA_DEL_VIAJE` |
 | — | `GET /api/viajes/:viajeId/alojamientos?estado=` | Participante | Filtro opcional por estado | — |
 
 ### 5.6 Planificar actividades
@@ -565,7 +565,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
-| RN-R1 | Las transiciones válidas son `PENDIENTE → CONFIRMADA`, `PENDIENTE → DENEGADA` y `CONFIRMADA → CANCELADA`; `DENEGADA` y `CANCELADA` son finales (P7). | `Propuesta.confirmar()`, `denegar()` y `cancelar()` con su tabla de transiciones; coordina `ResolverPropuesta` | 409 `TRANSICION_INVALIDA` |
+| RN-R1 | Las transiciones válidas son `PENDIENTE → CONFIRMADA`, `PENDIENTE → DENEGADA` y `CONFIRMADA → CANCELADA`; `DENEGADA` y `CANCELADA` son finales (P7), por eso la pantalla pide confirmación antes de denegar o cancelar. Si la propuesta cambió de estado mientras la lista estaba abierta, la lista se vuelve a cargar. | `Propuesta.confirmar()`, `denegar()` y `cancelar()` con su tabla de transiciones; coordina `ResolverPropuesta` | 409 `TRANSICION_INVALIDA` |
 | RN-R2 | El Admin confirma o deniega libremente, viendo el conteo de votos; no hay umbral de votación (P7). | `ResolverPropuesta` | — |
 | RN-R3 | Al confirmar una actividad se vuelve a controlar la superposición contra las confirmadas, dentro de la misma transacción (P10). | `ResolverPropuesta` | 409 `SUPERPOSICION_HORARIA` |
 | RN-R4 | Al confirmar una actividad que forma parte de un grupo de opciones (original y alternativas), las demás opciones pendientes pasan a `DENEGADA` en la misma transacción. Denegar la original no afecta a sus alternativas (P9). | `opcionesADenegar`, usada por `ResolverPropuesta` | 200 con las opciones denegadas |
@@ -647,7 +647,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | RN-X5 | Solo participantes activos envían mensajes al chat del viaje. | Caso de uso `EnviarMensaje` | confirmación con `NO_PARTICIPANTE` |
 | RN-X6 | Todos los montos de un viaje se expresan en su moneda, elegida al crearlo; no hay conversión (P16). | Objeto de valor `Dinero`, que lleva la moneda del viaje; `CrearViaje` y formateo en la interfaz | — |
 | RN-X7 | Un viaje dura hasta un año: la fecha de fin puede ser, como mucho, el mismo día del año siguiente (desde un 29 de febrero, el 28). Sus fechas van del año 2000 al 2100. Evita que un error al tipear el año cree un viaje de décadas o de hace siglos. Los selectores de fecha no ofrecen días por fuera. | Esquema `viajeNuevo` y `DialogoNuevoViaje` | 400 `VALIDACION` |
-| RN-X8 | El nombre y el destino de un viaje siguen la regla de RN-S7: sin caracteres de control ni los que invierten la dirección del texto, y con al menos una letra, número, signo o símbolo visible. | Esquema `viajeNuevo` y `DialogoNuevoViaje` | 400 `VALIDACION` |
+| RN-X8 | El nombre y el destino de un viaje, y el nombre, la descripción y la ubicación de una propuesta siguen la regla de RN-S7: sin caracteres de control ni los que invierten la dirección del texto, y con al menos una letra, número, signo o símbolo visible. La descripción admite además saltos de línea y tabulaciones, y se muestra con sus saltos. | Esquemas `viajeNuevo`, `alojamientoNuevo` y `actividadNueva`, `DialogoNuevoViaje` y `TarjetaPropuesta` | 400 `VALIDACION` |
 
 ### 6.11 Seguridad de la autenticación
 
