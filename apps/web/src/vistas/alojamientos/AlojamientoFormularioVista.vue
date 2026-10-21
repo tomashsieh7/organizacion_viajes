@@ -11,6 +11,7 @@ import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { usePropuestasStore } from '../../stores/propuestas';
 import { useViajeStore } from '../../stores/viajes';
 import { aUnidadMinima } from '../../utiles/formato';
+import { uuidAlAzar } from '../../utiles/idTemporal';
 import { useValidacion } from '../../composables/useValidacion';
 import { MONTO_INVALIDO, problemasSegun } from '../../utiles/formularios';
 
@@ -26,6 +27,8 @@ const datos = reactive({
   fechaHasta: actual.fechaFin,
   precio: '',
 });
+/** Identifica este intento de proponer: si la respuesta se pierde, reintentar no la duplica. */
+const idDeLaPropuesta = uuidAlAzar();
 const ubicacion = ref<ValorUbicacion>({ ubicacion: '', latitud: null, longitud: null });
 const error = ref('');
 const enviando = ref(false);
@@ -35,6 +38,7 @@ function armarCuerpo() {
   const precio =
     datos.precio.trim() === '' ? undefined : aUnidadMinima(datos.precio, actual.moneda.decimales);
   const cuerpo = {
+    id: idDeLaPropuesta,
     nombre: datos.nombre,
     descripcion: datos.descripcion,
     fechaDesde: datos.fechaDesde,

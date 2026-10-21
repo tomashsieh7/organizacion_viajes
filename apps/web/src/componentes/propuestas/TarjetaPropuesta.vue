@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { AccionSobrePropuesta, Moneda, PropuestaVista, ValorVoto } from '@viajes/compartido';
+import DialogoModal from '../base/DialogoModal.vue';
 import IconoLinea, { type NombreIcono } from '../base/IconoLinea.vue';
 import { formatearMonto, NOMBRES_ESTADO } from '../../utiles/formato';
 
@@ -37,6 +38,27 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
   }
   return props.propuesta.estado === 'CONFIRMADA' ? [{ accion: 'cancelar', texto: 'Cancelar' }] : [];
 });
+
+/**
+ * Denegar y cancelar no tienen vuelta atrás (RN-R1), así que piden confirmación; confirmar no,
+ * porque una propuesta confirmada todavía se puede cancelar.
+ */
+const aConfirmar = ref<'denegar' | 'cancelar' | null>(null);
+const PREGUNTAS = {
+  denegar: { titulo: 'Denegar propuesta', boton: 'Sí, denegar' },
+  cancelar: { titulo: 'Cancelar propuesta', boton: 'Sí, cancelar' },
+} as const;
+
+function alTocar(accion: AccionSobrePropuesta) {
+  if (accion === 'confirmar') emit('resolver', accion);
+  else aConfirmar.value = accion;
+}
+
+function confirmarAccion() {
+  const accion = aConfirmar.value;
+  aConfirmar.value = null;
+  if (accion) emit('resolver', accion);
+}
 </script>
 
 <template>
@@ -49,7 +71,7 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
       </span>
     </header>
     <slot />
-    <p>{{ propuesta.descripcion }}</p>
+    <p class="descripcion">{{ propuesta.descripcion }}</p>
     <p class="meta">
       <IconoLinea nombre="pin" :tamano="16" /> {{ propuesta.ubicacion }}
       <template v-if="propuesta.precio !== null">
@@ -105,16 +127,36 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
           class="boton"
           :class="a.accion === 'confirmar' ? 'boton--principal' : 'boton--peligro'"
           :disabled="ocupada"
-          @click="emit('resolver', a.accion)"
+          @click="alTocar(a.accion)"
         >
           {{ a.texto }}
         </button>
       </div>
     </footer>
+    <DialogoModal
+      v-if="aConfirmar"
+      :titulo="PREGUNTAS[aConfirmar].titulo"
+      @cerrar="aConfirmar = null"
+    >
+      <p>
+        ¿{{ aConfirmar === 'denegar' ? 'Denegar' : 'Cancelar' }} «{{ titulo }}»? No se puede
+        deshacer.
+      </p>
+      <div class="acciones">
+        <button type="button" class="boton" @click="aConfirmar = null">Volver</button>
+        <button type="button" class="boton boton--peligro" @click="confirmarAccion">
+          {{ PREGUNTAS[aConfirmar].boton }}
+        </button>
+      </div>
+    </DialogoModal>
   </article>
 </template>
 
 <style scoped>
+/* Los saltos de línea de la descripción se muestran como se escribieron. */
+.descripcion {
+  white-space: pre-line;
+}
 .propuesta {
   border-left: 4px solid var(--color-aviso);
   margin-bottom: var(--esp-3);

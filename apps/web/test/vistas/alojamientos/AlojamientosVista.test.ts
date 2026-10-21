@@ -83,9 +83,32 @@ describe('AlojamientosVista', () => {
       .findAll('button')
       .find((b) => b.text() === 'Denegar')!
       .trigger('click');
+    await vista
+      .findAll('button')
+      .find((b) => b.text() === 'Sí, denegar')!
+      .trigger('click');
     await flushPromises();
     expect(resolver).toHaveBeenCalledWith('v1', 'a1', 'denegar');
     expect(vista.find('[role="alert"]').text()).toContain('La propuesta ya está resuelta');
+  });
+
+  it('si la propuesta ya cambió de estado al votar, avisa y muestra cómo quedó', async () => {
+    let estado: AlojamientoVista['estado'] = 'PENDIENTE';
+    const listarAlojamientos = vi.fn(async () => [{ ...cabana, estado }]);
+    const votar = vi.fn(async () => {
+      estado = 'CONFIRMADA'; // el Admin la confirmó mientras la lista estaba abierta
+      throw errorDeApi('PROPUESTA_NO_PENDIENTE', 'La propuesta ya fue resuelta', 409);
+    });
+    const vista = await montar({ listarAlojamientos, votar });
+    expect(vista.text()).toContain('A favor');
+    await vista
+      .findAll('button')
+      .find((b) => b.text() === 'A favor')!
+      .trigger('click');
+    await flushPromises();
+    expect(vista.find('[role="alert"]').text()).toContain('La propuesta ya fue resuelta');
+    expect(vista.findAll('button').some((b) => b.text() === 'A favor')).toBe(false);
+    expect(vista.text()).toContain('Confirmada');
   });
 
   it('filtra por estado y, sin resultados, sugiere mostrar todos', async () => {

@@ -62,6 +62,19 @@ export const CARACTERES_PROHIBIDOS = 'Tiene caracteres que no se pueden usar';
 /** RN-S7 y RN-X8: tiene al menos una letra, número, signo o símbolo (los emojis entre ellos). */
 const seVe = (v: string) => /[\p{L}\p{N}\p{P}\p{S}]/u.test(v);
 
+/** RN-X8: en un texto de varias líneas valen además el salto de línea y la tabulación. */
+const sinProhibidosEnVariasLineas = (v: string) =>
+  sinCaracteresProhibidos(v.replace(/[\n\r\t]/g, ''));
+
+/** RN-X8: texto obligatorio de varias líneas, que se ve y no tiene caracteres prohibidos. */
+const textoDeVariasLineas = (largoMaximo: number, siFalta: string) =>
+  z
+    .string()
+    .trim()
+    .max(largoMaximo, hasta(largoMaximo))
+    .refine(sinProhibidosEnVariasLineas, CARACTERES_PROHIBIDOS)
+    .refine(seVe, siFalta);
+
 /** RN-S7 y RN-X8: texto obligatorio de una línea, que se ve y no tiene caracteres prohibidos. */
 const textoDeUnaLinea = (largoMaximo: number, siFalta: string) =>
   z
@@ -215,16 +228,8 @@ const coordenadas = {
 
 /** Datos comunes a toda propuesta (P8): descripción, ubicación, coordenadas y precio opcional. */
 const baseDePropuesta = {
-  descripcion: z
-    .string()
-    .trim()
-    .min(1, 'Ingresá una descripción')
-    .max(LARGOS_MAXIMOS.descripcion, hasta(LARGOS_MAXIMOS.descripcion)),
-  ubicacion: z
-    .string()
-    .trim()
-    .min(1, 'Ingresá la ubicación')
-    .max(LARGOS_MAXIMOS.ubicacion, hasta(LARGOS_MAXIMOS.ubicacion)),
+  descripcion: textoDeVariasLineas(LARGOS_MAXIMOS.descripcion, 'Ingresá una descripción'),
+  ubicacion: textoDeUnaLinea(LARGOS_MAXIMOS.ubicacion, 'Ingresá la ubicación'),
   ...coordenadas,
   precio: z
     .number()
@@ -239,11 +244,9 @@ const coordenadasCompletas = (v: { latitud?: number | undefined; longitud?: numb
 
 export const esquemaAlojamientoNuevo = z
   .object({
-    nombre: z
-      .string()
-      .trim()
-      .min(1, 'Ingresá el nombre del alojamiento')
-      .max(LARGOS_MAXIMOS.titulo, hasta(LARGOS_MAXIMOS.titulo)),
+    /** Identificador que genera el formulario, para que un reintento no duplique la propuesta. */
+    id: z.uuid().optional(),
+    nombre: textoDeUnaLinea(LARGOS_MAXIMOS.titulo, 'Ingresá el nombre del alojamiento'),
     ...baseDePropuesta,
     fechaDesde: esquemaFecha,
     fechaHasta: esquemaFecha,

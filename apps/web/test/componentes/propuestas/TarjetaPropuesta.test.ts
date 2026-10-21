@@ -30,6 +30,8 @@ function propuesta(
 const montar = (p: PropuestaVista, soyAdmin: boolean) =>
   mount(TarjetaPropuesta, { props: { propuesta: p, soyAdmin, moneda: ARS, titulo: 'Hostel' } });
 const textos = (v: ReturnType<typeof montar>) => v.findAll('button').map((b) => b.text());
+const boton = (v: ReturnType<typeof montar>, texto: string) =>
+  v.findAll('button').find((b) => b.text() === texto)!;
 
 describe('TarjetaPropuesta', () => {
   it('muestra conteo, precio formateado y autor', () => {
@@ -71,11 +73,35 @@ describe('TarjetaPropuesta', () => {
       .findAll('button')
       .find((b) => b.text() === 'En contra')!
       .trigger('click');
-    await v
-      .findAll('button')
-      .find((b) => b.text() === 'Denegar')!
-      .trigger('click');
+    await boton(v, 'Confirmar').trigger('click');
     expect(v.emitted('votar')).toEqual([['EN_CONTRA']]);
+    expect(v.emitted('resolver')).toEqual([['confirmar']]);
+  });
+
+  it('RN-R1: denegar pide confirmación porque no se puede deshacer, y Volver no hace nada', async () => {
+    const v = montar(propuesta('PENDIENTE'), true);
+    await boton(v, 'Denegar').trigger('click');
+    expect(v.emitted('resolver')).toBeUndefined();
+    expect(v.find('[role="dialog"]').text()).toContain('¿Denegar «Hostel»? No se puede deshacer.');
+    await boton(v, 'Volver').trigger('click');
+    expect(v.find('[role="dialog"]').exists()).toBe(false);
+    expect(v.emitted('resolver')).toBeUndefined();
+    await boton(v, 'Denegar').trigger('click');
+    await boton(v, 'Sí, denegar').trigger('click');
     expect(v.emitted('resolver')).toEqual([['denegar']]);
+  });
+
+  it('RN-R1: cancelar una confirmada también pide confirmación', async () => {
+    const v = montar(propuesta('CONFIRMADA'), true);
+    await boton(v, 'Cancelar').trigger('click');
+    expect(v.find('[role="dialog"]').text()).toContain('¿Cancelar «Hostel»? No se puede deshacer.');
+    await boton(v, 'Sí, cancelar').trigger('click');
+    expect(v.emitted('resolver')).toEqual([['cancelar']]);
+  });
+
+  it('muestra los saltos de línea de la descripción', () => {
+    const v = montar({ ...propuesta('PENDIENTE'), descripcion: 'Uno\nDos' }, false);
+    expect(v.find('.descripcion').text()).toBe('Uno\nDos');
+    expect(v.find('.descripcion').classes()).toContain('descripcion');
   });
 });

@@ -6,7 +6,7 @@ import EstadoVacio from '../../componentes/base/EstadoVacio.vue';
 import IconoLinea from '../../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
 import TarjetaPropuesta from '../../componentes/propuestas/TarjetaPropuesta.vue';
-import { mensajeDeError } from '../../clientes/http';
+import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { useCarga } from '../../composables/useCarga';
 import { useCelebracion } from '../../composables/useCelebracion';
 import { usePropuestasStore } from '../../stores/propuestas';
@@ -43,6 +43,10 @@ async function intentar(accion: () => Promise<void>) {
     await accion();
   } catch (e) {
     error.value = mensajeDeError(e);
+    // La propuesta cambió de estado mientras la lista estaba abierta: se muestra cómo quedó.
+    if (e instanceof ErrorDeApi && e.estado === 409) {
+      await propuestas.cargarAlojamientos().catch(() => undefined);
+    }
   } finally {
     ocupado.value = false;
   }

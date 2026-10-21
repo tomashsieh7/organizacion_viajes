@@ -81,7 +81,7 @@ Al confirmar una actividad se vuelve a controlar la superposición con las confi
 | Método y ruta | Quién | Cuerpo | Respuesta | Errores específicos |
 |---|---|---|---|---|
 | `GET /api/viajes/:viajeId/alojamientos?estado=` | Participante | Filtro opcional por estado | `200 { alojamientos }`, ordenados por fecha de entrada | 400 si el estado no existe |
-| `POST /api/viajes/:viajeId/alojamientos` | Participante | `{ nombre, descripcion, ubicacion, latitud?, longitud?, fechaDesde, fechaHasta, precio? }`; coordenadas ambas o ninguna; precio total estimado en la unidad mínima de la moneda | `201 { alojamiento }` pendiente de votación | 422 `FUERA_DEL_VIAJE` (con `detalles: { desde, hasta }`) |
+| `POST /api/viajes/:viajeId/alojamientos` | Participante | `{ id?, nombre, descripcion, ubicacion, latitud?, longitud?, fechaDesde, fechaHasta, precio? }`; `id` es un UUID que genera el formulario para que un reintento no duplique la propuesta; coordenadas ambas o ninguna; textos sin caracteres de control ni invisibles del todo, con saltos de línea solo en la descripción (RN-X8); precio total estimado en la unidad mínima de la moneda | `201 { alojamiento }` pendiente de votación; si ya existe una propuesta con ese `id` de la misma persona en el viaje, devuelve esa | 409 `PROPUESTA_EXISTENTE` si el `id` es de otra propuesta, 422 `FUERA_DEL_VIAJE` (con `detalles: { desde, hasta }`) |
 
 Cada alojamiento es una `propuesta` con `alojamiento: { nombre, fechaDesde, fechaHasta }`.
 

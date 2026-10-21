@@ -9,7 +9,10 @@ import { Propuesta } from '../../propuestas/dominio/propuesta.js';
 import type { ConsultaFechasDeViaje } from '../../propuestas/dominio/puertos.js';
 import type { ReposAlojamientos } from '../dominio/puertos.js';
 
-/** CU05: proponer alojamiento. */
+const propuestaExistente = () =>
+  new ErrorDeDominio('CONFLICTO', 'PROPUESTA_EXISTENTE', 'Ya existe una propuesta con ese id');
+
+/** CU05: proponer alojamiento. Si el mismo formulario reintenta, devuelve la propuesta ya creada. */
 export class ProponerAlojamiento {
   constructor(
     private readonly unidad: UnidadDeTrabajo<ReposAlojamientos>,
@@ -31,7 +34,7 @@ export class ProponerAlojamiento {
       );
     }
     const propuesta = Propuesta.proponer({
-      id: randomUUID(),
+      id: datos.id ?? randomUUID(),
       viajeId,
       autorId,
       tipo: 'ALOJAMIENTO',
@@ -41,9 +44,29 @@ export class ProponerAlojamiento {
       coordenadas: Coordenadas.opcionales(datos.latitud, datos.longitud),
       ahora: this.reloj.ahora(),
     });
-    await this.unidad.ejecutar((repos) =>
-      repos.alojamientos.crear(propuesta, { nombre: datos.nombre, estadia }),
-    );
+    const guardar = () =>
+      this.unidad.ejecutar(async (repos) => {
+        // Un reintento del mismo formulario trae el mismo id: la propuesta ya existe y no se
+        // duplica. Con el id de una propuesta ajena no se toca nada.
+        const origen = await repos.alojamientos.origen(propuesta.id);
+        if (!origen) {
+          await repos.alojamientos.crear(propuesta, { nombre: datos.nombre, estadia });
+        } else if (
+          origen.viajeId !== viajeId ||
+          origen.autorId !== autorId ||
+          origen.tipo !== 'ALOJAMIENTO'
+        ) {
+          throw propuestaExistente();
+        }
+      });
+    try {
+      await guardar();
+    } catch (error) {
+      // Dos envíos simultáneos del mismo intento: el segundo choca con el primero al insertar y
+      // vuelve a mirar, ya con la propuesta guardada.
+      if (!(error instanceof ErrorDeDominio && error.codigo === 'PROPUESTA_EXISTENTE')) throw error;
+      await guardar();
+    }
     return propuesta.id;
   }
 }
