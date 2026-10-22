@@ -67,7 +67,7 @@ describe('Mensaje', () => {
 
 describe('CU19: enviar y consultar mensajes', () => {
   it('RN-X5: un participante activo envía y recibe la vista con su autor', async () => {
-    const vista = await enviar.ejecutar('v1', 'ana', 'Hola grupo');
+    const vista = await enviar.ejecutar('v1', 'ana', 'm1', 'Hola grupo');
     expect(vista).toMatchObject({
       viajeId: 'v1',
       contenido: 'Hola grupo',
@@ -78,7 +78,7 @@ describe('CU19: enviar y consultar mensajes', () => {
   });
 
   it('RN-X5: quien no participa no puede enviar ni unirse', async () => {
-    await expect(enviar.ejecutar('v1', 'luis', 'Hola')).rejects.toMatchObject({
+    await expect(enviar.ejecutar('v1', 'luis', 'm1', 'Hola')).rejects.toMatchObject({
       codigo: 'NO_PARTICIPANTE',
     });
     await expect(new UnirseAlChat(participacion).ejecutar('v2', 'ana')).rejects.toMatchObject({
@@ -88,9 +88,25 @@ describe('CU19: enviar y consultar mensajes', () => {
     expect(base.mensajes).toEqual([]);
   });
 
+  it('RN-X9: reenviar un mensaje que ya llegó devuelve el guardado, también si llegan a la vez', async () => {
+    base.usuarios.push({ id: 'tomas', nombre: 'Tomás', apodo: null });
+    const primero = await enviar.ejecutar('v1', 'ana', 'm1', 'Hola');
+    expect(await enviar.ejecutar('v1', 'ana', 'm1', 'Hola')).toEqual(primero);
+    const [a, b] = await Promise.all([
+      enviar.ejecutar('v1', 'ana', 'm2', 'Chau'),
+      enviar.ejecutar('v1', 'ana', 'm2', 'Chau'),
+    ]);
+    expect(a).toEqual(b);
+    expect(base.mensajes.map((m) => m.id)).toEqual(['m1', 'm2']);
+    // El id de un mensaje ajeno no se puede usar.
+    await expect(enviar.ejecutar('v1', 'tomas', 'm1', 'Hola')).rejects.toMatchObject({
+      codigo: 'MENSAJE_EXISTENTE',
+    });
+  });
+
   it('el historial responde NO_ENCONTRADO si el cursor no es un mensaje del viaje', async () => {
     const consultar = new ConsultarMensajes(new ConsultaMensajesEnMemoria(base));
-    await enviar.ejecutar('v1', 'ana', 'uno');
+    await enviar.ejecutar('v1', 'ana', 'm1', 'uno');
     expect((await consultar.pagina('v1', undefined, 50)).mensajes).toHaveLength(1);
     await expect(consultar.pagina('v1', 'no-existe', 50)).rejects.toMatchObject({
       codigo: 'NO_ENCONTRADO',

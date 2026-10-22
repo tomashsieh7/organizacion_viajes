@@ -54,7 +54,10 @@ export interface DependenciasGatewayChat {
   enviar: EnviarMensaje;
 }
 
-/** Ritmo máximo de envío por conexión: alcanza para charlar y frena a quien inunda la sala. */
+/**
+ * Ritmo máximo de envío por persona, sumando todas sus conexiones: alcanza para charlar y frena a
+ * quien inunda la sala.
+ */
 const MENSAJES_POR_VENTANA = 10;
 
 const VENTANA_MS = 10_000;
@@ -86,6 +89,22 @@ function rechazo(error: unknown): ConfirmacionSocket {
  * cerrada o vencida deja de poder usar una conexión abierta.
  */
 export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGatewayChat): void {
+  /** Momentos de los últimos envíos de cada usuario. */
+  const enviosPorUsuario = new Map<string, number[]>();
+
+  /**
+   * Controla el ritmo del usuario. Antes descarta a quienes no enviaron nada en la última ventana,
+   * así el registro solo guarda a los que están escribiendo.
+   */
+  function controlarRitmoDe(usuarioId: string, ahora = Date.now()): void {
+    for (const [id, envios] of enviosPorUsuario) {
+      if (ahora - envios.at(-1)! >= VENTANA_MS) enviosPorUsuario.delete(id);
+    }
+    const envios = enviosPorUsuario.get(usuarioId) ?? [];
+    enviosPorUsuario.set(usuarioId, envios);
+    controlarRitmo(envios, ahora);
+  }
+
   espacio.use(async (socket, next) => {
     try {
       if (socket.handshake.headers.origin !== deps.origenPermitido) {
@@ -106,9 +125,6 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
   });
 
   espacio.on('connection', (socket: SocketChat) => {
-    /** Momentos de los últimos envíos de esta conexión. */
-    const envios: number[] = [];
-
     /** Ejecuta un evento con la sesión revalidada y responde con la confirmación. */
     const manejar =
       <D, R extends object>(accion: (usuarioId: string, datos: D) => Promise<R>) =>
@@ -149,7 +165,7 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
     socket.on(
       'chat:enviar',
       manejar(async (usuarioId, datos: unknown) => {
-        controlarRitmo(envios);
+        controlarRitmoDe(usuarioId);
         const r = esquemaMensajeNuevo.safeParse(datos);
         if (!r.success) {
           throw new ErrorDeDominio(
@@ -158,12 +174,11 @@ export function registrarGatewayChat(espacio: EspacioChat, deps: DependenciasGat
             r.error.issues[0]?.message ?? 'Datos inválidos',
           );
         }
-        const mensaje = await deps.enviar.ejecutar(r.data.viajeId, usuarioId, r.data.contenido);
-        // Se emite a toda la sala, incluido quien lo envió, con su identificador temporal.
-        espacio
-          .to(salaDelViaje(r.data.viajeId))
-          .emit('chat:mensaje', { ...mensaje, idTemporal: r.data.idTemporal });
-        return { mensaje: { ...mensaje, idTemporal: r.data.idTemporal } };
+        const { id, viajeId, contenido } = r.data;
+        const mensaje = await deps.enviar.ejecutar(viajeId, usuarioId, id, contenido);
+        // Se emite a toda la sala, incluido quien lo envió; un reintento se reconoce por el id.
+        espacio.to(salaDelViaje(viajeId)).emit('chat:mensaje', mensaje);
+        return { mensaje };
       }),
     );
   });

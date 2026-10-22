@@ -118,22 +118,22 @@ describe('CU19 por Socket.IO', () => {
     const deAna = recibidos<MensajeVista>(a.socket, 'chat:mensaje');
     const deTomas = recibidos<MensajeVista>(t.socket, 'chat:mensaje');
 
+    const id = crypto.randomUUID();
     const r = await a.socket.emitWithAck('chat:enviar', {
+      id,
       viajeId,
       contenido: '  ¿Salimos a las 9?  ',
-      idTemporal: 'tmp-1',
     });
     expect(r).toMatchObject({
       ok: true,
-      mensaje: { contenido: '¿Salimos a las 9?', idTemporal: 'tmp-1', autor: { id: ana.id } },
+      mensaje: { id, contenido: '¿Salimos a las 9?', autor: { id: ana.id } },
     });
     await esperar();
     expect(deAna).toEqual([r.mensaje]);
     expect(deTomas).toEqual([r.mensaje]);
     // El mensaje queda en el historial.
     const h = await tomas.c.get(`/api/viajes/${viajeId}/mensajes`);
-    const { idTemporal: _t, ...guardado } = r.mensaje as MensajeVista;
-    expect(h.body).toEqual({ mensajes: [guardado], hayMas: false });
+    expect(h.body).toEqual({ mensajes: [r.mensaje], hayMas: false });
   });
 
   it('un usuario de otro viaje no puede unirse ni enviar, y no recibe nada', async () => {
@@ -145,14 +145,14 @@ describe('CU19 por Socket.IO', () => {
     const envio = await l.socket.emitWithAck('chat:enviar', {
       viajeId,
       contenido: 'hola',
-      idTemporal: 'x',
+      id: crypto.randomUUID(),
     });
     expect(envio).toMatchObject({ ok: false, error: { codigo: 'NO_PARTICIPANTE' } });
     const a = await unido(ana);
     await a.socket.emitWithAck('chat:enviar', {
       viajeId,
       contenido: 'solo el grupo',
-      idTemporal: 'y',
+      id: crypto.randomUUID(),
     });
     await esperar();
     expect(deLuis).toEqual([]);
@@ -163,14 +163,60 @@ describe('CU19 por Socket.IO', () => {
     });
   });
 
+  it('RN-X8: rechaza caracteres de control y mensajes que no se ven', async () => {
+    const a = await unido(ana);
+    for (const contenido of ['hola\u0000chau', 'hola \u202Eodnum', '\u200B\u200B']) {
+      expect(
+        await a.socket.emitWithAck('chat:enviar', { id: crypto.randomUUID(), viajeId, contenido }),
+      ).toMatchObject({ ok: false, error: { codigo: 'VALIDACION' } });
+    }
+    const valido = await a.socket.emitWithAck('chat:enviar', {
+      id: crypto.randomUUID(),
+      viajeId,
+      contenido: 'Hola\n\tgrupo 😀',
+    });
+    expect(valido).toMatchObject({ ok: true, mensaje: { contenido: 'Hola\n\tgrupo 😀' } });
+    expect(await db.mensaje.count()).toBe(1);
+  });
+
+  it('RN-X9: reenviar un mensaje que ya llegó no lo duplica', async () => {
+    const a = await unido(ana);
+    const t = await unido(tomas);
+    const deTomas = recibidos<MensajeVista>(t.socket, 'chat:mensaje');
+    const datos = { id: crypto.randomUUID(), viajeId, contenido: 'Una sola vez' };
+    const [r1, r2] = await Promise.all([
+      a.socket.emitWithAck('chat:enviar', datos),
+      a.socket.emitWithAck('chat:enviar', datos),
+    ]);
+    const r3 = await a.socket.emitWithAck('chat:enviar', datos);
+    expect(r1).toMatchObject({ ok: true, mensaje: { id: datos.id } });
+    expect([r2, r3]).toEqual([r1, r1]);
+    expect(await db.mensaje.count()).toBe(1);
+    // Los demás pueden recibirlo de nuevo, pero es el mismo mensaje.
+    await esperar();
+    expect(new Set(deTomas.map((m) => m.id))).toEqual(new Set([datos.id]));
+    // Otra persona no puede usar ese id.
+    expect(
+      await t.socket.emitWithAck('chat:enviar', { ...datos, contenido: 'otro' }),
+    ).toMatchObject({ ok: false, error: { codigo: 'MENSAJE_EXISTENTE' } });
+  });
+
   it('valida el contenido y deja de aceptar eventos cuando vence la sesión', async () => {
     const a = await unido(ana);
     expect(
-      await a.socket.emitWithAck('chat:enviar', { viajeId, contenido: '   ', idTemporal: 'x' }),
+      await a.socket.emitWithAck('chat:enviar', {
+        viajeId,
+        contenido: '   ',
+        id: crypto.randomUUID(),
+      }),
     ).toMatchObject({ ok: false, error: { codigo: 'VALIDACION' } });
     await db.sesion.updateMany({ where: { usuarioId: ana.id }, data: { expiraEn: new Date(0) } });
     expect(
-      await a.socket.emitWithAck('chat:enviar', { viajeId, contenido: 'hola', idTemporal: 'x' }),
+      await a.socket.emitWithAck('chat:enviar', {
+        viajeId,
+        contenido: 'hola',
+        id: crypto.randomUUID(),
+      }),
     ).toMatchObject({ ok: false, error: { codigo: 'NO_AUTENTICADO' } });
     await esperar();
     expect(a.socket.connected).toBe(false);
@@ -194,18 +240,22 @@ describe('CU19 por Socket.IO', () => {
     expect(a.socket.connected).toBe(false);
     expect(a2.socket.connected).toBe(true);
 
-    await t.socket.emitWithAck('chat:enviar', { viajeId, contenido: 'después', idTemporal: 'y' });
+    await t.socket.emitWithAck('chat:enviar', {
+      viajeId,
+      contenido: 'después',
+      id: crypto.randomUUID(),
+    });
     await esperar();
     expect(enLaCerrada).toEqual([]);
     expect(enLaOtra.map((m) => m.contenido)).toEqual(['después']);
   });
 
-  it('rechaza más de 10 mensajes en 10 segundos por conexión', async () => {
+  it('rechaza más de 10 mensajes en 10 segundos por persona, aunque use varias conexiones', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       const a = await unido(ana);
       const enviar = (socket: Socket, i: number) =>
-        socket.emitWithAck('chat:enviar', { viajeId, contenido: `m${i}`, idTemporal: `t${i}` });
+        socket.emitWithAck('chat:enviar', { viajeId, contenido: `m${i}`, id: crypto.randomUUID() });
       for (let i = 0; i < 10; i++) expect(await enviar(a.socket, i)).toMatchObject({ ok: true });
       expect(await enviar(a.socket, 10)).toEqual({
         ok: false,
@@ -216,11 +266,16 @@ describe('CU19 por Socket.IO', () => {
       });
       // El mensaje rechazado no se guardó.
       expect(await db.mensaje.count()).toBe(10);
-      // El límite es por conexión, y se libera cuando pasa la ventana.
+      // El límite es por persona: otra pestaña no lo saltea, pero sí otra persona.
       const otra = await unido(ana);
-      expect(await enviar(otra.socket, 11)).toMatchObject({ ok: true });
+      expect(await enviar(otra.socket, 11)).toMatchObject({
+        error: { codigo: 'DEMASIADOS_MENSAJES' },
+      });
+      const t = await unido(tomas);
+      expect(await enviar(t.socket, 12)).toMatchObject({ ok: true });
+      // Se libera cuando pasa la ventana.
       vi.setSystemTime(Date.now() + 10_000);
-      expect(await enviar(a.socket, 12)).toMatchObject({ ok: true });
+      expect(await enviar(otra.socket, 13)).toMatchObject({ ok: true });
     } finally {
       vi.useRealTimers();
     }
@@ -241,7 +296,7 @@ describe('Avisos del viaje', () => {
     await a.socket.emitWithAck('chat:enviar', {
       viajeId,
       contenido: 'ya no te llega',
-      idTemporal: 'z',
+      id: crypto.randomUUID(),
     });
     await esperar();
     expect(mensajes).toEqual([]);
@@ -280,7 +335,7 @@ describe('Historial: GET …/mensajes', () => {
       const r = await a.socket.emitWithAck('chat:enviar', {
         viajeId,
         contenido: `m${i}`,
-        idTemporal: `t${i}`,
+        id: crypto.randomUUID(),
       });
       enviados.push(r.mensaje.id);
     }
@@ -311,7 +366,11 @@ describe('Eventos sin confirmación', () => {
     const deTomas = recibidos<MensajeVista>(t.socket, 'chat:mensaje');
     t.socket.emit('chat:salir', { viajeId });
     await esperar();
-    await a.socket.emitWithAck('chat:enviar', { viajeId, contenido: 'Hola', idTemporal: 'x' });
+    await a.socket.emitWithAck('chat:enviar', {
+      viajeId,
+      contenido: 'Hola',
+      id: crypto.randomUUID(),
+    });
     await esperar();
     expect(deTomas).toEqual([]);
   });

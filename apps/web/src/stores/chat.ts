@@ -3,7 +3,7 @@ import { inject, ref } from 'vue';
 import type { AvisoMembresiaFinalizada, MensajeVista } from '@viajes/compartido';
 import { CLIENTE_CHAT, type ConexionChat } from '../clientes/chat';
 import { mensajeDeError } from '../clientes/http';
-import { idTemporal } from '../utiles/idTemporal';
+import { uuidAlAzar } from '../utiles/uuid';
 import { useSesionStore } from './sesion';
 import { useViajeStore } from './viajes';
 
@@ -30,23 +30,26 @@ export const useChatStore = defineStore('chat', () => {
   const finalizada = ref<AvisoMembresiaFinalizada | null>(null);
   let conexion: ConexionChat | null = null;
 
-  /** Agrega o reemplaza un mensaje; el propio optimista se reconoce por su id temporal. */
+  /** Si `x` va después de `m` en el orden del servidor: por hora de envío y, a igual hora, por id. */
+  const vaDespues = (x: MensajeVista, m: MensajeVista) =>
+    x.enviadoEn > m.enviadoEn || (x.enviadoEn === m.enviadoEn && x.id > m.id);
+
+  /**
+   * Agrega o reemplaza un mensaje confirmado por el servidor. Los confirmados quedan en el orden del
+   * servidor, igual que en el historial; los propios que esperan o fallaron, al final, en el orden
+   * en que se escribieron. El propio se reconoce por su id, que eligió el navegador (RN-X9).
+   */
   function incorporar(m: MensajeVista) {
-    const i = mensajes.value.findIndex(
-      (x) =>
-        x.id === m.id ||
-        (m.idTemporal !== undefined && x.idTemporal === m.idTemporal && x.autor.id === m.autor.id),
-    );
-    const nuevo: MensajeEnPantalla = { ...m, estado: 'enviado' };
-    // Conserva el id temporal propio, que es la clave con la que se dibujó el mensaje.
-    const previo = i >= 0 ? mensajes.value[i] : undefined;
-    if (previo)
-      mensajes.value.splice(
-        i,
-        1,
-        previo.idTemporal ? { ...nuevo, idTemporal: previo.idTemporal } : nuevo,
-      );
-    else mensajes.value.push(nuevo);
+    const i = mensajes.value.findIndex((x) => x.id === m.id);
+    const habiaFallado = mensajes.value[i]?.estado === 'error';
+    if (i >= 0) mensajes.value.splice(i, 1);
+    // Si el que figuraba como fallado en realidad llegó y no queda otro fallado, el aviso sobra.
+    if (habiaFallado && !mensajes.value.some((x) => x.estado === 'error')) error.value = '';
+    const lugar = mensajes.value.findIndex((x) => x.estado !== 'enviado' || vaDespues(x, m));
+    mensajes.value.splice(lugar < 0 ? mensajes.value.length : lugar, 0, {
+      ...m,
+      estado: 'enviado',
+    });
   }
 
   function abrirConexion() {
@@ -61,8 +64,12 @@ export const useChatStore = defineStore('chat', () => {
       adminCambiado: (aviso) => {
         if (aviso.viajeId === viajeId.value) void viaje.refrescar();
       },
-      // Lo que se envió mientras la conexión estaba cortada se recupera del historial.
-      reconectado: () => void cargarUltimos(),
+      // Lo que se envió mientras la conexión estaba cortada se recupera del historial, y el aviso
+      // de que no había conexión ya no corresponde.
+      reconectado: () => {
+        error.value = '';
+        void cargarUltimos();
+      },
     });
     return conexion;
   }
@@ -122,25 +129,36 @@ export const useChatStore = defineStore('chat', () => {
   /** Muestra el mensaje enseguida y lo reemplaza cuando el servidor lo confirma. */
   async function enviar(contenido: string) {
     if (!viajeId.value || !conexion || !sesion.usuario) return;
-    const temporal = idTemporal();
+    const id = uuidAlAzar();
     mensajes.value.push({
-      id: temporal,
-      idTemporal: temporal,
+      id,
       viajeId: viajeId.value,
       autor: { id: sesion.usuario.id, nombre: sesion.usuario.nombre, apodo: sesion.usuario.apodo },
       contenido: contenido.trim(),
       enviadoEn: new Date().toISOString(),
       estado: 'pendiente',
     });
+    await mandar(id);
+  }
+
+  /** Vuelve a mandar un mensaje que no se pudo enviar, con el mismo id para no duplicarlo. */
+  async function reintentar(id: string) {
+    if (mensajes.value.find((x) => x.id === id)?.estado === 'error') await mandar(id);
+  }
+
+  async function mandar(id: string) {
+    const m = mensajes.value.find((x) => x.id === id);
+    if (!m || !conexion) return;
+    m.estado = 'pendiente';
     try {
-      incorporar(
-        await conexion.enviar({ viajeId: viajeId.value, contenido, idTemporal: temporal }),
-      );
+      incorporar(await conexion.enviar({ id, viajeId: m.viajeId, contenido: m.contenido }));
       // Un envío que sale borra el aviso de uno anterior que falló, como el de esperar unos segundos.
       error.value = '';
     } catch (e) {
-      const m = mensajes.value.find((x) => x.idTemporal === temporal && x.estado === 'pendiente');
-      if (m) m.estado = 'error';
+      // Si mientras tanto llegó confirmado (por la sala o por el historial), no falló.
+      const actual = mensajes.value.find((x) => x.id === id);
+      if (actual?.estado !== 'pendiente') return;
+      actual.estado = 'error';
       error.value = mensajeDeError(e);
     }
   }
@@ -156,5 +174,6 @@ export const useChatStore = defineStore('chat', () => {
     cargarHistorial,
     cargarAnteriores,
     enviar,
+    reintentar,
   };
 });

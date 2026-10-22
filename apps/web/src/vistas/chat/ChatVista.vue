@@ -35,6 +35,7 @@ watch(
       :mi-id="sesion.usuario?.id ?? ''"
       :hay-mas="chat.hayMas"
       @anteriores="chat.cargarAnteriores"
+      @reintentar="chat.reintentar"
     />
     <CampoMensaje :deshabilitado="!chat.viajeId" @enviar="chat.enviar" />
   </section>

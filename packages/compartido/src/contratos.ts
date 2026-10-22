@@ -188,8 +188,6 @@ export interface MensajeVista {
   autor: { id: string; nombre: string; apodo: string | null };
   contenido: string;
   enviadoEn: string;
-  /** Identificador que puso el cliente al enviarlo, para reemplazar su versión optimista. */
-  idTemporal?: string;
 }
 
 export interface PaginaDeMensajes {
@@ -228,7 +226,7 @@ export interface EventosClienteChat {
   'chat:unirse': (datos: { viajeId: string }, confirmar: (r: ConfirmacionSocket) => void) => void;
   'chat:salir': (datos: { viajeId: string }, confirmar?: (r: ConfirmacionSocket) => void) => void;
   'chat:enviar': (
-    datos: { viajeId: string; contenido: string; idTemporal: string },
+    datos: { id: string; viajeId: string; contenido: string },
     confirmar: (r: ConfirmacionSocket<{ mensaje: MensajeVista }>) => void,
   ) => void;
 }

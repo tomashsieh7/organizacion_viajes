@@ -24,3 +24,80 @@ test('CU19: conversar en el chat desde dos sesiones', async ({ browser }) => {
   await tomas.page.reload();
   await expect(tomas.page.locator('.mensaje')).toHaveCount(2);
 });
+
+test('RN-X9: un mensaje que falló se reintenta, y uno que llegó sin respuesta no queda fallado', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const tomas = await nuevoViajero(browser, 'Tomás');
+  const viajeId = await viajeCon(ana, tomas);
+  // Entre la página y el servidor: puede rechazar un envío o perder su respuesta, y cortar la conexión.
+  let modo: 'normal' | 'rechazar' | 'perder' = 'normal';
+  let cortar = () => {};
+  await ana.page.routeWebSocket(/socket\.io/, (ws) => {
+    const servidor = ws.connectToServer();
+    cortar = () => ws.close();
+    ws.onMessage((m) => {
+      const envio = typeof m === 'string' && /^42\/chat,(\d+)\["chat:enviar"/.exec(m);
+      if (envio && modo === 'rechazar') {
+        modo = 'normal';
+        const error = { codigo: 'DEMASIADOS_MENSAJES', mensaje: 'Esperá unos segundos' };
+        ws.send(`43/chat,${envio[1]}${JSON.stringify([{ ok: false, error }])}`);
+        return;
+      }
+      servidor.send(m);
+    });
+    servidor.onMessage((m) => {
+      const respuesta = typeof m === 'string' && /^43\/chat,|"chat:mensaje"/.test(m);
+      if (!(respuesta && modo === 'perder')) ws.send(m);
+    });
+  });
+  const p = ana.page;
+  await p.goto(`/viajes/${viajeId}/chat`);
+  await tomas.page.goto(`/viajes/${viajeId}/chat`);
+  await expect(p.getByText('Todavía no hay mensajes')).toBeVisible();
+
+  modo = 'rechazar';
+  await p.fill('#mensaje', 'Llevo el mate');
+  await p.press('#mensaje', 'Enter');
+  const burbuja = p.locator('.mensaje', { hasText: 'Llevo el mate' });
+  await expect(burbuja).toContainText('No se pudo enviar');
+  await burbuja.getByRole('button', { name: 'Reintentar' }).click();
+  await expect(burbuja).toHaveAttribute('data-estado', 'enviado');
+  await expect(tomas.page.locator('.mensaje', { hasText: 'Llevo el mate' })).toHaveCount(1);
+
+  // El servidor lo guarda pero la respuesta no vuelve; al reconectarse queda enviado y sin aviso.
+  modo = 'perder';
+  await p.fill('#mensaje', 'Salgo en 5');
+  await p.press('#mensaje', 'Enter');
+  await expect(tomas.page.locator('.mensaje', { hasText: 'Salgo en 5' })).toHaveCount(1);
+  await expect(p.locator('.mensaje', { hasText: 'Salgo en 5' })).toContainText(
+    'No se pudo enviar',
+    { timeout: 15_000 },
+  );
+  modo = 'normal';
+  cortar();
+  await expect(p.locator('.mensaje', { hasText: 'Salgo en 5' })).toHaveAttribute(
+    'data-estado',
+    'enviado',
+    { timeout: 15_000 },
+  );
+  await expect(p.locator('.mensaje', { hasText: 'Salgo en 5' })).toHaveCount(1);
+  await expect(p.getByRole('alert')).toHaveCount(0);
+  await p.reload();
+  await expect(p.locator('.mensaje')).toHaveCount(2);
+});
+
+test('RN-X8: el campo no deja mandar caracteres de control y explica por qué', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const viajeId = await viajeCon(ana);
+  const p = ana.page;
+  await p.goto(`/viajes/${viajeId}/chat`);
+  await p.fill('#mensaje', 'hola\u0000chau');
+  await expect(p.getByRole('alert')).toHaveText('Tiene caracteres que no se pueden usar');
+  await expect(p.getByRole('button', { name: 'Enviar' })).toBeDisabled();
+  await p.press('#mensaje', 'Enter');
+  await expect(p.locator('.mensaje')).toHaveCount(0);
+});

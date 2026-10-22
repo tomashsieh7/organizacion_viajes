@@ -131,8 +131,8 @@ Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exig
 |---|---|---|---|
 | `chat:unirse` | cliente → servidor | `{ viajeId }` | `{ ok: true }`, o `{ ok: false, error: { codigo: "NO_PARTICIPANTE" } }` si no tiene membresía activa |
 | `chat:salir` | cliente → servidor | `{ viajeId }` | `{ ok: true }` |
-| `chat:enviar` | cliente → servidor | `{ viajeId, contenido, idTemporal }`; contenido de 1 a 2000 caracteres, sin contar los espacios de los extremos | `{ ok: true, mensaje }`, o `{ ok: false, error }` con `VALIDACION` o `NO_PARTICIPANTE` |
-| `chat:mensaje` | servidor → sala del viaje | el mensaje con el `idTemporal` de quien lo envió | Llega a todos los que están en la sala, incluido quien lo envió |
+| `chat:enviar` | cliente → servidor | `{ id, viajeId, contenido }`; `id` es un UUID que genera el navegador para cada mensaje; contenido de 1 a 2000 caracteres, sin contar los espacios de los extremos, sin caracteres de control (salvo saltos de línea y tabulaciones) ni de inversión del texto, y con algo visible | `{ ok: true, mensaje }`, o `{ ok: false, error }` con `VALIDACION`, `NO_PARTICIPANTE`, `MENSAJE_EXISTENTE` (el `id` ya es de un mensaje de otra persona o de otro viaje) o `DEMASIADOS_MENSAJES` (más de 10 en 10 segundos por persona, sumando sus conexiones). Reenviar un `id` propio ya guardado devuelve ese mensaje sin duplicarlo |
+| `chat:mensaje` | servidor → sala del viaje | el mensaje, con el `id` que eligió quien lo envió | Llega a todos los que están en la sala, incluido quien lo envió. Un reintento puede volver a emitirlo con el mismo `id` |
 | `viaje:membresia-finalizada` | servidor → conexiones del usuario | `{ viajeId, motivo: "ELIMINADO" \| "RETIRADO", conservaAccesoSaldos }` | Se emite tras una baja; el servidor saca esas conexiones de la sala. `conservaAccesoSaldos` es verdadero si tiene saldos pendientes a favor o en contra |
 | `viaje:admin-cambiado` | servidor → sala del viaje | `{ viajeId, nuevoAdminId, anteriorAdminId }` | Se emite tras un traspaso |
 

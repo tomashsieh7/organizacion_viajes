@@ -7,6 +7,7 @@ import type {
 import type { Mensaje } from './mensaje.js';
 
 export interface RepositorioMensajes {
+  /** Lanza `MENSAJE_EXISTENTE` si ya hay un mensaje con ese id. */
   guardar(mensaje: Mensaje): Promise<void>;
 }
 

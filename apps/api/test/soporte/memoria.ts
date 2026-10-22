@@ -38,7 +38,11 @@ import type {
   RepositorioDeudas,
   RepositorioGastos,
 } from '../../src/modulos/gastos/dominio/puertos.js';
-import type { DatosMensaje, Mensaje } from '../../src/modulos/chat/dominio/mensaje.js';
+import {
+  mensajeExistente,
+  type DatosMensaje,
+  type Mensaje,
+} from '../../src/modulos/chat/dominio/mensaje.js';
 import type {
   ConsultaMensajes,
   NotificadorViaje,
@@ -671,6 +675,7 @@ export class RepositorioMensajesEnMemoria implements RepositorioMensajes {
   constructor(private readonly base: BaseEnMemoria) {}
 
   async guardar(mensaje: Mensaje): Promise<void> {
+    if (this.base.mensajes.some((m) => m.id === mensaje.id)) throw mensajeExistente();
     this.base.mensajes.push(mensaje.aDatos());
   }
 }

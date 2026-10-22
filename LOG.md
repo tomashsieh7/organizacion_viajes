@@ -2135,3 +2135,39 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - Cada prueba nueva falla sin su arreglo.
 - **Documentación:** PLAN.md (RN-M3, RN-M5, RN-M7, RN-M8, la nueva RN-M9, el contrato de CU17 y la pantalla del mapa) y `docs/api.md`. Con la confirmación del usuario ("Si"), el diagrama «Consultando mapa» suma el paso «Lista aparte las del día anterior que siguen después de la medianoche» (`map-42`) y, en la rama sin actividades, la decisión «¿sigue alguna del día anterior?» (`map-43`): con sí va directo a la unión y con no muestra el aviso (aristas `map-44` a `map-46`). Lo de abajo se corrió 200 px. Se editó el XML de la página a mano, como en «Saliendo del grupo».
 - **Verificación:** lint, cobertura con sus mínimos, 383 pruebas de la API, 261 de la web y 23 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-22 16:45 — Merge del PR #46
+
+- Con la autorización del usuario ("Si"), el PR #46 (mapa: último día elegido, lo que sigue del día anterior, marcadores visibles y teclado) se mergeó a `main` en `2c831c2`, fijando la cabeza verificada `2e5b3a5`. El CI pasó los tres trabajos en unos dos minutos, sin conflictos ni comentarios.
+
+## 2026-10-22 — Testing intensivo del chat
+
+- **Pedido del usuario:** seguir con la funcionalidad 8, con la regla 7.2. El usuario eligió corregir los cinco hallazgos ("Todos") y aprobó el plan ("Si").
+- **Probado sin hallazgos:**
+  - permisos de ajenos, ex participantes (también por una conexión abierta antes de salir) y sin sesión;
+  - parámetros del historial y cursores de otro viaje;
+  - 237 mensajes con milisegundos repetidos, paginados de a 13, comparados con un modelo: sin repetidos ni perdidos;
+  - 60 conexiones reciben los mismos 10 mensajes en el mismo orden;
+  - Mayús + Enter, textos de 2000 caracteres y enlaces largos en celular;
+  - el aviso al que lo sacan del grupo.
+- **Hallazgos y arreglos:**
+  1. **Un mensaje que fallaba se perdía.** Quedaba «No se pudo enviar», con el campo ya vacío y sin forma de reintentar. Ahora la burbuja ofrece «Reintentar» (RN-X9).
+  2. **Fallado pero entregado.** Si la respuesta se perdía después de guardarse, quedaba como fallado, y reintentarlo lo duplicaba.
+     - `esquemaMensajeNuevo` pasa a llevar un `id` (UUID) que genera el navegador, en lugar de `idTemporal`, y `MensajeVista` pierde ese campo.
+     - `EnviarMensaje` devuelve el mensaje ya guardado si el `id` es del mismo autor y viaje; si es de otro, rechaza con `MENSAJE_EXISTENTE`. `RepositorioMensajesPrisma` traduce la clave repetida a ese error, para el caso de dos envíos simultáneos.
+     - `utiles/idTemporal.ts` pasa a `utiles/uuid.ts`, con solo `uuidAlAzar`.
+  3. **Reconexión.** El aviso «No se pudo conectar con el chat» quedaba, y el orden podía diferir del de los demás.
+     - `useChatStore` ordena los confirmados como el servidor y deja al final los propios que esperan o fallaron.
+     - El aviso se borra al reconectarse.
+     - `ListaMensajes` sigue al final cuando llega un mensaje que se ubica antes de uno propio fallado.
+  4. **Caracteres.** El carácter nulo daba un error interno, y un mensaje solo invisible quedaba como burbuja vacía. El contenido pasa a `textoDeVariasLineas` (RN-X8), y `CampoMensaje` explica el motivo y no envía.
+  5. **Límite.** El límite de 10 mensajes en 10 segundos se esquivaba con varias pestañas. Pasa a contarse por persona en `gatewayChat`, que descarta a quienes no escribieron en la última ventana.
+- **Testing intensivo de los arreglos:**
+  - 10 envíos simultáneos del mismo `id` desde 5 conexiones: un solo mensaje y la misma respuesta;
+  - 80 envíos y reintentos al azar de 8 personas, comparados con un modelo, sin diferencias;
+  - 250 mensajes de 50 personas a la vez en 627 ms;
+  - en el navegador: sin red y de vuelta, ráfagas con reintento, doble clic en «Reintentar» y celular a 360 px.
+  - **Caso nuevo encontrado y corregido:** sin red, Chrome no corta la conexión, y el mensaje llegaba al volver sin que hubiera reconexión, así que el aviso quedaba. Ahora el aviso se borra cuando no queda ningún mensaje fallado.
+  - Cada prueba nueva falla sin su arreglo.
+- **Documentación:** PLAN.md (RN-X8, la nueva RN-X9, los eventos `chat:enviar` y `chat:mensaje`, y la pantalla del chat) y `docs/api.md`. No hay diagrama de actividad del chat, y el diagrama conceptual no cambia.
+- **Verificación:** lint, cobertura con sus mínimos, 386 pruebas de la API, 266 de la web y 25 e2e en verde; knip solo informa los falsos positivos conocidos.
