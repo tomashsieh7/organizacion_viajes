@@ -210,6 +210,8 @@ export type DatosGastoNuevo = z.input<typeof esquemaGastoNuevo>;
 
 /** CU23 (RN-P3): pago de una deuda propia; quien lo registra es siempre el deudor (P17). */
 export const esquemaPagoNuevo = z.object({
+  /** Id del intento: reintentar con el mismo no registra el pago dos veces (RN-P7). */
+  id: z.uuid().optional(),
   acreedorId: z.uuid('Elegí a quién le pagás'),
   monto: montoEntero.positive('El monto tiene que ser mayor que cero'),
 });

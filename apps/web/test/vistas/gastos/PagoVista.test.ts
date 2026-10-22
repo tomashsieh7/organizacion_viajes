@@ -80,7 +80,11 @@ describe('PagoVista (CU23)', () => {
     await vista.find('#pago-monto').setValue('400');
     await vista.find('form').trigger('submit');
     await flushPromises();
-    expect(pagar).toHaveBeenCalledWith('v1', { acreedorId: 'ana', monto: 40_000 });
+    expect(pagar).toHaveBeenCalledWith('v1', {
+      id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      acreedorId: 'ana',
+      monto: 40_000,
+    });
     const comprobante = vista.find('.comprobante');
     expect(comprobante.attributes('role')).toBe('status');
     expect(comprobante.find('h3').text()).toBe('Pago registrado');
@@ -142,12 +146,50 @@ describe('PagoVista (CU23)', () => {
       deudas: async (_v, rol) => (rol === 'deudor' ? [deudaConAna(100_000)] : []),
       pagar,
     });
-    for (const texto of ['', '0', 'abc']) {
+    // Mal escrito y en cero son problemas distintos, con el mismo texto que en gastos.
+    for (const [texto, mensaje] of [
+      ['', 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50'],
+      ['abc', 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50'],
+      ['0,001', 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50'],
+      ['-1', 'Ingresá un monto válido, por ejemplo 48000 o 48.000,50'],
+      ['0', 'El monto tiene que ser mayor que cero'],
+      ['0,00', 'El monto tiene que ser mayor que cero'],
+    ]) {
       await vista.find('#pago-monto').setValue(texto);
       await vista.find('form').trigger('submit');
-      expect(vista.text()).toContain('Ingresá un monto mayor que cero');
+      expect(vista.find('#pago-monto-error').text()).toContain(mensaje);
     }
     expect(pagar).not.toHaveBeenCalled();
+  });
+
+  it('RN-P7: si se pierde la respuesta, volver a pagar manda el mismo id', async () => {
+    const pagar = vi
+      .fn<ClienteGastos['pagar']>()
+      .mockRejectedValueOnce(new ErrorDeApi(0, 'SIN_CONEXION', 'No se pudo contactar al servidor'))
+      .mockResolvedValue({
+        saldo: 80_000,
+        pago: {
+          id: 'p1',
+          monto: 20_000,
+          fecha: '',
+          registradoPor: { id: 'yo', nombre: 'Yo', apodo: null },
+        },
+      });
+    const vista = await montar({
+      deudas: async (_v, rol) => (rol === 'deudor' ? [deudaConAna(100_000)] : []),
+      pagar,
+    });
+    await vista.find('#pago-monto').setValue('200');
+    await vista.find('form').trigger('submit');
+    await flushPromises();
+    expect(vista.text()).toContain('No se pudo contactar al servidor');
+    await vista.find('form').trigger('submit');
+    await flushPromises();
+    expect(pagar).toHaveBeenCalledTimes(2);
+    const [primero, segundo] = pagar.mock.calls.map(([, datos]) => datos.id);
+    expect(primero).toBeDefined();
+    expect(segundo).toBe(primero);
+    expect(vista.find('.comprobante').exists()).toBe(true);
   });
 
   it('sin deuda con esa persona lo informa', async () => {

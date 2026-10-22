@@ -91,3 +91,44 @@ test('RN-G7: si se pierde la respuesta, volver a guardar no anota el gasto dos v
   expect(gastos).toHaveLength(1);
   await expect(p.locator('.billetera')).toContainText('$ 1.500,00');
 });
+
+test('RN-P7: si se pierde la respuesta, volver a pagar no registra el pago dos veces', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const tomas = await nuevoViajero(browser, 'Tomás');
+  const viajeId = await viajeCon(ana, tomas);
+  const { categorias } = await api<{ categorias: { id: string }[] }>(
+    ana,
+    'GET',
+    '/categorias-gasto',
+  );
+  await api(ana, 'POST', `/viajes/${viajeId}/gastos`, {
+    titulo: 'Cena',
+    categoriaId: categorias[0]!.id,
+    monto: 10_000,
+    modoDivision: 'IGUALES',
+    deudores: [tomas.id],
+  });
+  const p = tomas.page;
+  // El servidor registra el primer intento, pero la respuesta no llega.
+  let perder = true;
+  await p.route('**/api/viajes/*/pagos', async (r) => {
+    if (r.request().method() !== 'POST' || !perder) return r.continue();
+    perder = false;
+    await r.fetch();
+    await r.abort('connectionreset');
+  });
+  await p.goto(`/viajes/${viajeId}/saldos/pagar/${ana.id}`);
+  await p.fill('#pago-monto', '20');
+  await p.getByRole('button', { name: 'Pagar', exact: true }).click();
+  await expect(p.getByRole('alert')).toContainText('No se pudo contactar al servidor');
+  await p.getByRole('button', { name: 'Pagar', exact: true }).click();
+  await expect(p.locator('.comprobante')).toContainText('Te queda por pagarle$ 80,00');
+  const { deudas } = await api<{ deudas: { monto: number }[] }>(
+    tomas,
+    'GET',
+    `/viajes/${viajeId}/deudas?rol=deudor`,
+  );
+  expect(deudas.map((d) => d.monto)).toEqual([8_000]);
+});

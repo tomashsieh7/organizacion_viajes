@@ -2200,3 +2200,30 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - Cada prueba nueva falla sin su arreglo.
 - **Documentación:** PLAN.md (CU20, RN-X8 y la nueva RN-G7) y `docs/api.md`. El diagrama «Anotando gasto» no cambia.
 - **Verificación:** lint, cobertura con sus mínimos, 388 pruebas de la API, 268 de la web y 26 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-22 20:16 — Merge del PR #48
+
+- Con la autorización del usuario ("si"), el PR #48 (gastos) se mergeó a `main` en `7d7f98d`, fijando la cabeza verificada `a22b2cb`. El CI pasó los tres trabajos en menos de tres minutos, sin conflictos ni comentarios.
+
+## 2026-10-22 — Testing intensivo de saldos y pagos
+
+- **Pedido del usuario:** seguir con la funcionalidad 10, con la regla 7.2. El usuario eligió corregir los dos hallazgos ("todas") y aprobó el plan ("si").
+- **Probado sin hallazgos:**
+  - 200 operaciones al azar (gastos, pagos válidos y pagos de más) contra un modelo de deudas netas: saldos y rechazos coinciden;
+  - 30 pagos simultáneos no dejan deudas negativas;
+  - permisos de ajenos, del acreedor que intenta pagar y de ex participantes con deuda, que pagan y al saldar pierden el acceso;
+  - el formulario relee el saldo si otro pago lo cambió;
+  - doble clic y celular.
+- **Hallazgos y arreglos:**
+  1. **Pago duplicado al perderse la respuesta (RN-P7).**
+     - `esquemaPagoNuevo` suma un `id` opcional y `PagoVista` manda uno por intento.
+     - `RegistrarPago` usa ese id: si ya existe del mismo deudor, lo devuelve con el saldo actual, y si es de otro rechaza con 409 `PAGO_EXISTENTE`.
+     - `RepositorioDeudasPrisma` guardaba los pagos con `skipDuplicates`, que con un id repetido habría descartado el pago en silencio mientras la deuda bajaba. Ahora un id repetido deshace la transacción, y `Deuda.marcarPagosGuardados()` mantiene el contrato de que guardar dos veces la misma deuda no repite sus pagos.
+  2. **Mensaje del monto.** `PagoVista` usa los textos del formulario de gastos: monto mal escrito y monto en cero.
+- **Testing intensivo de los arreglos:**
+  - **Caso nuevo encontrado y corregido:** varios reintentos simultáneos de un pago que salda la deuda. El segundo esperaba el bloqueo y chocaba con el saldo ya bajado (`PAGO_EXCEDE_DEUDA` o `SIN_DEUDA_CON_ACREEDOR`) en vez de con el id. `RegistrarPago` ahora devuelve el pago registrado ante cualquier error si ese id ya quedó guardado.
+  - Después del arreglo: 200 operaciones al azar con reintentos simultáneos de 1 a 3 envíos, pagos totales y parciales, y reintentos de otras personas, sin errores ni diferencias de deuda.
+  - En gastos no aplica, porque el reintento simultáneo solo puede chocar con el id.
+  - Cada prueba nueva falla sin su arreglo, también la del contrato de repositorios con `skipDuplicates`.
+- **Documentación:** PLAN.md (CU23 y la nueva RN-P7) y `docs/api.md`. El diagrama «Registrando pago» no cambia.
+- **Verificación:** lint, cobertura con sus mínimos, 390 pruebas de la API, 269 de la web y 27 e2e en verde; knip solo informa los falsos positivos conocidos.
