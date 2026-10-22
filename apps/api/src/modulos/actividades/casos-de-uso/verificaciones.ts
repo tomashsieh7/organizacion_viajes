@@ -42,7 +42,7 @@ export function datosDeActividad(
   ahora: Date,
 ): Omit<DatosNuevaActividad, 'viajeId'> {
   return {
-    id: randomUUID(),
+    id: datos.id ?? randomUUID(),
     autorId,
     titulo: datos.titulo,
     descripcion: datos.descripcion,
@@ -56,7 +56,10 @@ export function datosDeActividad(
   };
 }
 
-/** RN-A2: si choca con alguna confirmada, no se guarda. */
+/**
+ * RN-A2: si choca con alguna confirmada, no se guarda. Llamar después de `compartirAgenda`, para
+ * no pasar por alto una confirmación simultánea.
+ */
 export async function exigirSinSuperposicion(repos: ReposActividades, actividad: Actividad) {
   const conflictos = conflictosDeHorario(
     { id: actividad.id, intervalo: actividad.intervalo },

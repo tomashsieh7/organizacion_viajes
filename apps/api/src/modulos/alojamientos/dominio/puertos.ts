@@ -7,20 +7,12 @@ export interface DetalleAlojamiento {
   estadia: RangoFechas;
 }
 
-/** De qué viaje y de quién es una propuesta ya guardada, para reconocer un reintento. */
-export interface OrigenDePropuesta {
-  viajeId: string;
-  autorId: string;
-  tipo: 'ALOJAMIENTO' | 'ACTIVIDAD';
-}
-
 export interface RepositorioAlojamientos {
   /**
    * Guarda la propuesta base y los datos propios del alojamiento. Lanza CONFLICTO
    * `PROPUESTA_EXISTENTE` si ya hay una propuesta con ese id.
    */
   crear(propuesta: Propuesta, detalle: DetalleAlojamiento): Promise<void>;
-  origen(propuestaId: string): Promise<OrigenDePropuesta | null>;
 }
 
 export interface ReposAlojamientos {

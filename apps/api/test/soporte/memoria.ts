@@ -60,13 +60,14 @@ import type {
 import type {
   ConsultaAlojamientos,
   DetalleAlojamiento,
-  OrigenDePropuesta,
   RepositorioAlojamientos,
 } from '../../src/modulos/alojamientos/dominio/puertos.js';
 import { Propuesta, type DatosPropuesta } from '../../src/modulos/propuestas/dominio/propuesta.js';
 import type {
   ConsultaFechasDeViaje,
+  ConsultaOrigenesDePropuestas,
   ConsultaPropuestas,
+  OrigenDePropuesta,
   RepositorioPropuestas,
 } from '../../src/modulos/propuestas/dominio/puertos.js';
 import { ErrorDeDominio } from '../../src/comun/errores.js';
@@ -430,6 +431,15 @@ export class ConsultaPropuestasEnMemoria implements ConsultaPropuestas {
   }
 }
 
+export class ConsultaOrigenesDePropuestasEnMemoria implements ConsultaOrigenesDePropuestas {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async origen(propuestaId: string): Promise<OrigenDePropuesta | null> {
+    const p = this.base.propuestas.find((x) => x.datos.id === propuestaId)?.datos;
+    return p ? { viajeId: p.viajeId, autorId: p.autorId, tipo: p.tipo } : null;
+  }
+}
+
 export class ConsultaFechasDeViajeEnMemoria implements ConsultaFechasDeViaje {
   constructor(private readonly base: BaseEnMemoria) {}
 
@@ -451,11 +461,6 @@ export class RepositorioAlojamientosEnMemoria implements RepositorioAlojamientos
         fechaHasta: detalle.estadia.hasta,
       },
     });
-  }
-
-  async origen(propuestaId: string): Promise<OrigenDePropuesta | null> {
-    const p = this.base.propuestas.find((x) => x.datos.id === propuestaId)?.datos;
-    return p ? { viajeId: p.viajeId, autorId: p.autorId, tipo: p.tipo } : null;
   }
 }
 
@@ -556,6 +561,8 @@ export class RepositorioActividadesEnMemoria implements RepositorioActividades {
 
   /** Las transacciones en memoria ya se ejecutan de a una. */
   async bloquearAgenda(): Promise<void> {}
+
+  async compartirAgenda(): Promise<void> {}
 
   private reconstruir(fila: FilaConActividad): Actividad {
     return Actividad.reconstruir(

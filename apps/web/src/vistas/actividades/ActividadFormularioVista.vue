@@ -19,6 +19,7 @@ import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { usePropuestasStore } from '../../stores/propuestas';
 import { useViajeStore } from '../../stores/viajes';
 import { aUnidadMinima, formatearDuracion, formatearHorario } from '../../utiles/formato';
+import { uuidAlAzar } from '../../utiles/idTemporal';
 import { useValidacion } from '../../composables/useValidacion';
 import { MONTO_INVALIDO, problemasSegun } from '../../utiles/formularios';
 
@@ -68,10 +69,14 @@ onMounted(async () => {
 });
 
 /** Arma el cuerpo para la API y devuelve sus problemas, con el mismo esquema que valida la API. */
+/** Identifica este intento de proponer: si la respuesta se pierde, reintentar no la duplica. */
+const idDeLaPropuesta = uuidAlAzar();
+
 function armarCuerpo() {
   const precio =
     datos.precio.trim() === '' ? undefined : aUnidadMinima(datos.precio, actual.moneda.decimales);
   const cuerpo: DatosActividadNueva = {
+    id: idDeLaPropuesta,
     titulo: datos.titulo,
     descripcion: datos.descripcion,
     ubicacion: ubicacion.value.ubicacion,

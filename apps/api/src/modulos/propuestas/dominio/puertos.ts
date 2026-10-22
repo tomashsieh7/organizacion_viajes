@@ -48,3 +48,14 @@ export interface ConsultaPropuestas {
 export interface ConsultaFechasDeViaje {
   rango(viajeId: string): Promise<RangoFechas | null>;
 }
+
+/** De qué viaje, de quién y de qué tipo es una propuesta ya guardada, para reconocer un reintento. */
+export interface OrigenDePropuesta {
+  viajeId: string;
+  autorId: string;
+  tipo: 'ALOJAMIENTO' | 'ACTIVIDAD';
+}
+
+export interface ConsultaOrigenesDePropuestas {
+  origen(propuestaId: string): Promise<OrigenDePropuesta | null>;
+}

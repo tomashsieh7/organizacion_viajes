@@ -4,6 +4,10 @@ import type { Coordenadas } from '../../../comun/valores/coordenadas.js';
 
 export type TipoPropuesta = 'ACTIVIDAD' | 'ALOJAMIENTO';
 
+/** Ya hay una propuesta guardada con ese id (de otro intento o de otra persona). */
+export const propuestaExistente = () =>
+  new ErrorDeDominio('CONFLICTO', 'PROPUESTA_EXISTENTE', 'Ya existe una propuesta con ese id');
+
 interface Voto {
   usuarioId: string;
   valor: ValorVoto;
