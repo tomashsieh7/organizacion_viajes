@@ -105,14 +105,14 @@ Votar, desvotar, confirmar, denegar y cancelar una actividad usan los endpoints 
 | Método y ruta | Quién | Parámetros | Respuesta | Errores específicos |
 |---|---|---|---|---|
 | `GET /api/viajes/:viajeId/cronograma` | Participante | — | `200 { dias: [{ fecha, siguenDelDiaAnterior, actividades, alojamientos }] }` con todos los días del viaje | — |
-| `GET /api/viajes/:viajeId/mapa?hoy=&dia=` | Participante | `hoy` obligatorio: fecha del dispositivo (`YYYY-MM-DD`); `dia` opcional, dentro del viaje | `200 { dia, diasConActividad, actividades, recorrido, aviso }` | 400 `VALIDACION`, 422 `FUERA_DEL_VIAJE` |
+| `GET /api/viajes/:viajeId/mapa?hoy=&dia=` | Participante | `hoy` obligatorio: fecha del dispositivo (`YYYY-MM-DD`); `dia` opcional, dentro del viaje | `200 { dia, diasConActividad, siguenDelDiaAnterior, actividades, recorrido, aviso }` | 400 `VALIDACION`, 422 `FUERA_DEL_VIAJE` |
 
 - **Actividades del itinerario:** solo las confirmadas, con la forma `{ id, titulo, descripcion, fecha, horaInicio, horaFin, duracionMin, ubicacion, latitud, longitud }`, ordenadas por hora de inicio y título. En el mapa, la posición en la lista es el número del marcador.
-- **`siguenDelDiaAnterior`:** `[{ id, titulo, ubicacion, horaFin }]` con las actividades confirmadas del día anterior que terminan después de la medianoche (RN-C2). Una que termina justo a las 00:00 no se incluye, y el primer día del viaje la tiene siempre vacía.
+- **`siguenDelDiaAnterior`:** `[{ id, titulo, ubicacion, horaFin }]` con las actividades confirmadas del día anterior que terminan después de la medianoche (RN-C2 y RN-M9). En el mapa no forman parte de `actividades` ni de `recorrido`. Una que termina justo a las 00:00 no se incluye, y el primer día del viaje la tiene siempre vacía.
 - **Alojamientos de cada día del cronograma:** `[{ id, nombre, ubicacion }]` con los alojamientos confirmados en los que se pasa esa noche. El día de salida no cuenta. La lista queda vacía si no hay ninguno.
 - **Día que muestra el mapa si no se indica `dia`:** hoy, si cae dentro del viaje; si no, el primer día con actividades confirmadas; y si no hay ninguna, el primer día del viaje.
 - **`recorrido`:** los puntos `{ latitud, longitud }` que unen las actividades en orden. En el MVP son líneas rectas.
-- **`aviso`:** vale `"SIN_ACTIVIDADES_CONFIRMADAS"` cuando el día no tiene actividades, y `null` en otro caso.
+- **`aviso`:** vale `"SIN_ACTIVIDADES_CONFIRMADAS"` cuando el día no tiene actividades ni ninguna que siga del día anterior, y `null` en otro caso.
 - **Ver una actividad en el mapa (CU18):** se usa `GET …/actividades/:actividadId` para conocer su día y después se pide el mapa de ese día.
 
 ## Chat

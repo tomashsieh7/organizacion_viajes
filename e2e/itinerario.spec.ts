@@ -90,4 +90,66 @@ test('RN-C2: una actividad que pasa la medianoche se aclara y aparece también a
   await expect(sigue).toContainText('Hasta 01:00');
   await expect(sigue).toContainText('Noche de bar');
   await expect(p.getByText('Sin actividades confirmadas')).toHaveCount(0);
+
+  // RN-M9: el mapa del día siguiente también la muestra, sin el aviso de día vacío, y la abre.
+  await p.goto(`/viajes/${viajeId}/mapa?dia=2026-12-12`);
+  const sigueEnMapa = p.locator('.siguen li');
+  await expect(sigueEnMapa).toContainText('Hasta 01:00 · Noche de bar');
+  await expect(p.getByText('no tiene actividades confirmadas')).toHaveCount(0);
+  await sigueEnMapa.getByRole('button', { name: 'Ver en el mapa' }).click();
+  await expect(p).toHaveURL(new RegExp(`actividad=${actividad.id}&dia=2026-12-11$`));
+  await expect(p.locator('.panel-actividad')).toContainText('22:00 a 01:00 del día siguiente');
+});
+
+test('mapa: mismo lugar, teclado, títulos largos y actividad no confirmada', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const viajeId = await viajeCon(ana);
+  const proponer = async (titulo: string, horaInicio: string, latitud: number) =>
+    (
+      await api<{ actividad: { id: string } }>(ana, 'POST', `/viajes/${viajeId}/actividades`, {
+        titulo,
+        descripcion: 'x',
+        ubicacion: 'Hotel',
+        latitud,
+        longitud: -71.3,
+        fecha: '2026-12-11',
+        horaInicio,
+        duracionMin: 60,
+      })
+    ).actividad.id;
+  const largo = 'Desayuno en el hotel con todo el grupo antes de salir a la excursión';
+  for (const [titulo, hora] of [
+    [largo, '08:00'],
+    ['Cena en el hotel', '21:00'],
+  ] as const) {
+    const id = await proponer(titulo, hora, -41.1);
+    await api(ana, 'POST', `/viajes/${viajeId}/propuestas/${id}/confirmar`);
+  }
+  const pendiente = await proponer('Pendiente', '15:00', -41.3);
+  const p = ana.page;
+  await p.setViewportSize({ width: 360, height: 740 });
+  await p.goto(`/viajes/${viajeId}/mapa?dia=2026-12-11`);
+
+  // Las dos actividades del hotel se ven separadas, con sus dos números.
+  const marcadores = p.locator('.marcador-actividad');
+  await expect(marcadores).toHaveText(['1', '2']);
+  const [x1, x2] = await marcadores.evaluateAll((m) => m.map((e) => e.getBoundingClientRect().x));
+  expect(Math.abs(x1! - x2!)).toBeGreaterThanOrEqual(20);
+
+  // Los títulos largos de la lista quedan alineados a la izquierda.
+  await expect(p.locator('.orden button').first()).toHaveCSS('text-align', 'left');
+
+  await marcadores.nth(1).focus();
+  await p.keyboard.press('Enter');
+  await expect(p.locator('.panel-actividad h3')).toContainText('Cena en el hotel');
+
+  await p.goto(`/viajes/${viajeId}/mapa?actividad=${pendiente}`);
+  await expect(p.locator('.marcador-actividad--fuera')).toHaveCount(1);
+  await expect(p.locator('.marcador-actividad--fuera')).toHaveAttribute(
+    'title',
+    'Pendiente (no confirmada)',
+  );
+  await expect(p.locator('.panel-actividad')).toContainText('el marcador gris muestra dónde es');
 });

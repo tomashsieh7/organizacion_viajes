@@ -510,7 +510,7 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 | CU | Método y ruta | Quién | Validaciones | Respuesta y errores |
 |---|---|---|---|---|
 | CU16 | `GET /api/viajes/:viajeId/cronograma` | Participante | — | Todos los días del viaje; cada uno con las actividades confirmadas del día anterior que siguen después de la medianoche (RN-C2), sus actividades confirmadas ordenadas por hora (inicio, fin, título, ubicación, id para el enlace al mapa) y la lista de alojamientos confirmados de esa noche, vacía si no hay ninguno (P21; lista desde F5, porque nada impide confirmar dos alojamientos para la misma noche) |
-| CU17 | `GET /api/viajes/:viajeId/mapa?hoy=YYYY-MM-DD&dia=YYYY-MM-DD` | Participante | `hoy` obligatorio (fecha del dispositivo, P19); `dia` opcional y dentro del viaje | `{ dia, diasConActividad[], actividades[] ordenadas, recorrido[], aviso }`, con `aviso = SIN_ACTIVIDADES_CONFIRMADAS` cuando el día no tiene actividades; 422 `FUERA_DEL_VIAJE` |
+| CU17 | `GET /api/viajes/:viajeId/mapa?hoy=YYYY-MM-DD&dia=YYYY-MM-DD` | Participante | `hoy` obligatorio (fecha del dispositivo, P19); `dia` opcional y dentro del viaje | `{ dia, diasConActividad[], siguenDelDiaAnterior[], actividades[] ordenadas, recorrido[], aviso }`, con `aviso = SIN_ACTIVIDADES_CONFIRMADAS` cuando el día no tiene actividades ni ninguna que siga del anterior; 422 `FUERA_DEL_VIAJE` |
 
 ### 5.8 Comunicarse
 
@@ -576,12 +576,13 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 |---|---|---|---|
 | RN-M1 | Al abrir el mapa sin día elegido: si `hoy` (fecha del dispositivo) cae dentro de `[fecha_inicio, fecha_fin]`, se muestra hoy aunque no tenga actividades; si no, el primer día con actividad confirmada; si no hay ninguna actividad confirmada, el primer día del viaje (P19). | `Viaje.diaInicialDelMapa(hoy, diasConActividad)`; coordina `ConsultarMapa` (`GET …/mapa`) | `dia` |
 | RN-M2 | Se buscan las actividades `CONFIRMADA` de ese día. | `ConsultarMapa` | `actividades` |
-| RN-M3 | Si el día no tiene actividades confirmadas, se muestra un aviso. | `ConsultarMapa` devuelve `aviso`; `MapaVista` lo muestra sobre el mapa | 200 con `actividades: []` |
+| RN-M3 | Si el día no tiene actividades confirmadas, se muestra un aviso. No se muestra si hay alguna que sigue del día anterior (RN-M9), igual que en el cronograma. | `ConsultarMapa` devuelve `aviso`; `MapaVista` lo muestra sobre el mapa | 200 con `actividades: []` |
 | RN-M4 | Las actividades se ordenan cronológicamente por horario. | Repositorio de itinerario (`ORDER BY hora_inicio, titulo`) | orden de `actividades` |
-| RN-M5 | Cada actividad se ubica como marcador numerado en el mapa. | Componente `MapaActividades` | — |
+| RN-M5 | Cada actividad se ubica como marcador numerado en el mapa. Los marcadores que caen en el mismo lugar se separan unos píxeles para que se vean todos los números. Con el teclado, Enter o Espacio sobre un marcador abren su detalle. | Componente `MapaActividades` | — |
 | RN-M6 | Se traza el recorrido entre ellas según ese orden, con líneas rectas en el MVP (P20). | `recorridoEnLineaRecta` en `ConsultarMapa` y `MapaActividades` | `recorrido` |
-| RN-M7 | El viajero puede elegir otro día; el flujo vuelve a RN-M2 con ese día. El día va en `?dia=` y se conserva al pasar al cronograma. | `CalendarioViaje` en `MapaVista` → `GET …/mapa?dia=` | — |
-| RN-M8 | Consultar una actividad en el mapa abre el día de esa actividad, centra el mapa en su marcador y muestra su detalle. | `GET …/actividades/:actividadId` y `MapaVista` con `?actividad=` | 404 si no existe |
+| RN-M7 | El viajero puede elegir otro día; el flujo vuelve a RN-M2 con ese día. El día va en `?dia=` y se conserva al pasar al cronograma. Si cambia de día antes de que llegue la respuesta anterior, esa respuesta se descarta y queda el último día elegido. | `CalendarioViaje` en `MapaVista` → `GET …/mapa?dia=`; `useMapaDelDia` | — |
+| RN-M8 | Consultar una actividad en el mapa abre el día de esa actividad, centra el mapa en su marcador y muestra su detalle. Si no está confirmada, se ubica con un marcador gris sin número, fuera del recorrido. Si la carga falla, «Reintentar» vuelve a abrir la misma actividad. | `GET …/actividades/:actividadId` y `MapaVista` con `?actividad=` | 404 si no existe |
+| RN-M9 | Las actividades confirmadas del día anterior que terminan después de la medianoche se listan arriba del mapa como «Hasta HH:MM · … · sigue del día anterior», con un botón que las abre en su día (RN-M8). No forman parte del recorrido ni de la numeración del día. | `siguenDelDiaAnterior` (módulo itinerario), usada por `ConsultarMapa` y `ConsultarCronograma`; `MapaVista` | `siguenDelDiaAnterior` |
 
 ### 6.5 Consultando cronograma
 
@@ -741,7 +742,7 @@ El cronograma y el mapa no usan store propio porque son vistas de solo lectura; 
 | `/viajes/:viajeId/actividades/nueva` | `ActividadFormularioVista` | `CampoUbicacion`, `CampoFechaHora` (limitado al viaje), `AvisoSuperposicion` (lista los conflictos y deja el formulario listo para ajustar el horario) | `usePropuestasStore` | CU10 |
 | `/viajes/:viajeId/actividades/:actividadId/alternativa` | `ActividadFormularioVista` en modo alternativa | Resumen de la actividad original y los mismos campos que CU10 | `usePropuestasStore` | CU11 |
 | `/viajes/:viajeId/cronograma?dia=` | `CronogramaVista` | `CalendarioViaje` (mes con los días del viaje, punto en los que tienen actividades) y `DiaCronograma` del día elegido, con actividades, alojamiento de la noche y enlace "Ver en el mapa" | Local | CU16 |
-| `/viajes/:viajeId/mapa?dia=&actividad=` | `MapaVista` | `CalendarioViaje` (el mismo del cronograma), `MapaActividades` (Leaflet, marcadores numerados y recorrido), `AvisoSinActividades`, `PanelActividad` | `useMapaDelDia` | CU17, CU18 |
+| `/viajes/:viajeId/mapa?dia=&actividad=` | `MapaVista` | `CalendarioViaje` (el mismo del cronograma), `MapaActividades` (Leaflet, marcadores numerados, recorrido y marcador gris para la actividad no confirmada), lista de lo que sigue del día anterior, `AvisoSinActividades`, `PanelActividad` | `useMapaDelDia` | CU17, CU18 |
 | `/viajes/:viajeId/chat` | `ChatVista` | `ListaMensajes` (carga hacia atrás al subir), `CampoMensaje` | `useChatStore` | CU19 |
 | `/viajes/:viajeId/gastos` | `GastosVista` | Billetera, accesos rápidos y Actividad por día con `TarjetaGasto` (detalle de partes) y `FilaPago` (pagos propios) | `useGastosStore` | CU20 |
 | `/viajes/:viajeId/gastos/nuevo` | `GastoFormularioVista` | `SelectorPagador` (por defecto, quien anota), `SelectorDeudores` (una fila por persona con su inicial y la casilla, contador "2 de 4", nadie marcado al inicio y botón que alterna entre "Seleccionar a todos" y "Quitar a todos"), `SelectorModoDivision`, `TablaPartes` (en arbitraria muestra la suma y la diferencia con el total mientras se escribe) | `useGastosStore` | CU20 |

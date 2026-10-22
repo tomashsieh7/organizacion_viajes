@@ -20,7 +20,8 @@ const emit = defineEmits<{ cerrar: [] }>();
     <p>{{ actividad.ubicacion }}</p>
     <p>{{ actividad.descripcion }}</p>
     <p v-if="!confirmada" class="nota">
-      Esta actividad no está confirmada, por eso no aparece en el recorrido del día.
+      Esta actividad no está confirmada: el marcador gris muestra dónde es, pero no forma parte del
+      recorrido del día.
     </p>
   </aside>
 </template>

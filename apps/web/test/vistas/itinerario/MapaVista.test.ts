@@ -34,6 +34,7 @@ const kayak = {
 const mapaDe = (dia: string, conKayak: boolean): MapaDelDia => ({
   dia,
   diasConActividad: ['2026-12-12'],
+  siguenDelDiaAnterior: [],
   actividades: conKayak ? [kayak] : [],
   recorrido: conKayak ? [{ latitud: kayak.latitud, longitud: kayak.longitud }] : [],
   aviso: conKayak ? null : 'SIN_ACTIVIDADES_CONFIRMADAS',
@@ -121,5 +122,76 @@ describe('MapaVista', () => {
       obtenerActividad: async () => actividad('p', 'Pendiente'),
     });
     expect(vista.find('.panel-actividad').text()).toContain('no está confirmada');
+    // El mapa la ubica aparte, fuera del recorrido.
+    expect(
+      vista.findComponent({ name: 'MapaActividades' }).props('fueraDelRecorrido'),
+    ).toMatchObject({ id: 'p', titulo: 'Pendiente' });
+  });
+
+  it('si llega tarde la respuesta de un día que ya no está elegido, la descarta', async () => {
+    const pendientes = new Map<string, (m: MapaDelDia) => void>();
+    const mapa = vi.fn(
+      (_v: string, _h: string, dia?: string) =>
+        new Promise<MapaDelDia>((ok) => {
+          if (dia) pendientes.set(dia, ok);
+          else ok(mapaDe('2026-12-10', false));
+        }),
+    );
+    const vista = await montar(mapa);
+    const dia = (fecha: string) => vista.find(`[data-fecha="${fecha}"]`);
+    await dia('2026-12-11').trigger('click');
+    await dia('2026-12-12').trigger('click');
+    await flushPromises();
+    pendientes.get('2026-12-12')!(mapaDe('2026-12-12', true));
+    await flushPromises();
+    pendientes.get('2026-12-11')!(mapaDe('2026-12-11', false));
+    await flushPromises();
+    expect(replace).toHaveBeenLastCalledWith({ query: { dia: '2026-12-12' } });
+    expect(vista.find('[aria-pressed="true"]').attributes('data-fecha')).toBe('2026-12-12');
+    expect(vista.find('.orden').text()).toContain('Kayak');
+  });
+
+  it('si falla la carga al abrir una actividad, Reintentar vuelve a abrir esa actividad', async () => {
+    consulta = { actividad: 'k' };
+    let fallar = true;
+    const mapa = vi.fn(async (_v: string, _h: string, dia?: string) => {
+      if (fallar) throw new Error('caída');
+      return mapaDe(dia!, true);
+    });
+    const obtenerActividad = vi.fn(async () => actividad('k', 'Kayak', { estado: 'CONFIRMADA' }));
+    const vista = await montar(mapa, { obtenerActividad });
+    fallar = false;
+    await vista.find('[role="alert"] button').trigger('click');
+    await flushPromises();
+    expect(mapa).toHaveBeenLastCalledWith('v1', expect.any(String), '2026-12-11');
+    expect(vista.find('.panel-actividad').text()).toContain('Kayak');
+    expect(replace).toHaveBeenCalledWith({ query: { actividad: 'k', dia: '2026-12-11' } });
+  });
+
+  it('RN-M9: muestra lo que sigue del día anterior sin el aviso y lo abre en su día', async () => {
+    consulta = { dia: '2026-12-13' };
+    const boliche = { ...kayak, id: 'b', titulo: 'Boliche', ubicacion: 'Centro' };
+    const mapa = vi.fn(async (_v: string, _h: string, dia?: string) =>
+      dia === '2026-12-13'
+        ? {
+            ...mapaDe(dia, false),
+            aviso: null,
+            siguenDelDiaAnterior: [
+              { id: 'b', titulo: 'Boliche', ubicacion: 'Centro', horaFin: '03:00' },
+            ],
+          }
+        : { ...mapaDe(dia!, false), actividades: [boliche], aviso: null },
+    );
+    // La actividad del doble empieza el 11; alcanza para ver que se abre en su día.
+    const obtenerActividad = vi.fn(async () => actividad('b', 'Boliche', { estado: 'CONFIRMADA' }));
+    const vista = await montar(mapa, { obtenerActividad });
+    const sigue = vista.find('.siguen');
+    expect(sigue.text()).toContain('Hasta 03:00 · Boliche · Centro · sigue del día anterior');
+    expect(vista.find('[role="status"]').exists()).toBe(false);
+    await sigue.find('button').trigger('click');
+    await flushPromises();
+    expect(mapa).toHaveBeenLastCalledWith('v1', expect.any(String), '2026-12-11');
+    expect(vista.find('.panel-actividad').text()).toContain('Boliche');
+    expect(replace).toHaveBeenLastCalledWith({ query: { actividad: 'b', dia: '2026-12-11' } });
   });
 });

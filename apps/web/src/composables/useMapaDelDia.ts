@@ -22,17 +22,31 @@ export function useMapaDelDia(viajeId: () => string) {
   const error = ref('');
   const cargando = ref(false);
 
-  /** RN-M1 y RN-M7: sin día, la API decide cuál mostrar con la fecha del dispositivo. */
-  async function cargar(dia?: string) {
+  /**
+   * Número del último pedido: si el viajero cambia de día antes de que llegue la respuesta, la
+   * anterior se descarta para que el mapa muestre siempre el último día elegido.
+   */
+  let ultimoPedido = 0;
+
+  /**
+   * RN-M1 y RN-M7: sin día, la API decide cuál mostrar con la fecha del dispositivo. Devuelve si
+   * el mapa quedó cargado con esta respuesta.
+   */
+  async function cargar(dia?: string): Promise<boolean> {
+    const pedido = ++ultimoPedido;
     error.value = '';
     cargando.value = true;
     try {
-      mapa.value = await itinerario!.mapa(viajeId(), hoyDelDispositivo(), dia);
-      if (elegida.value && elegida.value.actividad.fecha !== mapa.value.dia) elegida.value = null;
+      const respuesta = await itinerario!.mapa(viajeId(), hoyDelDispositivo(), dia);
+      if (pedido !== ultimoPedido) return false;
+      mapa.value = respuesta;
+      if (elegida.value && elegida.value.actividad.fecha !== respuesta.dia) elegida.value = null;
+      return true;
     } catch (e) {
-      error.value = mensajeDeError(e);
+      if (pedido === ultimoPedido) error.value = mensajeDeError(e);
+      return false;
     } finally {
-      cargando.value = false;
+      if (pedido === ultimoPedido) cargando.value = false;
     }
   }
 
@@ -43,10 +57,11 @@ export function useMapaDelDia(viajeId: () => string) {
 
   /** RN-M8: abre el día de la actividad y muestra su detalle. */
   async function abrirActividad(id: string) {
+    const pedido = ++ultimoPedido;
     error.value = '';
     try {
       const vista = await propuestas!.obtenerActividad(viajeId(), id);
-      await cargar(vista.actividad.fecha);
+      if (pedido !== ultimoPedido || !(await cargar(vista.actividad.fecha))) return;
       const enElMapa = mapa.value?.actividades.find((a) => a.id === id);
       elegida.value = enElMapa
         ? { actividad: enElMapa, confirmada: true }
@@ -66,7 +81,7 @@ export function useMapaDelDia(viajeId: () => string) {
             },
           };
     } catch (e) {
-      error.value = mensajeDeError(e);
+      if (pedido === ultimoPedido) error.value = mensajeDeError(e);
     }
   }
 
