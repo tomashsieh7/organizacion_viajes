@@ -33,6 +33,7 @@ async function actividadConfirmada(
   fecha: string,
   horaInicio: string,
   latitud: number,
+  duracionMin = 60,
 ) {
   const r = await ana.c.post(url('/actividades'), {
     titulo,
@@ -42,7 +43,7 @@ async function actividadConfirmada(
     longitud: -71.3,
     fecha,
     horaInicio,
-    duracionMin: 60,
+    duracionMin,
   });
   await ana.c.post(url(`/propuestas/${r.body.actividad.id}/confirmar`));
   return r.body.actividad.id as string;
@@ -97,6 +98,25 @@ describe('CU16: GET …/cronograma', () => {
     expect(
       r.body.dias.map((d: { alojamientos: { id: string }[] }) => d.alojamientos.map((a) => a.id)),
     ).toEqual([[hostel], [hostel], [], []]);
+  });
+});
+
+describe('RN-C2: actividades que pasan la medianoche', () => {
+  it('también aparecen al día siguiente, hasta su hora de fin', async () => {
+    const noche = await actividadConfirmada('Noche', '2026-12-10', '22:00', -41.1, 180);
+    // Termina justo a las 00:00: no sigue al día siguiente.
+    await actividadConfirmada('Cena', '2026-12-11', '23:00', -41.2, 60);
+    // Empieza el último día y termina después: no se agrega un día al viaje.
+    await actividadConfirmada('Cierre', '2026-12-13', '23:00', -41.3, 120);
+
+    const { dias } = (await ana.c.get(url('/cronograma'))).body;
+    expect(dias.map((d: { siguenDelDiaAnterior: unknown[] }) => d.siguenDelDiaAnterior)).toEqual([
+      [],
+      [{ id: noche, titulo: 'Noche', ubicacion: 'lugar Noche', horaFin: '01:00' }],
+      [],
+      [],
+    ]);
+    expect(dias).toHaveLength(4);
   });
 });
 

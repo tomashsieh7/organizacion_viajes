@@ -509,7 +509,7 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 
 | CU | Método y ruta | Quién | Validaciones | Respuesta y errores |
 |---|---|---|---|---|
-| CU16 | `GET /api/viajes/:viajeId/cronograma` | Participante | — | Todos los días del viaje; cada uno con sus actividades confirmadas ordenadas por hora (inicio, fin, título, ubicación, id para el enlace al mapa) y la lista de alojamientos confirmados de esa noche, vacía si no hay ninguno (P21; lista desde F5, porque nada impide confirmar dos alojamientos para la misma noche) |
+| CU16 | `GET /api/viajes/:viajeId/cronograma` | Participante | — | Todos los días del viaje; cada uno con las actividades confirmadas del día anterior que siguen después de la medianoche (RN-C2), sus actividades confirmadas ordenadas por hora (inicio, fin, título, ubicación, id para el enlace al mapa) y la lista de alojamientos confirmados de esa noche, vacía si no hay ninguno (P21; lista desde F5, porque nada impide confirmar dos alojamientos para la misma noche) |
 | CU17 | `GET /api/viajes/:viajeId/mapa?hoy=YYYY-MM-DD&dia=YYYY-MM-DD` | Participante | `hoy` obligatorio (fecha del dispositivo, P19); `dia` opcional y dentro del viaje | `{ dia, diasConActividad[], actividades[] ordenadas, recorrido[], aviso }`, con `aviso = SIN_ACTIVIDADES_CONFIRMADAS` cuando el día no tiene actividades; 422 `FUERA_DEL_VIAJE` |
 
 ### 5.8 Comunicarse
@@ -588,7 +588,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
 | RN-C1 | Se muestran todos los días del viaje, incluidos los que no tienen actividades, con la leyenda "sin actividades confirmadas" (P21). En la interfaz, el calendario muestra todos los días y el detalle se ve de a un día, el elegido. | `ConsultarCronograma`; `CalendarioViaje` y `CronogramaVista` | — |
-| RN-C2 | Cada día muestra solo actividades confirmadas, ordenadas por horario, con hora de inicio y de fin, título, ubicación y enlace "Ver en el mapa". | `ConsultarCronograma` y `CronogramaVista` | — |
+| RN-C2 | Cada día muestra solo actividades confirmadas, ordenadas por horario, con hora de inicio y de fin, título, ubicación y enlace "Ver en el mapa". Si una actividad termina después de la medianoche, su horario lo aclara ("del día siguiente") y el día siguiente la muestra primero, con su hora de fin y la aclaración "sigue del día anterior"; si termina justo a las 00:00, no sigue. | `ConsultarCronograma` y `CronogramaVista` | — |
 | RN-C3 | Cada día muestra el alojamiento confirmado de esa noche, es decir, el que cumple `fecha_desde <= día < fecha_hasta`; si no hay, no se muestra nada. | `RangoFechas.incluyeNoche(dia)` del alojamiento; coordina `ConsultarCronograma` | — |
 | RN-C4 | Al abrir, la vista muestra hoy si cae dentro del viaje; si no, aplica la misma regla que el mapa (RN-M1). Con `?dia=`, abre en ese día, que se conserva al pasar al mapa. | `CronogramaVista` con `diaInicial` de `utiles/fechas.ts` | — |
 

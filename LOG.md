@@ -2078,3 +2078,28 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - Cada prueba nueva falla sin su arreglo.
 - **Documentación:** PLAN.md (RN-X8, RN-A2, CU10 y CU11) y `docs/api.md`. Los diagramas «Proponiendo actividad» y «Proponiendo alternativa de actividad» no cambian.
 - **Verificación:** lint, cobertura con sus mínimos, 381 pruebas de la API, 252 de la web y 21 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-22 15:10 — Merge del PR #44
+
+- Con la autorización del usuario ("si"), el PR #44 ("Actividades: título válido, sin duplicados, tarjetas al día y sin choques con confirmaciones simultáneas") se mergeó a `main` en `54e7133`, fijando la cabeza verificada `6651cd5`. El CI pasó los tres trabajos, sin conflictos ni comentarios. Vitest había terminado en verde, pero GitHub tardó unos minutos en marcarlo.
+
+## 2026-10-22 — Testing intensivo del cronograma
+
+- **Pedido del usuario:** "seguí con la funcionalidad 6", con la regla 7.2. El usuario eligió corregir las dos cosas ("corregí las dos") y aprobó el plan.
+- **Probado sin hallazgos:**
+  - todos los días del viaje;
+  - solo confirmadas y ordenadas;
+  - el alojamiento de cada noche sin el día de salida;
+  - 250 confirmaciones, denegaciones y cancelaciones al azar contra un modelo, sin diferencias;
+  - permisos de ajenos, ex participantes y sin sesión;
+  - un `?dia=` inválido o fuera del viaje;
+  - el enlace «Ver en el mapa»;
+  - un viaje de un año con 300 actividades: 23 ms la consulta, 735 ms para 50 a la vez y 1,2 s la pantalla;
+  - celular a 360 px.
+- **Hallazgo y arreglos:** una actividad de 22:00 a 01:00 se veía como «22:00 a 01:00», una de 24 horas como «00:00 a 00:00», y el día siguiente decía «Sin actividades confirmadas».
+  1. `DiaCronograma` aclara «del día siguiente» con `pasaLaMedianoche`, como la lista de actividades.
+  2. `ConsultarCronograma` suma a cada día `siguenDelDiaAnterior` (contrato `ActividadQueSigue`), que la pantalla muestra primero como «Hasta 01:00 · … · sigue del día anterior». Una actividad que termina justo a las 00:00 no sigue, y no se agrega un día después del viaje (RN-C2).
+  - El calendario no marca el día siguiente como día con actividades, y el mapa se revisa en la funcionalidad 7.
+- **Testing intensivo de los arreglos:** bordes de 00:00 exacto, 24 horas y último día del viaje. Cada prueba nueva falla sin su arreglo.
+- **Documentación:** PLAN.md (RN-C2 y CU16) y `docs/api.md`.
+- **Verificación:** lint, cobertura con sus mínimos, 382 pruebas de la API, 255 de la web y 22 e2e en verde.

@@ -139,8 +139,18 @@ export interface AlojamientoDeLaNoche {
   ubicacion: string;
 }
 
+/** RN-C2: actividad confirmada del día anterior que termina después de la medianoche. */
+export interface ActividadQueSigue {
+  id: string;
+  titulo: string;
+  ubicacion: string;
+  horaFin: string;
+}
+
 export interface DiaDelCronograma {
   fecha: string;
+  /** Las del día anterior que siguen después de la medianoche, ordenadas por horario (RN-C2). */
+  siguenDelDiaAnterior: ActividadQueSigue[];
   /** Solo confirmadas, ordenadas por horario (RN-C2); vacía si el día no tiene (RN-C1). */
   actividades: ActividadDelItinerario[];
   /** Alojamientos confirmados de esa noche; el día de salida no cuenta (RN-C3). */

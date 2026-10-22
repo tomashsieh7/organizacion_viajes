@@ -1,18 +1,30 @@
 <script setup lang="ts">
-import type { DiaDelCronograma } from '@viajes/compartido';
+import { pasaLaMedianoche, type DiaDelCronograma } from '@viajes/compartido';
 import { nombreDelDia } from '../../utiles/fechas';
 
 defineProps<{ dia: DiaDelCronograma; viajeId: string; esHoy: boolean }>();
+
+/** "22:00 a 01:00 del día siguiente" cuando la actividad pasa la medianoche. */
+const horario = (a: DiaDelCronograma['actividades'][number]) =>
+  `${a.horaInicio} a ${a.horaFin}${pasaLaMedianoche(a.horaInicio, a.duracionMin) ? ' del día siguiente' : ''}`;
 </script>
 
 <template>
   <section :id="`dia-${dia.fecha}`" class="dia" :class="{ hoy: esHoy }">
     <h3>{{ nombreDelDia(dia.fecha) }}<span v-if="esHoy" class="etiqueta-hoy"> · hoy</span></h3>
-    <p v-if="!dia.actividades.length" class="vacio">Sin actividades confirmadas</p>
+    <p v-if="!dia.actividades.length && !dia.siguenDelDiaAnterior.length" class="vacio">
+      Sin actividades confirmadas
+    </p>
     <ol v-else>
+      <!-- RN-C2: lo que empezó el día anterior y sigue después de la medianoche. -->
+      <li v-for="a in dia.siguenDelDiaAnterior" :key="`sigue-${a.id}`" class="sigue">
+        <span class="horario">Hasta {{ a.horaFin }}</span> · <strong>{{ a.titulo }}</strong> ·
+        {{ a.ubicacion }} · sigue del día anterior ·
+        <RouterLink :to="`/viajes/${viajeId}/mapa?actividad=${a.id}`">Ver en el mapa</RouterLink>
+      </li>
       <li v-for="a in dia.actividades" :key="a.id">
-        <span class="horario">{{ a.horaInicio }} a {{ a.horaFin }}</span> ·
-        <strong>{{ a.titulo }}</strong> · {{ a.ubicacion }} ·
+        <span class="horario">{{ horario(a) }}</span>
+        · <strong>{{ a.titulo }}</strong> · {{ a.ubicacion }} ·
         <RouterLink :to="`/viajes/${viajeId}/mapa?actividad=${a.id}`">Ver en el mapa</RouterLink>
       </li>
     </ol>
@@ -50,6 +62,9 @@ ol {
 }
 li {
   margin-bottom: 0.3rem;
+}
+.sigue {
+  color: var(--color-texto-secundario);
 }
 .horario {
   display: inline-block;
