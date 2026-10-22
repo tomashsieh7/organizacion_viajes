@@ -43,7 +43,13 @@ async function intentar(accion: () => Promise<void>) {
     // RN-R3: si al confirmar choca con otra confirmada, se muestra con qué.
     if (e instanceof ErrorDeApi && e.codigo === 'SUPERPOSICION_HORARIA') {
       conflictos.value = (e.detalles as { conflictos: ConflictoHorario[] }).conflictos;
-    } else error.value = mensajeDeError(e);
+    } else {
+      error.value = mensajeDeError(e);
+      // La propuesta cambió de estado mientras la lista estaba abierta: se muestra cómo quedó.
+      if (e instanceof ErrorDeApi && e.estado === 409) {
+        await propuestas.cargarActividades().catch(() => undefined);
+      }
+    }
   } finally {
     ocupado.value = false;
   }

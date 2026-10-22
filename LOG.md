@@ -2047,3 +2047,34 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - Cada prueba nueva falla sin su arreglo.
 - **Documentación:** PLAN.md (RN-X8, RN-R1 y CU05) y `docs/api.md`.
 - **Verificación:** lint, cobertura con sus mínimos, 373 pruebas de la API, 251 de la web y 19 e2e en verde.
+
+## 2026-10-21 18:55 — Merge del PR #43
+
+- Con la autorización del usuario ("Sí"), el PR #43 ("Alojamientos: textos válidos, sin duplicados, confirmación al denegar o cancelar y tarjetas al día") se mergeó a `main` en `85398fc`, fijando la cabeza verificada `9c35b90`. El CI pasó los tres trabajos, sin conflictos ni comentarios. Antes, a pedido del usuario, se le pasó el `CLAUDE.md` actual para usarlo en otros proyectos.
+
+## 2026-10-22 — Testing intensivo de actividades
+
+- **Pedido del usuario:** seguir con la funcionalidad 5 con la regla 7.2. El usuario eligió corregir los cuatro hallazgos ("las cuatro") y aprobó el plan.
+- **Probado sin hallazgos:**
+  - horarios y duraciones fuera de rango;
+  - superposición con actividades que cruzan la medianoche y en los bordes, y cancelar libera el horario;
+  - alternativas de alternativas en el mismo grupo, y confirmar una opción deniega el resto;
+  - dos confirmaciones superpuestas simultáneas y grupos de cuatro opciones confirmadas a la vez: queda una sola confirmada;
+  - 100 propuestas simultáneas sin errores;
+  - el formulario conserva lo cargado ante una superposición;
+  - celular a 360 px.
+- **Hallazgos y arreglos:**
+  1. **Título.** El carácter nulo daba 500, y se aceptaban textos invisibles e inversión del texto. Pasa a `textoDeUnaLinea` (RN-X8).
+  2. **Actividad o alternativa duplicada al perderse la respuesta.**
+     - Se extrae `proponerUnaVez` (módulo de propuestas) con el puerto `ConsultaOrigenesDePropuestas`, y alojamientos pasa a usarla.
+     - `RepositorioActividades.crear` lanza `PROPUESTA_EXISTENTE` ante el id repetido.
+     - El formulario de actividad manda un UUID por intento.
+  3. **Tarjeta desactualizada en actividades.** Ante un 409 al votar o resolver, la lista se recarga, como en alojamientos.
+  4. **Carrera entre proponer y confirmar.** Una propuesta que chocaba con una confirmación simultánea se guardaba (8 de 10 intentos). Proponer toma `compartirAgenda` (`FOR SHARE` sobre el viaje) antes de controlar la superposición; en la alternativa, antes de cargar la actividad elegida, en el mismo orden que la resolución.
+- **Testing intensivo de los arreglos:**
+  - 30 carreras de proponer contra confirmar: ninguna propuesta que choca quedó guardada;
+  - 100 propuestas simultáneas siguen entrando todas, en 682 ms frente a 590 ms antes.
+  - La prueba de la carrera es determinista: deja la confirmación abierta en una transacción mientras se propone.
+  - Cada prueba nueva falla sin su arreglo.
+- **Documentación:** PLAN.md (RN-X8, RN-A2, CU10 y CU11) y `docs/api.md`. Los diagramas «Proponiendo actividad» y «Proponiendo alternativa de actividad» no cambian.
+- **Verificación:** lint, cobertura con sus mínimos, 381 pruebas de la API, 252 de la web y 21 e2e en verde; knip solo informa los falsos positivos conocidos.

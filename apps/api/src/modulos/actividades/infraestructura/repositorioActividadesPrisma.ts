@@ -1,6 +1,10 @@
 import { deFecha, deHora } from '../../../comun/infraestructura/conversiones.js';
-import type { ClientePrisma } from '../../../comun/infraestructura/clientePrisma.js';
+import {
+  esViolacionDeUnicidad,
+  type ClientePrisma,
+} from '../../../comun/infraestructura/clientePrisma.js';
 import { Intervalo } from '../../../comun/valores/intervalo.js';
+import { propuestaExistente } from '../../propuestas/dominio/propuesta.js';
 import type { RepositorioPropuestas } from '../../propuestas/dominio/puertos.js';
 import { Actividad } from '../dominio/actividad.js';
 import type { ActividadAgendada } from '../dominio/politicas.js';
@@ -16,21 +20,26 @@ export class RepositorioActividadesPrisma implements RepositorioActividades {
   async crear(actividad: Actividad): Promise<void> {
     const { votos, ...p } = actividad.propuesta.aDatos();
     const d = actividad.detalle;
-    await this.db.propuesta.create({
-      data: {
-        ...p,
-        precio: p.precio === null ? null : BigInt(p.precio),
-        actividad: {
-          create: {
-            titulo: d.titulo,
-            fecha: deFecha(d.fecha),
-            horaInicio: deHora(d.horaInicio),
-            duracionMin: d.duracionMin,
-            alternativaDeId: d.alternativaDeId,
+    try {
+      await this.db.propuesta.create({
+        data: {
+          ...p,
+          precio: p.precio === null ? null : BigInt(p.precio),
+          actividad: {
+            create: {
+              titulo: d.titulo,
+              fecha: deFecha(d.fecha),
+              horaInicio: deHora(d.horaInicio),
+              duracionMin: d.duracionMin,
+              alternativaDeId: d.alternativaDeId,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (error) {
+      if (esViolacionDeUnicidad(error)) throw propuestaExistente();
+      throw error;
+    }
   }
 
   async obtenerParaModificar(viajeId: string, actividadId: string): Promise<Actividad | null> {
@@ -77,5 +86,9 @@ export class RepositorioActividadesPrisma implements RepositorioActividades {
 
   async bloquearAgenda(viajeId: string): Promise<void> {
     await this.db.$queryRaw`SELECT id FROM viaje WHERE id = ${viajeId}::uuid FOR UPDATE`;
+  }
+
+  async compartirAgenda(viajeId: string): Promise<void> {
+    await this.db.$queryRaw`SELECT id FROM viaje WHERE id = ${viajeId}::uuid FOR SHARE`;
   }
 }

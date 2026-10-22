@@ -14,6 +14,7 @@ import {
   baseVacia,
   ConsultaAlojamientosEnMemoria,
   ConsultaFechasDeViajeEnMemoria,
+  ConsultaOrigenesDePropuestasEnMemoria,
   ConsultaPropuestasEnMemoria,
   RepositorioAlojamientosEnMemoria,
   RepositorioPropuestasEnMemoria,
@@ -80,6 +81,7 @@ const proponer = (fechaDesde = '2026-12-10', fechaHasta = '2026-12-13') =>
     unidadAlojamientos,
     new ConsultaFechasDeViajeEnMemoria(base),
     reloj,
+    new ConsultaOrigenesDePropuestasEnMemoria(unidadAlojamientos.confirmado),
   ).ejecutar(VIAJE, 'tomas', {
     nombre: 'Hostel Patagonia',
     descripcion: 'Con desayuno',

@@ -14,6 +14,7 @@ import {
   baseVacia,
   ConsultaActividadesEnMemoria,
   ConsultaFechasDeViajeEnMemoria,
+  ConsultaOrigenesDePropuestasEnMemoria,
   ConsultaPropuestasEnMemoria,
   propuestaDePrueba,
   RepositorioActividadesEnMemoria,
@@ -70,6 +71,9 @@ beforeEach(() => {
     unidad,
     fechas: { rango: (id) => new ConsultaFechasDeViajeEnMemoria(unidad.confirmado).rango(id) },
     reloj,
+    origenes: {
+      origen: (id) => new ConsultaOrigenesDePropuestasEnMemoria(unidad.confirmado).origen(id),
+    },
   };
 });
 

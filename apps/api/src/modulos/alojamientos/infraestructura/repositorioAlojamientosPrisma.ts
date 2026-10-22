@@ -1,15 +1,10 @@
-import { ErrorDeDominio } from '../../../comun/errores.js';
 import { deFecha } from '../../../comun/infraestructura/conversiones.js';
 import {
   esViolacionDeUnicidad,
   type ClientePrisma,
 } from '../../../comun/infraestructura/clientePrisma.js';
-import type { Propuesta } from '../../propuestas/dominio/propuesta.js';
-import type {
-  DetalleAlojamiento,
-  OrigenDePropuesta,
-  RepositorioAlojamientos,
-} from '../dominio/puertos.js';
+import { propuestaExistente, type Propuesta } from '../../propuestas/dominio/propuesta.js';
+import type { DetalleAlojamiento, RepositorioAlojamientos } from '../dominio/puertos.js';
 
 export class RepositorioAlojamientosPrisma implements RepositorioAlojamientos {
   constructor(private readonly db: ClientePrisma) {}
@@ -32,20 +27,9 @@ export class RepositorioAlojamientosPrisma implements RepositorioAlojamientos {
       });
     } catch (error) {
       if (esViolacionDeUnicidad(error)) {
-        throw new ErrorDeDominio(
-          'CONFLICTO',
-          'PROPUESTA_EXISTENTE',
-          'Ya existe una propuesta con ese id',
-        );
+        throw propuestaExistente();
       }
       throw error;
     }
-  }
-
-  origen(propuestaId: string): Promise<OrigenDePropuesta | null> {
-    return this.db.propuesta.findUnique({
-      where: { id: propuestaId },
-      select: { viajeId: true, autorId: true, tipo: true },
-    });
   }
 }

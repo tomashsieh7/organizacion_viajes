@@ -65,6 +65,7 @@ describe('ActividadFormularioVista', () => {
     await vista.find('form').trigger('submit');
     await flushPromises();
     expect(proponerActividad).toHaveBeenCalledWith('v1', {
+      id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       titulo: 'Kayak',
       descripcion: 'Salida guiada',
       ubicacion: 'Bahía López',

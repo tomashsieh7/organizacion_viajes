@@ -4,6 +4,7 @@ import type { Actividad } from './actividad.js';
 import type { ActividadAgendada } from './politicas.js';
 
 export interface RepositorioActividades {
+  /** Lanza CONFLICTO `PROPUESTA_EXISTENTE` si ya hay una propuesta con ese id. */
   crear(actividad: Actividad): Promise<void>;
   /** Carga una actividad del viaje bloqueada hasta el fin de la transacción; null si no existe. */
   obtenerParaModificar(viajeId: string, actividadId: string): Promise<Actividad | null>;
@@ -16,6 +17,12 @@ export interface RepositorioActividades {
    * simultáneas no dejen actividades superpuestas.
    */
   bloquearAgenda(viajeId: string): Promise<void>;
+  /**
+   * RN-A2: bloqueo compartido de la agenda para proponer. Espera a que termine una confirmación en
+   * curso, así el control de superposición ve la agenda actualizada, pero no frena a otras
+   * propuestas simultáneas.
+   */
+  compartirAgenda(viajeId: string): Promise<void>;
 }
 
 export interface ReposActividades {

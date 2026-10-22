@@ -97,6 +97,39 @@ describe('CU10 y CU18: proponer y ver actividades', () => {
     }
   });
 
+  it('RN-X8: el título no admite caracteres de control ni ser invisible del todo', async () => {
+    for (const titulo of ['Kayak\u0000', '\u200b', 'Kayak\u202Eabc', 'Kayak\nlago']) {
+      const r = await tomas.c.post(url('/actividades'), { ...kayak, titulo });
+      expect(r.status, JSON.stringify(titulo)).toBe(400);
+      expect(r.body.error.codigo).toBe('VALIDACION');
+    }
+  });
+
+  it('CU10 y CU11: reintentar con el mismo id devuelve la propuesta ya creada y no la duplica', async () => {
+    const id = '7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
+    const intentos = await Promise.all(
+      Array.from({ length: 5 }, () => tomas.c.post(url('/actividades'), { ...kayak, id })),
+    );
+    expect(intentos.map((r) => r.status)).toEqual([201, 201, 201, 201, 201]);
+    expect(await db.propuesta.count({ where: { viajeId } })).toBe(1);
+
+    const idAlt = '8b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e';
+    const alt = { ...kayak, id: idAlt, horaInicio: '15:00' };
+    const alternativas = await Promise.all(
+      Array.from({ length: 5 }, () => tomas.c.post(url(`/actividades/${id}/alternativas`), alt)),
+    );
+    expect(alternativas.map((r) => r.status)).toEqual([201, 201, 201, 201, 201]);
+    expect(await db.propuesta.count({ where: { viajeId } })).toBe(2);
+
+    // Con el id de una propuesta de otra persona no se toca nada.
+    const ajena = await ana.c.post(url('/actividades'), { ...kayak, titulo: 'Otra', id });
+    expect(ajena.status).toBe(409);
+    expect(ajena.body.error.codigo).toBe('PROPUESTA_EXISTENTE');
+    expect((await db.actividad.findUniqueOrThrow({ where: { propuestaId: id } })).titulo).toBe(
+      kayak.titulo,
+    );
+  });
+
   it('RN-X4: el día de inicio tiene que estar dentro del viaje', async () => {
     const r = await tomas.c.post(url('/actividades'), { ...kayak, fecha: '2026-12-17' });
     expect([r.status, r.body.error.codigo]).toEqual([422, 'FUERA_DEL_VIAJE']);
@@ -144,6 +177,35 @@ describe('RN-A2 y RN-R3: superposición', () => {
     expect(confirmadas).toHaveLength(1);
   });
 });
+
+describe('RN-A2 con una confirmación en curso', () => {
+  it('proponer espera a que termine la confirmación y controla contra la agenda actualizada', async () => {
+    const confirmandose = await proponer();
+    let pedido!: Promise<{ status: number; body: { error?: { codigo: string } } }>;
+    // Una confirmación en curso: la agenda bloqueada y la actividad confirmada sin publicar.
+    await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM viaje WHERE id = ${viajeId}::uuid FOR UPDATE`;
+      await tx.propuesta.update({
+        where: { id: confirmandose },
+        data: { estado: 'CONFIRMADA', resueltaPorId: ana.id, resueltaEn: new Date() },
+      });
+      pedido = proponerQueChoca();
+      await new Promise((listo) => setTimeout(listo, 300));
+    });
+    const r = await pedido;
+    expect(r.status).toBe(409);
+    expect(r.body.error?.codigo).toBe('SUPERPOSICION_HORARIA');
+  });
+});
+
+/** Una propuesta que choca con el Kayak de 10 a 12; arranca el pedido en el momento. */
+function proponerQueChoca() {
+  return new Promise<{ status: number; body: { error?: { codigo: string } } }>((listo, falla) => {
+    tomas.c
+      .post(url('/actividades'), { ...kayak, titulo: 'Choca', horaInicio: '11:00' })
+      .then(listo, falla);
+  });
+}
 
 describe('CU11 y RN-R4: alternativas', () => {
   it('la alternativa de una alternativa se vincula a la original', async () => {

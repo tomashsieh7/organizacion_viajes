@@ -262,11 +262,9 @@ export const esquemaHora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Usá e
 
 /** RN-A1 y RN-B2: datos de una actividad o de una alternativa; las coordenadas son obligatorias (P8). */
 export const esquemaActividadNueva = z.object({
-  titulo: z
-    .string()
-    .trim()
-    .min(1, 'Ingresá un título')
-    .max(LARGOS_MAXIMOS.titulo, hasta(LARGOS_MAXIMOS.titulo)),
+  /** Identificador que genera el formulario, para que un reintento no duplique la propuesta. */
+  id: z.uuid().optional(),
+  titulo: textoDeUnaLinea(LARGOS_MAXIMOS.titulo, 'Ingresá un título'),
   ...baseDePropuesta,
   latitud: z.number({ error: 'Marcá la ubicación en el mapa' }).min(-90).max(90),
   longitud: z.number({ error: 'Marcá la ubicación en el mapa' }).min(-180).max(180),

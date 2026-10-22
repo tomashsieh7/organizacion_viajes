@@ -90,6 +90,30 @@ describe('ActividadesVista', () => {
     expect(vista.find('.aviso-superposicion').text()).toContain('primero hay que cancelar');
   });
 
+  it('si la propuesta ya cambió de estado al votar, avisa y muestra cómo quedó', async () => {
+    let estado: typeof trekking.estado = 'PENDIENTE';
+    const listarActividades = vi.fn(async () => [kayak, { ...trekking, estado }]);
+    const votar = vi.fn(async () => {
+      estado = 'DENEGADA'; // el Admin confirmó otra opción del grupo con la lista abierta
+      throw errorDeApi('PROPUESTA_NO_PENDIENTE', 'La propuesta ya fue resuelta', 409);
+    });
+    const vista = await montar({ listarActividades, votar }, 'VIAJERO');
+    const tarjetaTrekking = () =>
+      vista.findAll('article').find((a) => a.text().includes('Trekking'))!;
+    await tarjetaTrekking()
+      .findAll('button')
+      .find((b) => b.text() === 'A favor')!
+      .trigger('click');
+    await flushPromises();
+    expect(vista.find('[role="alert"]').text()).toContain('La propuesta ya fue resuelta');
+    expect(tarjetaTrekking().text()).toContain('Denegada');
+    expect(
+      tarjetaTrekking()
+        .findAll('button')
+        .some((b) => b.text() === 'A favor'),
+    ).toBe(false);
+  });
+
   it('muestra los demás errores como mensaje', async () => {
     const vista = await montar({
       listarActividades: async () => {

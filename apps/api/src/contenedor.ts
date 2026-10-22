@@ -76,6 +76,7 @@ import type {
 import { ConsultaActividadesPrisma } from './modulos/actividades/infraestructura/consultaActividadesPrisma.js';
 import { RepositorioActividadesPrisma } from './modulos/actividades/infraestructura/repositorioActividadesPrisma.js';
 import { ConsultaFechasDeViajePrisma } from './modulos/propuestas/infraestructura/consultaFechasDeViajePrisma.js';
+import { ConsultaOrigenesDePropuestasPrisma } from './modulos/propuestas/infraestructura/consultaOrigenesDePropuestasPrisma.js';
 import { ConsultaPropuestasPrisma } from './modulos/propuestas/infraestructura/consultaPropuestasPrisma.js';
 import { RepositorioPropuestasPrisma } from './modulos/propuestas/infraestructura/repositorioPropuestasPrisma.js';
 import { ConsultaDeudasPrisma } from './modulos/viajes/infraestructura/consultaDeudasPrisma.js';
@@ -194,10 +195,12 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   const unidadActividades = new UnidadDeTrabajoPrisma<ReposActividades>(prisma, (tx) => ({
     actividades: new RepositorioActividadesPrisma(tx, new RepositorioPropuestasPrisma(tx)),
   }));
+  const origenesDePropuestas = new ConsultaOrigenesDePropuestasPrisma(prisma);
   const depsActividades: DependenciasProponerActividad = {
     unidad: unidadActividades,
     fechas: new ConsultaFechasDeViajePrisma(prisma),
     reloj,
+    origenes: origenesDePropuestas,
   };
   // La resolución de propuestas suma las reglas de actividades sin modificar ResolverPropuesta.
   const unidadResolucion = new UnidadDeTrabajoPrisma<ReposResolucionConActividades>(
@@ -318,6 +321,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
         unidadAlojamientos,
         new ConsultaFechasDeViajePrisma(prisma),
         reloj,
+        origenesDePropuestas,
       ),
       consultar: new ConsultarAlojamientos(new ConsultaAlojamientosPrisma(prisma)),
     },
