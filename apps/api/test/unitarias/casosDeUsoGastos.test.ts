@@ -12,6 +12,7 @@ import { UnidadDeTrabajoEnMemoria } from '../soporte/unidadDeTrabajoEnMemoria.js
 import {
   baseVacia,
   ConsultaCategoriasEnMemoria,
+  ConsultaGastosEnMemoria,
   ConsultaSaldosEnMemoria,
   ConsultaSaldosPendientesEnMemoria,
   RepositorioDeudasEnMemoria,
@@ -61,6 +62,11 @@ const anotar = (registradoPor: string, datos: Partial<DatosGastoNuevo>) =>
   new AnotarGasto({
     unidad,
     categorias: new ConsultaCategoriasEnMemoria(base),
+    // Lee lo confirmado, como la consulta real fuera de la transacción.
+    gastos: {
+      obtener: (v, id) => new ConsultaGastosEnMemoria(unidad.confirmado).obtener(v, id),
+      listar: (v) => new ConsultaGastosEnMemoria(unidad.confirmado).listar(v),
+    },
     division: (d) =>
       d.modoDivision === 'ARBITRARIA'
         ? new DivisionArbitraria(new Map((d.partes ?? []).map((p) => [p.usuarioId, p.monto])))
@@ -120,6 +126,22 @@ describe('CU20: anotar gasto', () => {
       detalles: { usuarios: [SOFIA, 'nadie'] },
     });
     expect(unidad.confirmado.gastos).toEqual([]);
+  });
+
+  it('RN-G7: reintentar con el mismo id devuelve el gasto sin volver a sumar las deudas', async () => {
+    const id = '0b8f8a1c-6a3e-4c1e-9b1a-3f2d1c0e9a77';
+    expect(await anotar(ANA, { id })).toBe(id);
+    expect(await anotar(ANA, { id })).toBe(id);
+    // Dos intentos a la vez: uno guarda y el otro devuelve ese.
+    const otro = '6c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f';
+    expect(await Promise.all([anotar(ANA, { id: otro }), anotar(ANA, { id: otro })])).toEqual([
+      otro,
+      otro,
+    ]);
+    expect(unidad.confirmado.gastos.map((g) => g.id)).toEqual([id, otro]);
+    expect([monto(TOMAS, ANA), monto(LUIS, ANA)]).toEqual([600, 600]);
+    // El id de un gasto ajeno no se puede usar.
+    await expect(anotar(TOMAS, { id })).rejects.toMatchObject({ codigo: 'GASTO_EXISTENTE' });
   });
 
   it('RN-G4: con la suma arbitraria incorrecta no guarda nada', async () => {

@@ -16,6 +16,10 @@ export interface DatosGasto {
   partes: ParteDeGasto[];
 }
 
+/** Ya hay un gasto guardado con ese id, de otro viaje o de otra persona (RN-G7). */
+export const gastoExistente = () =>
+  new ErrorDeDominio('CONFLICTO', 'GASTO_EXISTENTE', 'Ya existe un gasto con ese id');
+
 /** Lo que una parte agrega a la deuda de un viajero con el pagador (RN-G6). */
 export interface DeudaGenerada {
   deudorId: string;

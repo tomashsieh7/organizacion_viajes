@@ -2171,3 +2171,32 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - Cada prueba nueva falla sin su arreglo.
 - **Documentación:** PLAN.md (RN-X8, la nueva RN-X9, los eventos `chat:enviar` y `chat:mensaje`, y la pantalla del chat) y `docs/api.md`. No hay diagrama de actividad del chat, y el diagrama conceptual no cambia.
 - **Verificación:** lint, cobertura con sus mínimos, 386 pruebas de la API, 266 de la web y 25 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-22 18:20 — Merge del PR #47
+
+- Con la autorización del usuario ("Si"), el PR #47 (chat) se mergeó a `main` en `afcb99d`, fijando la cabeza verificada `8d5d65a`.
+- Vitest y los e2e pasaron enseguida. «Lint y tipos» quedó 40 minutos en cola sin máquina asignada, se relanzó una vez y pasó en 34 segundos.
+- El usuario indicó que, si un trabajo del CI no termina en verde, se espera a que diga de volver a lanzarlo.
+
+## 2026-10-22 — Testing intensivo de gastos
+
+- **Pedido del usuario:** seguir con la funcionalidad 9, con la regla 7.2. El usuario eligió corregir los tres hallazgos ("todos") y aprobó el plan ("si").
+- **Probado sin hallazgos:**
+  - 150 gastos al azar entre 6 personas, con partes iguales y arbitrarias y pagadores variados, contra un modelo propio de deudas netas: sin diferencias;
+  - validación de montos (cero, negativos, decimales de más, enormes) y de las partes;
+  - permisos de ajenos y ex participantes, como pagadores, deudores o quienes anotan;
+  - el doble clic y el doble Enter anotan un solo gasto;
+  - la lista de 200 gastos carga en 0,7 s, sin desbordes en celular.
+- **Hallazgos y arreglos:**
+  1. **Gasto duplicado al perderse la respuesta (RN-G7).**
+     - `esquemaGastoNuevo` suma un `id` opcional y el formulario manda uno por intento.
+     - `AnotarGasto` usa ese id: si ya existe del mismo autor y viaje lo devuelve sin tocar las deudas, y si es de otro rechaza con 409 `GASTO_EXISTENTE`. Lo consulta con la `ConsultaGastos` que ya existía.
+     - `RepositorioGastosPrisma` traduce la clave repetida, así dos intentos simultáneos deshacen la transacción del segundo, deudas incluidas.
+  2. **Título.** Con el carácter nulo daba un error interno, y aceptaba textos invisibles, con inversión o con saltos de línea. Pasa a `textoDeUnaLinea` (RN-X8).
+  3. **«Falta asignar $ 0,00».** Al cuadrar, `TablaPartes` dice «Coincide con el total» con el monto total.
+- **Testing intensivo de los arreglos:**
+  - 60 intentos al azar, con reintentos simultáneos de 1 a 3 envíos y de otras personas, contra un modelo de deudas: sin gastos duplicados, sin diferencias de deuda y con la invariante de saldos en verde;
+  - títulos con acentos, emojis y otros alfabetos siguen valiendo.
+  - Cada prueba nueva falla sin su arreglo.
+- **Documentación:** PLAN.md (CU20, RN-X8 y la nueva RN-G7) y `docs/api.md`. El diagrama «Anotando gasto» no cambia.
+- **Verificación:** lint, cobertura con sus mínimos, 388 pruebas de la API, 268 de la web y 26 e2e en verde; knip solo informa los falsos positivos conocidos.

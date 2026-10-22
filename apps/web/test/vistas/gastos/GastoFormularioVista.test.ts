@@ -94,9 +94,11 @@ describe('GastoFormularioVista', () => {
     expect(vista.find('.diferencia').text()).toMatch(/Sobra\$\s?100,00/);
     await vista.find(`#parte-${TOMAS_ID}`).setValue('400');
     expect(vista.find('.diferencia').attributes('data-cuadra')).toBe('true');
+    expect(vista.find('.diferencia').text()).toMatch(/Coincide con el total\$\s?1\.000,00/);
     await vista.find('form').trigger('submit');
     await flushPromises();
     expect(anotar).toHaveBeenCalledWith('v1', {
+      id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       titulo: 'Nafta',
       categoriaId: CATEGORIA,
       monto: 100_000,
@@ -109,6 +111,43 @@ describe('GastoFormularioVista', () => {
       ],
     });
     expect(push).toHaveBeenCalledWith('/viajes/v1/gastos');
+  });
+
+  it('RN-G7: si se pierde la respuesta, volver a guardar manda el mismo id', async () => {
+    const anotar = vi
+      .fn<ClienteGastos['anotar']>()
+      .mockRejectedValueOnce(new ErrorDeApi(0, 'SIN_CONEXION', 'No se pudo contactar al servidor'))
+      .mockResolvedValue({} as never);
+    const vista = await montar({ anotar });
+    await vista.find('#gasto-titulo').setValue('Nafta');
+    await vista.find('#gasto-categoria').setValue(CATEGORIA);
+    await vista.find('#gasto-monto').setValue('10');
+    await vista.find('.selector-deudores button').trigger('click');
+    await vista.find('form').trigger('submit');
+    await flushPromises();
+    expect(vista.text()).toContain('No se pudo contactar al servidor');
+    await vista.find('form').trigger('submit');
+    await flushPromises();
+    expect(anotar).toHaveBeenCalledTimes(2);
+    const [primero, segundo] = anotar.mock.calls.map(([, cuerpo]) => cuerpo.id);
+    expect(primero).toBeDefined();
+    expect(segundo).toBe(primero);
+    expect(push).toHaveBeenCalledWith('/viajes/v1/gastos');
+  });
+
+  it('RN-X8: el título no admite caracteres de control ni uno que no se vea', async () => {
+    const anotar = vi.fn();
+    const vista = await montar({ anotar });
+    await vista.find('#gasto-categoria').setValue(CATEGORIA);
+    await vista.find('#gasto-monto').setValue('10');
+    await vista.find('.selector-deudores button').trigger('click');
+    await vista.find('#gasto-titulo').setValue('Nafta\u0000');
+    await vista.find('form').trigger('submit');
+    expect(vista.text()).toContain('Tiene caracteres que no se pueden usar');
+    await vista.find('#gasto-titulo').setValue('\u200B');
+    await vista.find('form').trigger('submit');
+    expect(vista.text()).toContain('Ingresá un título');
+    expect(anotar).not.toHaveBeenCalled();
   });
 
   it('si la API rechaza la suma, explica cuánto falta', async () => {

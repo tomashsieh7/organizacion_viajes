@@ -18,6 +18,7 @@ import { useGastosStore } from '../../stores/gastos';
 import { useSesionStore } from '../../stores/sesion';
 import { useViajeStore } from '../../stores/viajes';
 import { aUnidadMinima, formatearMonto, simboloMoneda } from '../../utiles/formato';
+import { uuidAlAzar } from '../../utiles/uuid';
 import { useValidacion } from '../../composables/useValidacion';
 import { MONTO_INVALIDO, problemasSegun } from '../../utiles/formularios';
 
@@ -41,6 +42,8 @@ const deudores = ref<string[]>([]);
 const montos = ref<Record<string, string>>({});
 const error = ref('');
 const enviando = ref(false);
+/** RN-G7: id del intento; si la respuesta se pierde y se vuelve a guardar, no se anota dos veces. */
+const intento = uuidAlAzar();
 
 const total = computed(() =>
   datos.monto.trim() === '' ? null : aUnidadMinima(datos.monto, actual.moneda.decimales),
@@ -67,6 +70,7 @@ watch(deudores, (ids) => {
 /** Arma el cuerpo para la API y devuelve sus problemas, con el mismo esquema que valida la API. */
 function armarCuerpo(): { cuerpo: DatosGastoNuevo; problemas: Record<string, string> } {
   const cuerpo: DatosGastoNuevo = {
+    id: intento,
     titulo: datos.titulo,
     categoriaId: datos.categoriaId,
     monto: total.value ?? Number.NaN,

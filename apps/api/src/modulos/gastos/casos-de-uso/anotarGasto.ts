@@ -4,17 +4,27 @@ import { ErrorDeDominio } from '../../../comun/errores.js';
 import type { Reloj } from '../../../comun/reloj.js';
 import type { UnidadDeTrabajo } from '../../../comun/unidadDeTrabajo.js';
 import { Dinero } from '../../../comun/valores/dinero.js';
-import { Gasto } from '../dominio/gasto.js';
-import type { ConsultaCategorias, FabricaDeDivision, ReposGastos } from '../dominio/puertos.js';
+import { Gasto, gastoExistente } from '../dominio/gasto.js';
+import type {
+  ConsultaCategorias,
+  ConsultaGastos,
+  FabricaDeDivision,
+  ReposGastos,
+} from '../dominio/puertos.js';
 
 export interface DependenciasAnotarGasto {
   unidad: UnidadDeTrabajo<ReposGastos>;
   categorias: ConsultaCategorias;
+  gastos: ConsultaGastos;
   division: FabricaDeDivision;
   reloj: Reloj;
 }
 
-/** CU20: anota el gasto y actualiza las deudas netas en una sola transacción (RN-G1 a RN-G6). */
+/**
+ * CU20: anota el gasto y actualiza las deudas netas en una sola transacción (RN-G1 a RN-G6). Con el
+ * id del intento, reintentar un gasto que ya se anotó lo devuelve sin volver a sumar las deudas
+ * (RN-G7).
+ */
 export class AnotarGasto {
   constructor(private readonly deps: DependenciasAnotarGasto) {}
 
@@ -32,6 +42,32 @@ export class AnotarGasto {
         'La categoría no existe',
       );
     }
+    const id = datos.id ?? randomUUID();
+    if (await this.yaAnotado(viajeId, registradoPorId, id)) return id;
+    try {
+      return await this.anotar(viajeId, registradoPorId, id, datos);
+    } catch (error) {
+      // Dos intentos a la vez: el segundo choca con el id, su transacción se deshace entera (también
+      // las deudas) y devuelve el gasto que guardó el primero.
+      const repetido = error instanceof ErrorDeDominio && error.codigo === 'GASTO_EXISTENTE';
+      if (repetido && (await this.yaAnotado(viajeId, registradoPorId, id))) return id;
+      throw error;
+    }
+  }
+
+  /** Si el gasto con ese id ya está anotado por esa persona en el viaje; si es de otro, rechaza. */
+  private async yaAnotado(viajeId: string, registradoPorId: string, id: string) {
+    const gasto = await this.deps.gastos.obtener(viajeId, id);
+    if (gasto && gasto.registradoPor.id !== registradoPorId) throw gastoExistente();
+    return gasto !== null;
+  }
+
+  private anotar(
+    viajeId: string,
+    registradoPorId: string,
+    id: string,
+    datos: DatosGastoNuevo,
+  ): Promise<string> {
     return this.deps.unidad.ejecutar(async (repos) => {
       // Dentro de la transacción, para que nadie se dé de baja mientras se le anota una deuda.
       const viaje = await repos.viajes.obtener(viajeId);
@@ -57,7 +93,7 @@ export class AnotarGasto {
       }
       const ahora = this.deps.reloj.ahora();
       const gasto = Gasto.anotar({
-        id: randomUUID(),
+        id,
         viajeId,
         titulo: datos.titulo.trim(),
         categoriaId: datos.categoriaId,

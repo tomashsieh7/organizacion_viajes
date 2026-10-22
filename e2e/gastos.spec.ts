@@ -1,4 +1,4 @@
-import { expect, nuevoViajero, test, viajeCon } from './soporte/fixtures.js';
+import { api, expect, nuevoViajero, test, viajeCon } from './soporte/fixtures.js';
 
 test('CU20, CU21 y CU23: anotar un gasto con división arbitraria y pagar parte de la deuda', async ({
   browser,
@@ -60,4 +60,34 @@ test('CU20, CU21 y CU23: anotar un gasto con división arbitraria y pagar parte 
   await t.goto(`/viajes/${viajeId}/gastos`);
   await expect(t.locator('.pago')).toContainText('Le pagaste a Ana');
   await expect(t.locator('.gasto')).toContainText('Alquiler de auto');
+});
+
+test('RN-G7: si se pierde la respuesta, volver a guardar no anota el gasto dos veces', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const tomas = await nuevoViajero(browser, 'Tomás');
+  const viajeId = await viajeCon(ana, tomas);
+  const p = ana.page;
+  // El servidor guarda el primer intento, pero la respuesta no llega.
+  let perder = true;
+  await p.route('**/api/viajes/*/gastos', async (r) => {
+    if (r.request().method() !== 'POST' || !perder) return r.continue();
+    perder = false;
+    await r.fetch();
+    await r.abort('connectionreset');
+  });
+  await p.goto(`/viajes/${viajeId}/gastos/nuevo`);
+  await p.fill('#gasto-titulo', 'Taxi al aeropuerto');
+  await p.selectOption('#gasto-categoria', { label: 'Transporte' });
+  await p.fill('#gasto-monto', '3000');
+  await p.getByRole('button', { name: 'Seleccionar a todos' }).click();
+  await p.getByRole('button', { name: 'Guardar' }).click();
+  await expect(p.getByRole('alert')).toContainText('No se pudo contactar al servidor');
+  await p.getByRole('button', { name: 'Guardar' }).click();
+  await expect(p).toHaveURL(new RegExp(`/viajes/${viajeId}/gastos$`));
+  await expect(p.locator('article', { hasText: 'Taxi al aeropuerto' })).toHaveCount(1);
+  const { gastos } = await api<{ gastos: unknown[] }>(ana, 'GET', `/viajes/${viajeId}/gastos`);
+  expect(gastos).toHaveLength(1);
+  await expect(p.locator('.billetera')).toContainText('$ 1.500,00');
 });

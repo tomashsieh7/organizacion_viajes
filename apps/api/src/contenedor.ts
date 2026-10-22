@@ -225,6 +225,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
 
   // Gastos
   const categorias = new ConsultaCategoriasPrisma(prisma);
+  const consultaGastos = new ConsultaGastosPrisma(prisma);
   const consultaSaldos = new ConsultaSaldosPrisma(prisma);
 
   // Chat
@@ -279,10 +280,11 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
           viajes: new LectorDeViajesCompartidoPrisma(tx),
         })),
         categorias,
+        gastos: consultaGastos,
         division: (datos) => DIVISIONES[datos.modoDivision](datos),
         reloj,
       }),
-      consultar: new ConsultarGastos(new ConsultaGastosPrisma(prisma), categorias),
+      consultar: new ConsultarGastos(consultaGastos, categorias),
       deudas: new ConsultarDeudas(consultaSaldos),
       pagar: new RegistrarPago({
         unidad: new UnidadDeTrabajoPrisma<Pick<ReposGastos, 'deudas' | 'viajes'>>(prisma, (tx) => ({

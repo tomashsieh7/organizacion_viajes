@@ -142,12 +142,58 @@ describe('CU20: anotar gasto', () => {
       [{ deudores: [tomas.id], pagadoPorId: sofia.id }, 422, 'PAGADOR_NO_PARTICIPANTE'],
       [{ deudores: [tomas.id, sofia.id] }, 422, 'DEUDOR_NO_PARTICIPANTE'],
       [{ deudores: [tomas.id], categoriaId: crypto.randomUUID() }, 422, 'CATEGORIA_INEXISTENTE'],
+      // RN-X8: el título no admite caracteres de control ni de inversión del texto, y se tiene que ver.
+      [{ deudores: [tomas.id], titulo: 'Cena\u0000' }, 400, 'VALIDACION'],
+      [{ deudores: [tomas.id], titulo: 'Cena \u202Eanec' }, 400, 'VALIDACION'],
+      [{ deudores: [tomas.id], titulo: 'Cena\ncara' }, 400, 'VALIDACION'],
+      [{ deudores: [tomas.id], titulo: '\u200B' }, 400, 'VALIDACION'],
     ];
     for (const [datos, estado, codigo] of casos) {
       const r = await gasto(ana.c, datos);
       expect([r.status, r.body.error.codigo]).toEqual([estado, codigo]);
     }
     expect(await db.gasto.count()).toBe(0);
+  });
+
+  it('RN-G7: reintentar un gasto con el mismo id no lo anota dos veces', async () => {
+    const id = crypto.randomUUID();
+    const datos = { id, monto: 3000, deudores: [ana.id, tomas.id, luis.id] };
+    const primero = await gasto(ana.c, datos);
+    expect([primero.status, primero.body.gasto.id]).toEqual([201, id]);
+    const reintento = await gasto(ana.c, datos);
+    expect([reintento.status, reintento.body.gasto]).toEqual([201, primero.body.gasto]);
+    // Varios intentos a la vez con otro id: uno solo se guarda y todos lo devuelven.
+    const otro = crypto.randomUUID();
+    const simultaneos = await Promise.all(
+      Array.from({ length: 5 }, () => gasto(ana.c, { ...datos, id: otro })),
+    );
+    expect(simultaneos.map((r) => [r.status, r.body.gasto.id])).toEqual(
+      Array.from({ length: 5 }, () => [201, otro]),
+    );
+    expect(await db.gasto.count()).toBe(2);
+    expect(await deudas(tomas.c, 'deudor')).toEqual([['Ana', 2000]]);
+    // El id de un gasto de otra persona o de otro viaje no se puede usar.
+    const ajeno = await gasto(tomas.c, { id, deudores: [tomas.id] });
+    expect([ajeno.status, ajeno.body.error.codigo]).toEqual([409, 'GASTO_EXISTENTE']);
+    const otroViaje = (
+      await ana.c.post('/api/viajes', {
+        nombre: 'Otro',
+        destino: 'Otro',
+        fechaInicio: '2026-12-10',
+        fechaFin: '2026-12-16',
+        monedaCodigo: 'ARS',
+      })
+    ).body.viaje.id;
+    const enOtroViaje = await ana.c.post(`/api/viajes/${otroViaje}/gastos`, {
+      id,
+      titulo: 'Cena',
+      categoriaId: comida,
+      monto: 1000,
+      modoDivision: 'IGUALES',
+      deudores: [ana.id],
+    });
+    expect([enOtroViaje.status, enOtroViaje.body.error.codigo]).toEqual([409, 'GASTO_EXISTENTE']);
+    expect(await db.gasto.count()).toBe(2);
   });
 
   it('un gasto que haría superar el monto máximo a una deuda se rechaza sin guardar nada', async () => {
