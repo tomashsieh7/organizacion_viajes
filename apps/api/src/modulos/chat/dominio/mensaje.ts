@@ -10,6 +10,10 @@ export interface DatosMensaje {
   enviadoEn: Date;
 }
 
+/** Ya hay un mensaje guardado con ese id, de otro viaje o de otra persona (RN-X9). */
+export const mensajeExistente = () =>
+  new ErrorDeDominio('CONFLICTO', 'MENSAJE_EXISTENTE', 'Ya existe un mensaje con ese id');
+
 /** Mensaje del chat del viaje (CU19). Es el experto en qué contenido es válido. */
 export class Mensaje {
   private constructor(private readonly datos: DatosMensaje) {}

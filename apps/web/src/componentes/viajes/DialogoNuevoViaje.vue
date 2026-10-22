@@ -18,7 +18,7 @@ import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { useViajeStore } from '../../stores/viajes';
 import { useValidacion } from '../../composables/useValidacion';
 import { problemasSegun } from '../../utiles/formularios';
-import { uuidAlAzar } from '../../utiles/idTemporal';
+import { uuidAlAzar } from '../../utiles/uuid';
 
 /**
  * CU01 en tres pasos: dónde, cuándo y con quién. El viaje se crea al terminar el segundo; el

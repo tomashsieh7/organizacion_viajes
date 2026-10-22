@@ -19,7 +19,7 @@ import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { usePropuestasStore } from '../../stores/propuestas';
 import { useViajeStore } from '../../stores/viajes';
 import { aUnidadMinima, formatearDuracion, formatearHorario } from '../../utiles/formato';
-import { uuidAlAzar } from '../../utiles/idTemporal';
+import { uuidAlAzar } from '../../utiles/uuid';
 import { useValidacion } from '../../composables/useValidacion';
 import { MONTO_INVALIDO, problemasSegun } from '../../utiles/formularios';
 

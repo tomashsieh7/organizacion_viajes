@@ -4,7 +4,7 @@ import type { MensajeEnPantalla } from '../../stores/chat';
 import { etiquetaDelDia, formatearHora, nombreVisible } from '../../utiles/formato';
 
 const props = defineProps<{ mensajes: MensajeEnPantalla[]; miId: string; hayMas: boolean }>();
-const emit = defineEmits<{ anteriores: [] }>();
+const emit = defineEmits<{ anteriores: []; reintentar: [id: string] }>();
 const lista = ref<HTMLElement | null>(null);
 
 /** Mensajes seguidos de la misma persona, a menos de 5 minutos, se muestran como un bloque. */
@@ -27,7 +27,7 @@ const filas = computed<Fila[]>(() => {
       !nuevoDia &&
       anterior?.autor.id === m.autor.id &&
       Date.parse(m.enviadoEn) - Date.parse(anterior.enviadoEn) < PAUSA_MS;
-    resultado.push({ tipo: 'mensaje', clave: m.idTemporal ?? m.id, m, conNombre: !seguido });
+    resultado.push({ tipo: 'mensaje', clave: m.id, m, conNombre: !seguido });
     diaAnterior = dia;
     anterior = m;
   }
@@ -44,6 +44,19 @@ watch(
   () => props.mensajes.at(-1)?.id,
   async () => {
     const bajar = alFinal() || props.mensajes.at(-1)?.autor.id === props.miId;
+    await nextTick();
+    if (bajar && lista.value) lista.value.scrollTop = lista.value.scrollHeight;
+  },
+);
+
+/**
+ * Un mensaje de otro que llega cuando hay uno propio esperando o fallado se ubica antes de ese, sin
+ * cambiar el último: si se estaba al final, se sigue al final.
+ */
+watch(
+  () => props.mensajes.filter((m) => m.estado === 'enviado').length,
+  async () => {
+    const bajar = alFinal();
     await nextTick();
     if (bajar && lista.value) lista.value.scrollTop = lista.value.scrollHeight;
   },
@@ -99,7 +112,12 @@ onMounted(async () => {
         <p>{{ f.m.contenido }}</p>
         <footer class="mensaje__pie">
           <small v-if="f.m.estado === 'pendiente'">Enviando…</small>
-          <small v-else-if="f.m.estado === 'error'" class="fallo">No se pudo enviar</small>
+          <template v-else-if="f.m.estado === 'error'">
+            <small class="fallo">No se pudo enviar</small>
+            <button type="button" class="reintentar" @click="emit('reintentar', f.m.id)">
+              Reintentar
+            </button>
+          </template>
           <time :datetime="f.m.enviadoEn">{{ formatearHora(f.m.enviadoEn) }}</time>
         </footer>
       </article>
@@ -199,5 +217,15 @@ time {
 }
 .fallo {
   color: var(--color-error);
+}
+.reintentar {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-acento);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
 }
 </style>

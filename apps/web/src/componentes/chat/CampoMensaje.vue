@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
+import { esquemaMensajeNuevo, LARGOS_MAXIMOS } from '@viajes/compartido';
 import IconoLinea from '../base/IconoLinea.vue';
 
 const emit = defineEmits<{ enviar: [contenido: string] }>();
 defineProps<{ deshabilitado?: boolean }>();
-const MAXIMO = 2000;
+const MAXIMO = LARGOS_MAXIMOS.mensaje;
 const texto = ref('');
 const campo = ref<HTMLTextAreaElement | null>(null);
-const valido = computed(() => texto.value.trim().length > 0 && texto.value.trim().length <= MAXIMO);
+/** RN-X8: el mismo control que el servidor; un campo vacío no muestra error, solo no envía. */
+const revision = computed(() => esquemaMensajeNuevo.shape.contenido.safeParse(texto.value));
+const valido = computed(() => revision.value.success);
+const problema = computed(() =>
+  texto.value.trim() && !revision.value.success ? revision.value.error.issues[0]?.message : '',
+);
 
 /** El campo crece con el texto hasta un máximo; después aparece la barra de desplazamiento. */
 function ajustarAlto() {
@@ -44,6 +50,8 @@ function alTeclear(e: KeyboardEvent) {
       rows="1"
       :maxlength="MAXIMO"
       placeholder="Escribí un mensaje"
+      :aria-invalid="problema ? 'true' : undefined"
+      :aria-describedby="problema ? 'mensaje-problema' : undefined"
       @keydown="alTeclear"
       @input="ajustarAlto"
     ></textarea>
@@ -55,12 +63,14 @@ function alTeclear(e: KeyboardEvent) {
     >
       <IconoLinea nombre="enviar" :tamano="20" />
     </button>
+    <p v-if="problema" id="mensaje-problema" class="problema" role="alert">{{ problema }}</p>
   </form>
 </template>
 
 <style scoped>
 .campo-mensaje {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--esp-2);
   margin-top: var(--esp-3);
   align-items: flex-end;
@@ -73,6 +83,12 @@ textarea {
   resize: none;
   border-radius: 1.4rem;
   padding-inline: var(--esp-4);
+}
+.problema {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-error);
+  font-size: 0.85rem;
 }
 /* Botón redondo con solo el ícono; el nombre accesible lo da aria-label. */
 .enviar {

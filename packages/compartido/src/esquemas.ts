@@ -47,6 +47,7 @@ export const LARGOS_MAXIMOS = {
   titulo: 120,
   descripcion: 1000,
   ubicacion: 200,
+  mensaje: 2000,
 } as const;
 
 const hasta = (n: number) => `Puede tener hasta ${n} caracteres`;
@@ -157,15 +158,14 @@ export const esquemaConsultaMapa = z.object({
   dia: esquemaFecha.optional(),
 });
 
-/** CU19: mensaje del chat. */
+/**
+ * CU19: mensaje del chat. El `id` lo genera el navegador para cada mensaje, así reintentar un envío
+ * que en realidad llegó no lo duplica (RN-X9).
+ */
 export const esquemaMensajeNuevo = z.object({
+  id: z.uuid('Mensaje inválido'),
   viajeId: z.uuid('Viaje inválido'),
-  contenido: z
-    .string()
-    .trim()
-    .min(1, 'Escribí un mensaje')
-    .max(2000, 'El mensaje puede tener hasta 2000 caracteres'),
-  idTemporal: z.string().min(1).max(100),
+  contenido: textoDeVariasLineas(LARGOS_MAXIMOS.mensaje, 'Escribí un mensaje'),
 });
 export type DatosMensajeNuevo = z.input<typeof esquemaMensajeNuevo>;
 

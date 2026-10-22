@@ -174,15 +174,14 @@ export function mensaje(
   id: string,
   autorId: string,
   contenido: string,
-  idTemporal?: string,
+  enviadoEn = '2026-09-24T12:00:00.000Z',
 ): MensajeVista {
   return {
     id,
     viajeId: 'v1',
     autor: { id: autorId, nombre: autorId === 'ana' ? 'Ana' : 'Tomás', apodo: null },
     contenido,
-    enviadoEn: '2026-09-24T12:00:00.000Z',
-    ...(idTemporal ? { idTemporal } : {}),
+    enviadoEn,
   };
 }
 
