@@ -385,7 +385,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="Consultando mapa" id="CKJfphcsguskbWMk_RRl">
-    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1060" pageHeight="1560" math="0" shadow="0">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1060" pageHeight="1760" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -401,7 +401,7 @@
         <mxCell id="lane_sep_1" style="endArrow=none;html=1;strokeColor=light-dark(#000000,#FFFFFF);" edge="1" parent="1">
           <mxGeometry as="geometry" relative="1">
             <mxPoint x="340" y="30" as="sourcePoint" />
-            <mxPoint x="340" y="1500" as="targetPoint" />
+            <mxPoint x="340" y="1700" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="map-1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=light-dark(#000000,#FFFFFF);" vertex="1" parent="1">
@@ -432,37 +432,37 @@
           <mxGeometry as="geometry" x="530" y="610" width="220" height="60" />
         </mxCell>
         <mxCell id="map-10" value="¿hay al menos una actividad&lt;br&gt;confirmada ese día?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="530" y="700" width="220" height="80" />
+          <mxGeometry as="geometry" x="530" y="790" width="220" height="80" />
         </mxCell>
         <mxCell id="map-11" value="Muestra aviso de que ese día&lt;br&gt;no tiene actividades confirmadas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="380" y="830" width="200" height="60" />
+          <mxGeometry as="geometry" x="380" y="1030" width="200" height="60" />
         </mxCell>
         <mxCell id="map-12" value="Ordena las actividades&lt;br&gt;cronológicamente por horario" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="720" y="830" width="210" height="60" />
-        </mxCell>
-        <mxCell id="map-13" value="Ubica cada actividad&lt;br&gt;como marcador en el mapa" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="720" y="930" width="210" height="60" />
-        </mxCell>
-        <mxCell id="map-14" value="Traza el recorrido entre&lt;br&gt;ellas según ese orden" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
           <mxGeometry as="geometry" x="720" y="1030" width="210" height="60" />
         </mxCell>
+        <mxCell id="map-13" value="Ubica cada actividad&lt;br&gt;como marcador en el mapa" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="720" y="1130" width="210" height="60" />
+        </mxCell>
+        <mxCell id="map-14" value="Traza el recorrido entre&lt;br&gt;ellas según ese orden" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="720" y="1230" width="210" height="60" />
+        </mxCell>
         <mxCell id="map-15" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="625" y="1140" width="30" height="30" />
+          <mxGeometry as="geometry" x="625" y="1340" width="30" height="30" />
         </mxCell>
         <mxCell id="map-16" value="Ve el mapa del día" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="70" y="1180" width="220" height="60" />
+          <mxGeometry as="geometry" x="70" y="1380" width="220" height="60" />
         </mxCell>
         <mxCell id="map-17" value="¿elige ver&lt;br&gt;otro día?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="95" y="1280" width="170" height="80" />
+          <mxGeometry as="geometry" x="95" y="1480" width="170" height="80" />
         </mxCell>
         <mxCell id="map-18" value="Elige otro día" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="70" y="1410" width="220" height="60" />
+          <mxGeometry as="geometry" x="70" y="1610" width="220" height="60" />
         </mxCell>
         <mxCell id="map-19" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=light-dark(#000000,#FFFFFF);" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="295" y="1420" width="30" height="30" />
+          <mxGeometry as="geometry" x="295" y="1620" width="30" height="30" />
         </mxCell>
         <mxCell id="map-19_inner" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=light-dark(#000000,#FFFFFF);" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="302" y="1427" width="16" height="16" />
+          <mxGeometry as="geometry" x="302" y="1627" width="16" height="16" />
         </mxCell>
         <mxCell id="map-20" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-1" target="map-2">
           <mxGeometry as="geometry" relative="1" />
@@ -529,20 +529,20 @@
         <mxCell id="map-29" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-8" target="map-9">
           <mxGeometry as="geometry" relative="1" />
         </mxCell>
-        <mxCell id="map-30" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-9" target="map-10">
+        <mxCell id="map-30" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-9" target="map-42">
           <mxGeometry as="geometry" relative="1" />
         </mxCell>
-        <mxCell id="map-31" value="no" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-10" target="map-11">
+        <mxCell id="map-31" value="no" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-10" target="map-43">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="480" y="740" />
+              <mxPoint x="480" y="830" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="map-32" value="sí" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-10" target="map-12">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="825" y="740" />
+              <mxPoint x="825" y="830" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -555,21 +555,21 @@
         <mxCell id="map-35" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-11" target="map-15">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="480" y="1155" />
+              <mxPoint x="480" y="1355" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="map-36" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-14" target="map-15">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="825" y="1155" />
+              <mxPoint x="825" y="1355" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="map-37" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-15" target="map-16">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="640" y="1210" />
+              <mxPoint x="640" y="1410" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -582,7 +582,7 @@
         <mxCell id="map-40" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-18" target="map-9">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="40" y="1440" />
+              <mxPoint x="40" y="1640" />
               <mxPoint x="40" y="640" />
             </Array>
           </mxGeometry>
@@ -590,7 +590,26 @@
         <mxCell id="map-41" value="no" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-17" target="map-19">
           <mxGeometry as="geometry" relative="1">
             <Array as="points">
-              <mxPoint x="310" y="1320" />
+              <mxPoint x="310" y="1520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      <mxCell id="map-42" value="Lista aparte las del día anterior&lt;br&gt;que siguen después de la medianoche" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);arcSize=30;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="530" y="700" width="220" height="60" />
+        </mxCell>
+        <mxCell id="map-43" value="¿sigue alguna&lt;br&gt;del día anterior?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="380" y="920" width="200" height="80" />
+        </mxCell>
+        <mxCell id="map-44" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-42" target="map-10">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="map-45" value="no" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-43" target="map-11">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="map-46" value="sí" style="endArrow=block;html=1;strokeColor=light-dark(#000000,#FFFFFF);fontSize=11;rounded=0;endSize=8;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="map-43" target="map-15">
+          <mxGeometry as="geometry" relative="1">
+            <Array as="points">
+              <mxPoint x="640" y="960" />
             </Array>
           </mxGeometry>
         </mxCell>

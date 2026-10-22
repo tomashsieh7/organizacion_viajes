@@ -27,8 +27,25 @@ const parametro = (nombre: string) => {
   return typeof valor === 'string' ? valor : undefined;
 };
 
-/** Si el mapa no llegó a cargar, se puede volver a pedir el mismo día. */
-const reintentar = computed(() => (mapa.value ? undefined : () => cargar(parametro('dia'))));
+/**
+ * Abre la actividad de `?actividad=` (RN-M8) o el día de `?dia=`; sin ninguno, el que elige la API
+ * (RN-M1). El día que quedó también va a la dirección.
+ */
+async function abrir() {
+  const actividad = parametro('actividad');
+  if (actividad) await abrirActividad(actividad);
+  else await cargar(parametro('dia'));
+  if (mapa.value && parametro('dia') !== mapa.value.dia)
+    await router.replace({ query: { ...route.query, dia: mapa.value.dia } });
+}
+
+/** Si el mapa no llegó a cargar, se vuelve a pedir lo mismo, incluida la actividad. */
+const reintentar = computed(() => (mapa.value ? undefined : abrir));
+
+/** La actividad abierta que no está confirmada se ubica aparte, fuera del recorrido (RN-M8). */
+const fueraDelRecorrido = computed(() =>
+  elegida.value && !elegida.value.confirmada ? elegida.value.actividad : null,
+);
 
 function cerrarDetalle() {
   elegida.value = null;
@@ -43,14 +60,13 @@ async function elegirDia(dia: string) {
   await cargar(dia);
 }
 
-onMounted(async () => {
-  const actividad = parametro('actividad');
-  if (actividad) await abrirActividad(actividad);
-  else await cargar(parametro('dia'));
-  // El día que eligió la API (RN-M1 o RN-M8) también va a la dirección.
-  if (mapa.value && parametro('dia') !== mapa.value.dia)
-    await router.replace({ query: { ...route.query, dia: mapa.value.dia } });
-});
+/** RN-M9: abre en su día la actividad que sigue del día anterior. */
+async function verQueSigue(id: string) {
+  await abrirActividad(id);
+  if (mapa.value) await router.replace({ query: { actividad: id, dia: mapa.value.dia } });
+}
+
+onMounted(abrir);
 </script>
 
 <template>
@@ -66,11 +82,20 @@ onMounted(async () => {
         :hoy="hoy"
         @elegir="elegirDia"
       />
+      <ul v-if="mapa.siguenDelDiaAnterior.length" class="siguen">
+        <!-- RN-M9: lo que empezó el día anterior y sigue después de la medianoche. -->
+        <li v-for="a in mapa.siguenDelDiaAnterior" :key="a.id">
+          Hasta {{ a.horaFin }} · <strong>{{ a.titulo }}</strong> · {{ a.ubicacion }} · sigue del
+          día anterior ·
+          <button type="button" class="enlace" @click="verQueSigue(a.id)">Ver en el mapa</button>
+        </li>
+      </ul>
       <AvisoSinActividades v-if="mapa.aviso === 'SIN_ACTIVIDADES_CONFIRMADAS'" />
       <MapaActividades
         :actividades="mapa.actividades"
         :recorrido="mapa.recorrido"
         :elegida-id="elegida?.actividad.id ?? null"
+        :fuera-del-recorrido="fueraDelRecorrido"
         @elegir="elegir"
       />
       <ol v-if="mapa.actividades.length" class="orden">
@@ -97,6 +122,11 @@ onMounted(async () => {
   margin: 0.75rem 0 0;
   padding-left: 1.5rem;
 }
+.siguen {
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+}
 .enlace {
   background: none;
   border: none;
@@ -104,6 +134,7 @@ onMounted(async () => {
   color: var(--color-acento);
   cursor: pointer;
   font: inherit;
+  text-align: left;
   text-decoration: underline;
 }
 </style>

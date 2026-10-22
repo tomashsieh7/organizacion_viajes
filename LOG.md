@@ -2103,3 +2103,35 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Testing intensivo de los arreglos:** bordes de 00:00 exacto, 24 horas y último día del viaje. Cada prueba nueva falla sin su arreglo.
 - **Documentación:** PLAN.md (RN-C2 y CU16) y `docs/api.md`.
 - **Verificación:** lint, cobertura con sus mínimos, 382 pruebas de la API, 255 de la web y 22 e2e en verde.
+
+## 2026-10-22 15:40 — Merge del PR #45
+
+- Con la autorización del usuario ("si"), el PR #45 (cronograma: actividades que pasan la medianoche) se mergeó a `main` en `c53e160`, fijando la cabeza verificada `e4107f4`. El CI pasó los tres trabajos, sin conflictos ni comentarios. Los e2e tardaron 12 minutos en el CI, pero pasaron.
+
+## 2026-10-22 — Testing intensivo del mapa
+
+- **Pedido del usuario:** seguir con la funcionalidad 7, con la regla 7.2. El usuario eligió corregir los siete hallazgos ("todos"), la opción A para lo que sigue del día anterior y sacar el aviso de día vacío en ese caso, y aprobó el plan.
+- **Probado sin hallazgos:**
+  - parámetros inválidos (fechas inexistentes, repetidas, vacías, larguísimas o con carácter nulo) y días fuera del viaje;
+  - permisos de ajenos, ex participantes y sin sesión, y actividades de otro viaje;
+  - RN-M1 con y sin actividades, y solo lo confirmado;
+  - orden estable en empates;
+  - 56 actividades al azar contra un modelo, sin diferencias;
+  - coordenadas extremas;
+  - 50 y 200 consultas simultáneas;
+  - títulos con HTML;
+  - recargar y volver atrás.
+- **Hallazgos y arreglos:**
+  1. **Respuestas viejas.** Al cambiar de día rápido, la respuesta demorada del día anterior pisaba la del último elegido y la dirección quedaba en otro día. `useMapaDelDia` numera los pedidos y descarta los viejos, también al abrir una actividad.
+  2. **Lo que sigue del día anterior no aparecía en el mapa.** Se extrae `siguenDelDiaAnterior` (módulo itinerario), que comparten `ConsultarCronograma` y `ConsultarMapa`. `MapaDelDia` suma `siguenDelDiaAnterior`, y `MapaVista` lo lista arriba del mapa con un botón que abre la actividad en su día. Es un botón y no un enlace porque un enlace al mismo mapa no recarga la vista. El aviso de día vacío ya no aparece en ese caso (RN-M3 y RN-M9).
+  3. **«Reintentar» perdía la actividad.** Si fallaba la carga al abrir una actividad, el reintento abría otro día. Ahora repite lo mismo que al entrar.
+  4. **Marcadores en el mismo lugar.** Se tapaban y solo se veía un número. Se corren unos píxeles hacia los costados con `iconAnchor`. Se descartó Leaflet.markercluster por ser sobreingeniería para dos o tres marcadores.
+  5. **Actividad no confirmada sin ubicación.** Al abrirla, ahora va con un marcador gris sin número, fuera del recorrido, y el mapa se centra en ella.
+  6. **Teclado.** El marcador recibía el foco, pero Enter no hacía nada, porque Leaflet 1.9 no convierte la tecla en clic. Ahora Enter y Espacio abren el detalle.
+  7. **Títulos largos de la lista.** En celular quedaban centrados; ahora van alineados a la izquierda.
+- **Testing intensivo de los arreglos:**
+  - 30 actividades confirmadas al azar, 4 de ellas pasando la medianoche: el mapa y el cronograma coinciden en lo que sigue y en el aviso en todos los días;
+  - en el navegador: carrera de días, doble clic en «Ver en el mapa», recarga, Espacio sin desplazar la página, reintento después de un error y celular a 360 px sin desbordes.
+  - Cada prueba nueva falla sin su arreglo.
+- **Documentación:** PLAN.md (RN-M3, RN-M5, RN-M7, RN-M8, la nueva RN-M9, el contrato de CU17 y la pantalla del mapa) y `docs/api.md`. Con la confirmación del usuario ("Si"), el diagrama «Consultando mapa» suma el paso «Lista aparte las del día anterior que siguen después de la medianoche» (`map-42`) y, en la rama sin actividades, la decisión «¿sigue alguna del día anterior?» (`map-43`): con sí va directo a la unión y con no muestra el aviso (aristas `map-44` a `map-46`). Lo de abajo se corrió 200 px. Se editó el XML de la página a mano, como en «Saliendo del grupo».
+- **Verificación:** lint, cobertura con sus mínimos, 383 pruebas de la API, 261 de la web y 23 e2e en verde; knip solo informa los falsos positivos conocidos.

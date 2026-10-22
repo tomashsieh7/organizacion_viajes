@@ -172,6 +172,8 @@ export interface MapaDelDia {
   dia: string;
   /** Días del viaje con al menos una actividad confirmada, para resaltarlos en el selector. */
   diasConActividad: string[];
+  /** Las del día anterior que siguen después de la medianoche; no entran en el recorrido (RN-M9). */
+  siguenDelDiaAnterior: ActividadQueSigue[];
   /** Actividades confirmadas del día en orden cronológico; su posición es su número en el mapa. */
   actividades: ActividadDelItinerario[];
   /** Puntos de la línea que une las actividades en ese orden (P20). */

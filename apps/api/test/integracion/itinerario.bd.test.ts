@@ -155,6 +155,28 @@ describe('CU17: GET …/mapa', () => {
     });
   });
 
+  it('RN-M9: lo que sigue del día anterior va aparte, fuera del recorrido y sin el aviso', async () => {
+    const boliche = await actividadConfirmada('Boliche', '2026-12-11', '23:00', -41.1, 240);
+    const r = await ana.c.get(url('/mapa?hoy=2026-09-24&dia=2026-12-12'));
+    expect(r.body).toMatchObject({
+      dia: '2026-12-12',
+      siguenDelDiaAnterior: [
+        { id: boliche, titulo: 'Boliche', ubicacion: 'lugar Boliche', horaFin: '03:00' },
+      ],
+      actividades: [],
+      recorrido: [],
+      aviso: null,
+    });
+    await actividadConfirmada('Desayuno', '2026-12-12', '10:00', -41.2);
+    const conDesayuno = await ana.c.get(url('/mapa?hoy=2026-09-24&dia=2026-12-12'));
+    expect(conDesayuno.body.siguenDelDiaAnterior).toHaveLength(1);
+    expect(conDesayuno.body.recorrido).toEqual([{ latitud: -41.2, longitud: -71.3 }]);
+    // El día en que empieza, el boliche está en el recorrido y no se repite como "sigue".
+    const delOnce = await ana.c.get(url('/mapa?hoy=2026-09-24&dia=2026-12-11'));
+    expect(delOnce.body.siguenDelDiaAnterior).toEqual([]);
+    expect(delOnce.body.actividades.map((a: { id: string }) => a.id)).toEqual([boliche]);
+  });
+
   it('valida los parámetros y que el día esté dentro del viaje', async () => {
     const sinHoy = await ana.c.get(url('/mapa'));
     expect([sinHoy.status, sinHoy.body.error.codigo]).toEqual([400, 'VALIDACION']);
