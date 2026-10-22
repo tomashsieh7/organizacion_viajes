@@ -18,6 +18,8 @@ import {
   nombreVisible,
   simboloMoneda,
 } from '../../utiles/formato';
+import { MONTO_INVALIDO } from '../../utiles/formularios';
+import { uuidAlAzar } from '../../utiles/uuid';
 
 const viaje = useViajeStore();
 const gastos = useGastosStore();
@@ -39,6 +41,8 @@ interface Comprobante {
   fecha: string;
 }
 const comprobante = ref<Comprobante | null>(null);
+/** RN-P7: id del intento; si la respuesta se pierde y se vuelve a pagar, no se registra dos veces. */
+const intento = uuidAlAzar();
 
 // RN-P1 y RN-P2: se paga desde la lista de saldos propios, mostrando lo que se debe.
 const deuda = computed(() => gastos.debo.find((d) => d.contraparte.id === acreedorId));
@@ -69,8 +73,13 @@ function pagarTodo() {
 async function pagar() {
   error.value = '';
   errorMonto.value = '';
-  if (monto.value === null || monto.value <= 0) {
-    errorMonto.value = 'Ingresá un monto mayor que cero, por ejemplo 1500 o 1.500,50';
+  // El mismo texto que el formulario de gastos: mal escrito o en cero son problemas distintos.
+  if (monto.value === null) {
+    errorMonto.value = MONTO_INVALIDO;
+    return;
+  }
+  if (monto.value <= 0) {
+    errorMonto.value = 'El monto tiene que ser mayor que cero';
     return;
   }
   if (excede.value || !deuda.value) return;
@@ -79,7 +88,7 @@ async function pagar() {
     // Se toma antes de pagar: si el pago salda la deuda, deja de estar en la lista.
     const nombre = nombreVisible(deuda.value.contraparte);
     const pagado = monto.value;
-    const { saldo } = await gastos.pagar({ acreedorId, monto: pagado });
+    const { saldo } = await gastos.pagar({ id: intento, acreedorId, monto: pagado });
     comprobante.value = { monto: pagado, nombre, saldo, fecha: new Date().toISOString() };
     if (saldo === 0) celebrar(`¡Cuentas saldadas con ${nombre}!`);
     // La deuda pendiente del viaje cambió: el Resumen la usa para el hito de cuentas.

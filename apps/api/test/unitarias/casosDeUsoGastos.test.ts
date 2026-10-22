@@ -181,16 +181,31 @@ describe('CU21 y CU22: deudas propias', () => {
 });
 
 describe('CU23: registrar pago', () => {
-  const pagar = (deudor: string, acreedorId: string, monto: number) =>
+  const pagar = (deudor: string, acreedorId: string, monto: number, id?: string) =>
     new RegistrarPago({
       unidad,
+      // Lee lo confirmado, como la consulta real fuera de la transacción.
       saldos: {
-        deudas: async () => [],
+        deudas: (v, u, rol) => new ConsultaSaldosEnMemoria(unidad.confirmado).deudas(v, u, rol),
         pagosDe: async () => [],
         obtenerPago: (v, id) => new ConsultaSaldosEnMemoria(unidad.confirmado).obtenerPago(v, id),
       },
       reloj: { ahora: () => new Date('2026-12-12T10:00:00Z') },
-    }).ejecutar(VIAJE, deudor, { acreedorId, monto });
+    }).ejecutar(VIAJE, deudor, { acreedorId, monto, ...(id ? { id } : {}) });
+
+  it('RN-P7: reintentar con el mismo id devuelve el pago sin volver a restarlo', async () => {
+    await anotar(ANA, {});
+    const id = '3f2b1c0d-9e8a-4b7c-8d6e-5f4a3b2c1d0e';
+    const primero = await pagar(TOMAS, ANA, 100, id);
+    expect(await pagar(TOMAS, ANA, 100, id)).toEqual(primero);
+    const otro = '7a6b5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c2d';
+    const [a, b] = await Promise.all([pagar(TOMAS, ANA, 50, otro), pagar(TOMAS, ANA, 50, otro)]);
+    expect(a).toEqual(b);
+    expect(a.saldo).toBe(150);
+    expect(monto(TOMAS, ANA)).toBe(150);
+    expect(unidad.confirmado.pagos.map((p) => p.id)).toEqual([id, otro]);
+    await expect(pagar(LUIS, ANA, 10, id)).rejects.toMatchObject({ codigo: 'PAGO_EXISTENTE' });
+  });
 
   it('resta el pago y devuelve el pago con el saldo que queda', async () => {
     await anotar(ANA, {});

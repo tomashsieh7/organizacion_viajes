@@ -28,7 +28,7 @@ import {
 import { RangoFechas } from '../../src/comun/valores/rangoFechas.js';
 import { Intervalo } from '../../src/comun/valores/intervalo.js';
 import { Dinero } from '../../src/comun/valores/dinero.js';
-import { Deuda } from '../../src/modulos/gastos/dominio/deuda.js';
+import { Deuda, pagoExistente } from '../../src/modulos/gastos/dominio/deuda.js';
 import {
   gastoExistente,
   type DatosGasto,
@@ -839,10 +839,10 @@ export class RepositorioDeudasEnMemoria implements RepositorioDeudas {
       fila.monto = datos.monto.monto;
       fila.ultimaActualizacion = datos.ultimaActualizacion;
       for (const p of d.pagosSinGuardar()) {
-        if (!this.base.pagos.some((x) => x.id === p.id)) {
-          this.base.pagos.push({ ...p, monto: p.monto.monto });
-        }
+        if (this.base.pagos.some((x) => x.id === p.id)) throw pagoExistente();
+        this.base.pagos.push({ ...p, monto: p.monto.monto });
       }
+      d.marcarPagosGuardados();
     }
   }
 }

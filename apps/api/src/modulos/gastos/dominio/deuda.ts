@@ -23,6 +23,10 @@ export interface DatosPago {
  * su saldo: sumar lo que corresponde por un gasto, compensarse con la deuda en sentido opuesto y
  * restar los pagos, que forman parte de la deuda (relación "resta" del modelo conceptual).
  */
+/** Ya hay un pago registrado con ese id, de otro viaje o de otra persona (RN-P7). */
+export const pagoExistente = () =>
+  new ErrorDeDominio('CONFLICTO', 'PAGO_EXISTENTE', 'Ya existe un pago con ese id');
+
 export class Deuda {
   private readonly pagosNuevos: DatosPago[] = [];
 
@@ -128,6 +132,11 @@ export class Deuda {
   /** Pagos registrados desde que se cargó la deuda, para que el repositorio los guarde. */
   pagosSinGuardar(): DatosPago[] {
     return [...this.pagosNuevos];
+  }
+
+  /** El repositorio ya guardó los pagos nuevos: guardar otra vez la deuda no los repite. */
+  marcarPagosGuardados(): void {
+    this.pagosNuevos.splice(0);
   }
 
   aDatos(): DatosDeuda {

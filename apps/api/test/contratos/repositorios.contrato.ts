@@ -770,6 +770,17 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       // Guardar de nuevo la misma deuda no duplica los pagos.
       await r.deudasGastos.guardar([deuda]);
       expect((await r.consultaSaldos.deudas(viaje, tomas, 'deudor'))[0]?.pagos).toHaveLength(2);
+      // RN-P7: otro intento con el id de un pago ya guardado se rechaza, no se descarta en silencio.
+      const otroIntento = (await r.deudasGastos.obtenerParaPagar(viaje, par, 'ARS'))!;
+      otroIntento.registrarPago({
+        id: primero.id,
+        monto: Dinero.de(100, 'ARS'),
+        registradoPorId: tomas,
+        ahora: AHORA,
+      });
+      await expect(r.deudasGastos.guardar([otroIntento])).rejects.toMatchObject({
+        codigo: 'PAGO_EXISTENTE',
+      });
 
       // Para la Actividad: los ven deudor y acreedor, nadie más.
       const anaVista = { id: ana, nombre: 'Ana', apodo: null };

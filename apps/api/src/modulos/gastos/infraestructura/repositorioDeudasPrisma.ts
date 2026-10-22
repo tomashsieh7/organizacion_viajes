@@ -1,6 +1,9 @@
-import type { ClientePrisma } from '../../../comun/infraestructura/clientePrisma.js';
+import {
+  esViolacionDeUnicidad,
+  type ClientePrisma,
+} from '../../../comun/infraestructura/clientePrisma.js';
 import { Dinero } from '../../../comun/valores/dinero.js';
-import { Deuda } from '../dominio/deuda.js';
+import { Deuda, pagoExistente } from '../dominio/deuda.js';
 import type { ParDeViajeros, RepositorioDeudas } from '../dominio/puertos.js';
 
 interface FilaDeuda {
@@ -71,10 +74,18 @@ export class RepositorioDeudasPrisma implements RepositorioDeudas {
       });
       const pagos = d.pagosSinGuardar();
       if (pagos.length > 0) {
-        await this.db.pago.createMany({
-          data: pagos.map((p) => ({ ...p, monto: BigInt(p.monto.monto) })),
-          skipDuplicates: true,
-        });
+        // Sin `skipDuplicates`: un id repetido de otro intento tiene que deshacer la transacción, no
+        // descartar el pago mientras la deuda sí baja (RN-P7). Los ya guardados no se repiten
+        // porque la deuda los marca.
+        try {
+          await this.db.pago.createMany({
+            data: pagos.map((p) => ({ ...p, monto: BigInt(p.monto.monto) })),
+          });
+        } catch (error) {
+          if (esViolacionDeUnicidad(error)) throw pagoExistente();
+          throw error;
+        }
+        d.marcarPagosGuardados();
       }
     }
   }

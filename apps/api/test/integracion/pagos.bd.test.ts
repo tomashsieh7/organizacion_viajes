@@ -135,4 +135,38 @@ describe('CU23: registrar pago', () => {
     expect(rechazado.body.error.codigo).toBe('PAGO_EXCEDE_DEUDA');
     expect(await db.pago.count()).toBe(1);
   });
+
+  it('RN-P7: reintentar un pago con el mismo id no lo registra dos veces', async () => {
+    const id = crypto.randomUUID();
+    const primero = await tomas.c.post(url('/pagos'), { id, acreedorId: ana.id, monto: 200 });
+    expect([primero.status, primero.body.pago.id, primero.body.saldo]).toEqual([201, id, 800]);
+    const reintento = await tomas.c.post(url('/pagos'), { id, acreedorId: ana.id, monto: 200 });
+    expect([reintento.status, reintento.body]).toEqual([201, primero.body]);
+    // Varios intentos a la vez con otro id: uno solo se registra y todos lo devuelven.
+    const otro = crypto.randomUUID();
+    const simultaneos = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        tomas.c.post(url('/pagos'), { id: otro, acreedorId: ana.id, monto: 300 }),
+      ),
+    );
+    expect(simultaneos.map((r) => [r.status, r.body.pago.id, r.body.saldo])).toEqual(
+      Array.from({ length: 5 }, () => [201, otro, 500]),
+    );
+    expect(await db.pago.count()).toBe(2);
+    expect((await deudas(tomas.c, 'deudor')).map((d) => d.monto)).toEqual([500]);
+    // Si el pago salda la deuda, los demás intentos ya no tienen saldo, pero igual lo devuelven.
+    const total = crypto.randomUUID();
+    const saldan = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        tomas.c.post(url('/pagos'), { id: total, acreedorId: ana.id, monto: 500 }),
+      ),
+    );
+    expect(saldan.map((r) => [r.status, r.body.pago?.id, r.body.saldo])).toEqual(
+      Array.from({ length: 4 }, () => [201, total, 0]),
+    );
+    // El id de un pago de otra persona no se puede usar.
+    const ajeno = await ana.c.post(url('/pagos'), { id, acreedorId: tomas.id, monto: 1 });
+    expect([ajeno.status, ajeno.body.error.codigo]).toEqual([409, 'PAGO_EXISTENTE']);
+    expect(await db.pago.count()).toBe(3);
+  });
 });

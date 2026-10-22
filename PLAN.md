@@ -539,7 +539,7 @@ Eventos de Socket.IO (espacio de nombres `/chat`, solo con transporte WebSocket 
 | CU21 | `GET /api/viajes/:viajeId/deudas?rol=deudor` | `accesoSaldos` | Deudas con `monto > 0` donde quien llama es deudor, con acreedor, saldo, última actualización e historial de pagos | — |
 | CU22 | `GET /api/viajes/:viajeId/deudas?rol=acreedor` | `accesoSaldos` | Deudas con `monto > 0` donde quien llama es acreedor, con el mismo detalle | — |
 | — | `GET /api/viajes/:viajeId/pagos` | `accesoSaldos` | Pagos donde quien llama es deudor o acreedor, también de deudas ya saldadas, del más nuevo al más viejo, con `deudor` y `acreedor`; alimenta la Actividad de Cuentas | — |
-| CU23 | `POST /api/viajes/:viajeId/pagos` | `accesoSaldos`, solo el deudor (P17) | `acreedor_id` con deuda pendiente de quien llama, `monto > 0`, `monto <= saldo` | 404 `SIN_DEUDA_CON_ACREEDOR`, 422 `PAGO_EXCEDE_DEUDA` con `detalles: { saldo }` |
+| CU23 | `POST /api/viajes/:viajeId/pagos` | `accesoSaldos`, solo el deudor (P17) | `acreedor_id` con deuda pendiente de quien llama, `monto > 0`, `monto <= saldo`. El formulario manda un `id` propio del intento (RN-P7) | 404 `SIN_DEUDA_CON_ACREEDOR`, 422 `PAGO_EXCEDE_DEUDA` con `detalles: { saldo }`, 409 `PAGO_EXISTENTE` |
 
 ## 6. Reglas de negocio
 
@@ -615,6 +615,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | RN-P4 | Si el monto supera la deuda total con ese acreedor, se avisa y no se registra; el viajero vuelve a ingresar el monto. | `Deuda.registrarPago(monto)`, que rechaza el exceso, sobre la fila bloqueada; coordina `RegistrarPago` | 422 `PAGO_EXCEDE_DEUDA` con el saldo actual |
 | RN-P5 | Si no la supera, se registra el pago, se resta de la deuda y se actualiza `ultima_actualizacion`. El pago se aplica sin confirmación del acreedor (P17). | `Deuda.registrarPago()` crea el `Pago` y resta el monto; coordina `RegistrarPago` en una transacción | 201 con el pago y el saldo restante |
 | RN-P6 | Cada pago guarda quién lo registró y cuándo, y aparece en el historial de saldos del deudor y del acreedor y en su Actividad de Cuentas; nadie más lo ve. En el MVP no se deshacen pagos (P17). | `RegistrarPago`, `ConsultarDeudas` y `ConsultaSaldos.pagosDe` | — |
+| RN-P7 | Cada intento de pago lleva un id que genera el navegador. Si ya hay un pago con ese id registrado por la misma persona en el viaje (por ejemplo, porque la respuesta se perdió y se volvió a pagar), se devuelve ese pago con el saldo actual, sin volver a restarlo, aunque el reintento choque con el saldo que ese pago ya bajó. Si el id es de un pago de otra persona o de otro viaje, se rechaza. Un id repetido nunca se descarta en silencio mientras la deuda baja: deshace la transacción. El formulario distingue un monto mal escrito («Ingresá un monto válido…») de uno en cero («El monto tiene que ser mayor que cero»), como el de gastos. | `RegistrarPago`, `Deuda.marcarPagosGuardados`, `RepositorioDeudasPrisma` y `PagoVista` | 201 con el pago ya registrado; 409 `PAGO_EXISTENTE` |
 
 ### 6.8 Eliminando participantes y saliendo del grupo
 
