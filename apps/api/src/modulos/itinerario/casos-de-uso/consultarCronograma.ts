@@ -1,4 +1,4 @@
-import type { Cronograma } from '@viajes/compartido';
+import { pasaLaMedianoche, type Cronograma } from '@viajes/compartido';
 import type { LectorDeViajes } from '../../viajes/dominio/puertos.js';
 import type { ConsultaItinerario } from '../dominio/puertos.js';
 import { cargarViaje } from './cargarViaje.js';
@@ -17,8 +17,13 @@ export class ConsultarCronograma {
       this.consultas.alojamientosConfirmados(viajeId),
     ]);
     // RN-C1: también los días sin actividades.
-    const dias = viaje.rango.dias().map((fecha) => ({
+    const fechas = viaje.rango.dias();
+    const dias = fechas.map((fecha, i) => ({
       fecha,
+      // RN-C2: las que empezaron el día anterior y terminan después de la medianoche.
+      siguenDelDiaAnterior: actividades
+        .filter((a) => a.fecha === fechas[i - 1] && pasaLaMedianoche(a.horaInicio, a.duracionMin))
+        .map(({ id, titulo, ubicacion, horaFin }) => ({ id, titulo, ubicacion, horaFin })),
       actividades: actividades.filter((a) => a.fecha === fecha),
       // RN-C3: el día de salida no cuenta como noche del alojamiento.
       alojamientos: alojamientos

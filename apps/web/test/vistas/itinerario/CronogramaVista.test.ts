@@ -35,11 +35,13 @@ const cronograma: Cronograma = {
   dias: [
     {
       fecha: '2026-12-10',
+      siguenDelDiaAnterior: [],
       actividades: [],
       alojamientos: [{ id: 'h', nombre: 'Hostel', ubicacion: 'Mitre 100' }],
     },
     {
       fecha: '2026-12-11',
+      siguenDelDiaAnterior: [],
       actividades: [
         {
           id: 'k',

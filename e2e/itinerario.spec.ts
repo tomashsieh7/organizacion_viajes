@@ -58,3 +58,36 @@ test('CU13 y CU16 a CU18: confirmar una actividad y verla en el cronograma y en 
   await expect(p.locator('.panel-actividad')).toContainText('Cerro Catedral');
   await expect(p.locator('.panel-actividad')).toContainText('Base del cerro');
 });
+
+test('RN-C2: una actividad que pasa la medianoche se aclara y aparece también al día siguiente', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const viajeId = await viajeCon(ana);
+  const { actividad } = await api<{ actividad: { id: string } }>(
+    ana,
+    'POST',
+    `/viajes/${viajeId}/actividades`,
+    {
+      titulo: 'Noche de bar',
+      descripcion: 'Salida',
+      ubicacion: 'Centro',
+      latitud: -41.13,
+      longitud: -71.31,
+      fecha: '2026-12-11',
+      horaInicio: '22:00',
+      duracionMin: 180,
+    },
+  );
+  await api(ana, 'POST', `/viajes/${viajeId}/propuestas/${actividad.id}/confirmar`);
+  const p = ana.page;
+
+  await p.goto(`/viajes/${viajeId}/cronograma?dia=2026-12-11`);
+  await expect(p.getByText('22:00 a 01:00 del día siguiente')).toBeVisible();
+
+  await p.goto(`/viajes/${viajeId}/cronograma?dia=2026-12-12`);
+  const sigue = p.locator('li', { hasText: 'sigue del día anterior' });
+  await expect(sigue).toContainText('Hasta 01:00');
+  await expect(sigue).toContainText('Noche de bar');
+  await expect(p.getByText('Sin actividades confirmadas')).toHaveCount(0);
+});
