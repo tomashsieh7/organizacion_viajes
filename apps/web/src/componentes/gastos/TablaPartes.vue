@@ -32,6 +32,11 @@ const suma = computed(() =>
   ),
 );
 const diferencia = computed(() => (props.total ?? 0) - suma.value);
+/** Cuadra cuando hay un total y las partes suman exactamente eso. */
+const cuadra = computed(() => !!props.total && diferencia.value === 0);
+const etiquetaDiferencia = computed(() =>
+  cuadra.value ? 'Coincide con el total' : diferencia.value >= 0 ? 'Falta asignar' : 'Sobra',
+);
 const monto = (m: number) => formatearMonto(m, props.moneda);
 
 function escribir(usuarioId: string, texto: string) {
@@ -62,9 +67,9 @@ function escribir(usuarioId: string, texto: string) {
         <th scope="row">Suma</th>
         <td>{{ monto(suma) }}</td>
       </tr>
-      <tr class="diferencia" :data-cuadra="diferencia === 0">
-        <th scope="row">{{ diferencia >= 0 ? 'Falta asignar' : 'Sobra' }}</th>
-        <td>{{ monto(Math.abs(diferencia)) }}</td>
+      <tr class="diferencia" :data-cuadra="cuadra">
+        <th scope="row">{{ etiquetaDiferencia }}</th>
+        <td>{{ monto(cuadra ? total! : Math.abs(diferencia)) }}</td>
       </tr>
     </tfoot>
   </table>

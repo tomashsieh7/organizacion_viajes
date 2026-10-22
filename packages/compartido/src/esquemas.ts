@@ -186,11 +186,9 @@ const montoEntero = z
  */
 export const esquemaGastoNuevo = z
   .object({
-    titulo: z
-      .string()
-      .trim()
-      .min(1, 'Ingresá un título')
-      .max(LARGOS_MAXIMOS.titulo, hasta(LARGOS_MAXIMOS.titulo)),
+    /** Id del intento: reintentar con el mismo no anota el gasto dos veces (RN-G7). */
+    id: z.uuid().optional(),
+    titulo: textoDeUnaLinea(LARGOS_MAXIMOS.titulo, 'Ingresá un título'),
     categoriaId: z.uuid('Elegí una categoría'),
     monto: montoEntero.positive('El monto tiene que ser mayor que cero'),
     pagadoPorId: z.uuid().optional(),

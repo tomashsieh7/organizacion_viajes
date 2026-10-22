@@ -13,6 +13,7 @@ import type { EstrategiaDivision } from './estrategiaDivision.js';
 import type { Gasto } from './gasto.js';
 
 export interface RepositorioGastos {
+  /** Lanza `GASTO_EXISTENTE` si ya hay un gasto con ese id. */
   crear(gasto: Gasto): Promise<void>;
 }
 

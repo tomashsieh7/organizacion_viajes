@@ -29,7 +29,11 @@ import { RangoFechas } from '../../src/comun/valores/rangoFechas.js';
 import { Intervalo } from '../../src/comun/valores/intervalo.js';
 import { Dinero } from '../../src/comun/valores/dinero.js';
 import { Deuda } from '../../src/modulos/gastos/dominio/deuda.js';
-import type { DatosGasto, Gasto } from '../../src/modulos/gastos/dominio/gasto.js';
+import {
+  gastoExistente,
+  type DatosGasto,
+  type Gasto,
+} from '../../src/modulos/gastos/dominio/gasto.js';
 import type {
   ConsultaCategorias,
   ConsultaGastos,
@@ -766,6 +770,7 @@ export class RepositorioGastosEnMemoria implements RepositorioGastos {
   constructor(private readonly base: BaseEnMemoria) {}
 
   async crear(gasto: Gasto): Promise<void> {
+    if (this.base.gastos.some((g) => g.id === gasto.id)) throw gastoExistente();
     this.base.gastos.push(gasto.aDatos());
   }
 }
