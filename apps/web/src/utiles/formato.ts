@@ -39,6 +39,8 @@ export function formatearRango(desde: string, hasta: string): string {
   const [a1, m1, d1] = desde.split('-').map(Number) as [number, number, number];
   const [a2, m2, d2] = hasta.split('-').map(Number) as [number, number, number];
   const fin = `${d2} ${MESES[m2 - 1]} ${a2}`;
+  // Un viaje de un solo día: "10 dic 2026", no "10 al 10 dic 2026".
+  if (desde === hasta) return fin;
   if (a1 !== a2) return `${d1} ${MESES[m1 - 1]} ${a1} al ${fin}`;
   if (m1 !== m2) return `${d1} ${MESES[m1 - 1]} al ${fin}`;
   return `${d1} al ${fin}`;

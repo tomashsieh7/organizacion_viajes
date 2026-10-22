@@ -2227,3 +2227,33 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - Cada prueba nueva falla sin su arreglo, también la del contrato de repositorios con `skipDuplicates`.
 - **Documentación:** PLAN.md (CU23 y la nueva RN-P7) y `docs/api.md`. El diagrama «Registrando pago» no cambia.
 - **Verificación:** lint, cobertura con sus mínimos, 390 pruebas de la API, 269 de la web y 27 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-22 21:04 — Merge del PR #49
+
+- Con la autorización del usuario ("si"), el PR #49 (pagos) se mergeó a `main` en `9630bd8`, fijando la cabeza verificada `2eab449`. El CI pasó los tres trabajos en menos de tres minutos, sin conflictos ni comentarios.
+
+## 2026-10-22 — Testing intensivo de la lista de viajes y la pantalla de Inicio
+
+- **Pedido del usuario:** seguir con la funcionalidad 11, con la regla 7.2. El usuario eligió corregir los dos hallazgos ("Todos") y aprobó el plan ("si").
+- **Probado sin hallazgos:**
+  - orden de la lista (en curso y próximos primero, terminados al final);
+  - cuenta regresiva para el viaje que empieza hoy, mañana, uno en curso, terminado y muy lejano, con la hora cerca de la medianoche;
+  - tarjeta y redirección de quien tiene solo saldos;
+  - viajes ajenos o inexistentes;
+  - 120 viajes en 9 ms, siempre en el mismo orden;
+  - títulos con HTML, nombres largos en celular y la celebración del 100 %, una sola vez.
+- **Hallazgos y arreglos:**
+  1. **Viaje de un día.** Se mostraba «10 al 10 dic 2026»; `formatearRango` devuelve «10 dic 2026».
+  2. **Inicio sugería planificar el pasado.**
+     - `calcularProgreso` recibe la fecha del dispositivo y, con el viaje en curso, cuenta noches y días desde hoy.
+     - Con el viaje terminado, `ResumenVista` muestra «El viaje terminó» en lugar del progreso, sin pasos de planificación ni celebración, y deja solo el paso de las deudas si hay.
+- **Testing intensivo de los arreglos:** capturas en celular del viaje en curso y del terminado con deudas. Cada prueba nueva falla sin su arreglo.
+- **Hallazgo en el chat, presentado como propuesta (regla 7.2) y corregido en este mismo PR** a pedido del usuario ("si, corregí el chat en este mismo PR"):
+  - La prueba e2e de reintento del chat falló 2 veces en 6 corridas completas.
+  - **Causa:** si alguien envía un mensaje mientras otra persona termina de entrar al chat, esa persona lo pierde hasta recargar. Su historial se pide antes de que termine de unirse a la sala, así que el mensaje no está en el historial y tampoco le llega en vivo.
+  - Se reprodujo de forma determinista demorando la unión a la sala.
+  - **Arreglo:** `useChatStore` guarda la unión en curso y `cargarUltimos` la espera antes de pedir el historial. Lleva una prueba del store y un e2e que demora la unión; los dos fallan sin el arreglo.
+  - Después del arreglo, la suite completa de e2e pasó 4 veces seguidas.
+- **Documentación:** PLAN.md (la pantalla Resumen). El diagrama no cambia.
+- **Documentación:** también PLAN.md (RN-X9).
+- **Verificación:** lint, cobertura con sus mínimos, 390 pruebas de la API, 273 de la web y 29 e2e en verde; knip solo informa los falsos positivos conocidos.

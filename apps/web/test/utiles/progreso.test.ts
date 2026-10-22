@@ -3,6 +3,9 @@ import type { AlojamientoVista } from '@viajes/compartido';
 import { calcularProgreso, cuentaRegresiva } from '../../src/utiles/progreso';
 import { actividad } from '../soporte/clientesFalsos';
 
+/** Un día antes de que empiece el viaje: todo está por delante. */
+const ANTES = '2026-10-22';
+
 const viaje = {
   fechaInicio: '2026-12-10',
   fechaFin: '2026-12-13',
@@ -27,6 +30,7 @@ function alojamiento(
 describe('calcularProgreso', () => {
   it('un viaje recién creado arranca bajo: sin propuestas no hay votos ni decisiones cumplidas', () => {
     const p = calcularProgreso({
+      hoy: ANTES,
       viaje: { ...viaje, cantidadParticipantes: 1 },
       alojamientos: [],
       actividades: [],
@@ -49,6 +53,7 @@ describe('calcularProgreso', () => {
 
   it('cuenta las noches cubiertas por alojamientos confirmados y los días con actividades confirmadas', () => {
     const p = calcularProgreso({
+      hoy: ANTES,
       viaje,
       alojamientos: [
         alojamiento('2026-12-10', '2026-12-12'),
@@ -77,6 +82,7 @@ describe('calcularProgreso', () => {
 
   it('marca los votos que faltan y las deudas pendientes', () => {
     const p = calcularProgreso({
+      hoy: ANTES,
       viaje: { ...viaje, miDeudaPendiente: 500 },
       alojamientos: [],
       actividades: [actividad('a', 'Kayak'), actividad('b', 'Cena')],
@@ -88,6 +94,7 @@ describe('calcularProgreso', () => {
 
   it('llega al 100 % con todo cubierto, resuelto y saldado', () => {
     const p = calcularProgreso({
+      hoy: ANTES,
       viaje: { ...viaje, fechaFin: '2026-12-11' },
       alojamientos: [alojamiento('2026-12-10', '2026-12-11')],
       actividades: [
@@ -100,6 +107,23 @@ describe('calcularProgreso', () => {
     });
     expect(p.porcentaje).toBe(100);
     expect(p.hitos.every((h) => h.hecho)).toBe(true);
+  });
+});
+
+describe('calcularProgreso con el viaje en curso', () => {
+  it('lo que ya pasó deja de estar pendiente: cuenta desde hoy', () => {
+    // Del 10 al 13, hoy es el 12: quedan la noche del 12 y los días 12 y 13.
+    const p = calcularProgreso({
+      viaje,
+      alojamientos: [alojamiento('2026-12-12', '2026-12-13')],
+      actividades: [],
+      hoy: '2026-12-12',
+    });
+    expect(p.nochesLibres).toEqual([]);
+    expect(p.diasLibres).toEqual(['2026-12-12', '2026-12-13']);
+    const noches = p.hitos.find((h) => h.clave === 'noches')!;
+    expect([noches.fraccion, noches.hecho]).toEqual(['1/1', true]);
+    expect(p.hitos.find((h) => h.clave === 'dias')!.fraccion).toBe('0/2');
   });
 });
 

@@ -74,3 +74,29 @@ test('CU01: si la respuesta de crear se pierde y se reintenta, queda un solo gru
   const { viajes } = await api<{ viajes: { nombre: string }[] }>(ana, 'GET', '/viajes');
   expect(viajes.filter((v) => v.nombre === 'Con mala señal')).toHaveLength(1);
 });
+
+test('lista e Inicio: un viaje de un día y un viaje que ya terminó', async ({ browser }) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const p = ana.page;
+  await p.clock.setFixedTime(new Date(2026, 11, 20, 12, 0));
+  const crear = async (nombre: string, fechaInicio: string, fechaFin: string) =>
+    (
+      await api<{ viaje: { id: string } }>(ana, 'POST', '/viajes', {
+        nombre,
+        destino: 'Bariloche',
+        fechaInicio,
+        fechaFin,
+        monedaCodigo: 'ARS',
+      })
+    ).viaje.id;
+  await crear('Escapada', '2026-12-27', '2026-12-27');
+  const terminado = await crear('Vacaciones', '2026-12-10', '2026-12-16');
+  await p.goto('/viajes');
+  await expect(p.locator('.tarjeta', { hasText: 'Escapada' })).toContainText('27 dic 2026');
+  await expect(p.locator('.tarjeta', { hasText: 'Escapada' })).not.toContainText('27 al 27');
+
+  await p.goto(`/viajes/${terminado}/resumen`);
+  await expect(p.getByRole('heading', { name: 'El viaje terminó' })).toBeVisible();
+  await expect(p.getByText('No queda nada pendiente')).toBeVisible();
+  await expect(p.getByText('noches de alojamiento')).toHaveCount(0);
+});

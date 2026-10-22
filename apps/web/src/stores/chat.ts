@@ -29,6 +29,11 @@ export const useChatStore = defineStore('chat', () => {
   const error = ref('');
   const finalizada = ref<AvisoMembresiaFinalizada | null>(null);
   let conexion: ConexionChat | null = null;
+  /**
+   * La unión a la sala del viaje abierto. El historial se pide después de unirse: si se pidiera
+   * antes, un mensaje enviado en el medio no estaría en el historial ni llegaría en vivo.
+   */
+  let union: Promise<void> = Promise.resolve();
 
   /** Si `x` va después de `m` en el orden del servidor: por hora de envío y, a igual hora, por id. */
   const vaDespues = (x: MensajeVista, m: MensajeVista) =>
@@ -75,6 +80,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function cargarUltimos() {
+    await union;
     if (!viajeId.value) return;
     const pagina = await cliente!.historial(viajeId.value);
     for (const m of pagina.mensajes) incorporar(m);
@@ -92,8 +98,11 @@ export const useChatStore = defineStore('chat', () => {
     historialCargado.value = false;
     finalizada.value = null;
     error.value = '';
+    const unirse = abrirConexion().unirse(id);
+    // Si unirse falla, el historial igual se intenta: el error ya se muestra aparte.
+    union = unirse.catch(() => undefined);
     try {
-      await abrirConexion().unirse(id);
+      await unirse;
     } catch (e) {
       error.value = mensajeDeError(e);
     }

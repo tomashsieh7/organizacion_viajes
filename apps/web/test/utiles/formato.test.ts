@@ -38,6 +38,8 @@ describe('formatearRango', () => {
     expect(formatearRango('2026-12-10', '2026-12-16')).toBe('10 al 16 dic 2026');
     expect(formatearRango('2026-11-28', '2026-12-03')).toBe('28 nov al 3 dic 2026');
     expect(formatearRango('2026-12-28', '2027-01-03')).toBe('28 dic 2026 al 3 ene 2027');
+    // Un viaje de un solo día no repite el día.
+    expect(formatearRango('2026-12-10', '2026-12-10')).toBe('10 dic 2026');
   });
 });
 

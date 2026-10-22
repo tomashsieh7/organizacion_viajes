@@ -9,7 +9,7 @@ import { useCarga } from '../../composables/useCarga';
 import { useCelebracion } from '../../composables/useCelebracion';
 import { usePropuestasStore } from '../../stores/propuestas';
 import { useViajeStore } from '../../stores/viajes';
-import { nombreDelDia } from '../../utiles/fechas';
+import { hoyDelDispositivo, nombreDelDia } from '../../utiles/fechas';
 import { calcularProgreso, type ClaveHito } from '../../utiles/progreso';
 
 const viaje = useViajeStore();
@@ -18,11 +18,15 @@ const { celebrar } = useCelebracion();
 const actual = viaje.actual!;
 const ruta = (seccion: string) => `/viajes/${actual.id}/${seccion}`;
 
+const hoy = hoyDelDispositivo();
+/** Con el viaje terminado ya no hay nada que planificar: solo quedan las cuentas. */
+const terminado = computed(() => hoy > (viaje.actual ?? actual).fechaFin);
 const progreso = computed(() =>
   calcularProgreso({
     viaje: viaje.actual ?? actual,
     alojamientos: propuestas.alojamientos,
     actividades: propuestas.actividades,
+    hoy,
   }),
 );
 const hechos = computed(() => progreso.value.hitos.filter((h) => h.hecho).length);
@@ -64,6 +68,14 @@ interface Paso {
 const pasos = computed<Paso[]>(() => {
   const p = progreso.value;
   const v = viaje.actual ?? actual;
+  const deudas: Paso | false = v.miDeudaPendiente > 0 && {
+    icono: 'cuentas',
+    titulo: 'Tenés deudas por saldar',
+    detalle: 'Pagá cuando puedas desde tus saldos',
+    ruta: ruta('saldos'),
+    accion: 'Ver saldos',
+  };
+  if (terminado.value) return deudas ? [deudas] : [];
   const todos: (Paso | false)[] = [
     v.cantidadParticipantes < 2 &&
       viaje.soyAdmin && {
@@ -102,13 +114,7 @@ const pasos = computed<Paso[]>(() => {
       ruta: ruta('actividades/nueva'),
       accion: 'Proponer',
     },
-    v.miDeudaPendiente > 0 && {
-      icono: 'cuentas',
-      titulo: 'Tenés deudas por saldar',
-      detalle: 'Pagá cuando puedas desde tus saldos',
-      ruta: ruta('saldos'),
-      accion: 'Ver saldos',
-    },
+    deudas,
   ];
   return todos.filter((x): x is Paso => x !== false).slice(0, 3);
 });
@@ -118,7 +124,7 @@ const otros = computed(() => pasos.value.slice(1));
 
 /** El 100 % se celebra una sola vez por viaje en este dispositivo. */
 function celebrarSiTermino() {
-  if (progreso.value.porcentaje < 100) return;
+  if (terminado.value || progreso.value.porcentaje < 100) return;
   const clave = `viaje-listo:${actual.id}`;
   try {
     if (localStorage.getItem(clave)) return;
@@ -175,7 +181,17 @@ onMounted(cargar);
         <p v-else class="texto-secundario">No queda nada pendiente. ¡A disfrutar el viaje!</p>
       </section>
 
-      <section class="panel" aria-labelledby="titulo-progreso">
+      <section v-if="terminado" class="panel" aria-labelledby="titulo-terminado">
+        <h3 id="titulo-terminado">El viaje terminó</h3>
+        <p class="texto-secundario">
+          {{
+            (viaje.actual ?? actual).miDeudaPendiente > 0
+              ? 'Te quedan deudas por saldar con el grupo.'
+              : 'Tus cuentas con el grupo están al día.'
+          }}
+        </p>
+      </section>
+      <section v-else class="panel" aria-labelledby="titulo-progreso">
         <div class="progreso">
           <AnilloProgreso :porcentaje="progreso.porcentaje" compacto />
           <div>
