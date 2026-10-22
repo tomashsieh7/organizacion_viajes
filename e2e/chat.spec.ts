@@ -101,3 +101,29 @@ test('RN-X8: el campo no deja mandar caracteres de control y explica por qué', 
   await p.press('#mensaje', 'Enter');
   await expect(p.locator('.mensaje')).toHaveCount(0);
 });
+
+test('un mensaje enviado mientras otra persona termina de entrar al chat le llega igual', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const tomas = await nuevoViajero(browser, 'Tomás');
+  const viajeId = await viajeCon(ana, tomas);
+  await ana.page.goto(`/viajes/${viajeId}/chat`);
+  await expect(ana.page.getByText('Todavía no hay mensajes')).toBeVisible();
+  // La unión de Tomás a la sala tarda en llegar al servidor.
+  await tomas.page.routeWebSocket(/socket\.io/, (ws) => {
+    const servidor = ws.connectToServer();
+    ws.onMessage((m) => {
+      if (typeof m === 'string' && m.includes('"chat:unirse"'))
+        setTimeout(() => servidor.send(m), 1500);
+      else servidor.send(m);
+    });
+    servidor.onMessage((m) => ws.send(m));
+  });
+  await tomas.page.goto(`/viajes/${viajeId}/chat`);
+  // El mensaje sale cuando Tomás ya ve la pantalla del chat.
+  await expect(tomas.page.getByText('Todavía no hay mensajes')).toBeVisible();
+  await ana.page.fill('#mensaje', 'Justo ahora');
+  await ana.page.press('#mensaje', 'Enter');
+  await expect(tomas.page.locator('.mensaje', { hasText: 'Justo ahora' })).toHaveCount(1);
+});

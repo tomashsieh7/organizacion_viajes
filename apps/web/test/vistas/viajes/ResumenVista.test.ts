@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ActividadVista, AlojamientoVista } from '@viajes/compartido';
 import { CLIENTE_PROPUESTAS } from '../../../src/clientes/propuestas';
 import { useCelebracion } from '../../../src/composables/useCelebracion';
@@ -19,6 +19,7 @@ async function montar(
   datos: { alojamientos?: AlojamientoVista[]; actividades?: ActividadVista[] } = {},
   miRol: 'ADMIN' | 'VIAJERO' = 'ADMIN',
   fallar = false,
+  miDeudaPendiente = 0,
 ) {
   const listar =
     <T>(lista: T[] = []) =>
@@ -28,7 +29,7 @@ async function montar(
     };
   const opciones = montaje(
     clienteAuthFalso(),
-    clienteViajesFalso({ obtener: async () => detalle(miRol) }),
+    clienteViajesFalso({ obtener: async () => detalle(miRol, miDeudaPendiente) }),
     {
       [CLIENTE_PROPUESTAS as symbol]: {
         listarAlojamientos: listar(datos.alojamientos),
@@ -57,6 +58,7 @@ function todoListo() {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   localStorage.clear();
   useCelebracion().cerrar();
 });
@@ -120,5 +122,29 @@ describe('ResumenVista', () => {
     const vista = await montar({}, 'ADMIN', true);
     expect(vista.text()).toContain('Ocurrió un error inesperado');
     expect(vista.find('[role="progressbar"]').exists()).toBe(false);
+  });
+
+  it('con el viaje en curso, lo pendiente se cuenta desde hoy', async () => {
+    // Del 10 al 16, hoy es el 13: quedan las noches del 13 al 15 y los días del 13 al 16.
+    vi.useFakeTimers({ now: new Date(2026, 11, 13, 12, 0), toFake: ['Date'] });
+    const vista = await montar();
+    expect(vista.find('.paso--principal').text()).toContain('Faltan 3 noches de alojamiento');
+    expect(vista.findAll('details')[0]!.text()).toContain('4 días sin actividades');
+  });
+
+  it('con el viaje terminado, no propone planificar y solo quedan las deudas', async () => {
+    vi.useFakeTimers({ now: new Date(2026, 11, 20, 12, 0), toFake: ['Date'] });
+    const conDeuda = await montar({}, 'ADMIN', false, 50_000);
+    expect(conDeuda.findAll('h3').map((h) => h.text())).toEqual(['Lo próximo', 'El viaje terminó']);
+    expect(conDeuda.find('.paso--principal').text()).toContain('Tenés deudas por saldar');
+    expect(conDeuda.findAll('details')).toHaveLength(0);
+    expect(conDeuda.text()).toContain('Te quedan deudas por saldar con el grupo.');
+    expect(conDeuda.text()).not.toContain('%');
+
+    const alDia = await montar(todoListo());
+    expect(alDia.text()).toContain('No queda nada pendiente');
+    expect(alDia.text()).toContain('Tus cuentas con el grupo están al día.');
+    // Un viaje que ya terminó no se celebra como listo para viajar.
+    expect(useCelebracion().celebracion.value).toBeNull();
   });
 });

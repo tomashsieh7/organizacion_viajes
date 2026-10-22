@@ -48,6 +48,22 @@ describe('useChatStore', () => {
     expect(falso.conexion.unirse).toHaveBeenCalledWith('v1');
   });
 
+  it('pide el historial recién después de unirse a la sala, así no se pierde un mensaje del medio', async () => {
+    await preparar();
+    let unido!: () => void;
+    falso.conexion.unirse.mockImplementationOnce(
+      () => new Promise<undefined>((listo) => (unido = () => listo(undefined))),
+    );
+    falso.cliente.historial.mockClear();
+    const entrada = chat.entrar('v2');
+    const carga = chat.cargarHistorial();
+    await Promise.resolve();
+    expect(falso.cliente.historial).not.toHaveBeenCalled();
+    unido();
+    await Promise.all([entrada, carga]);
+    expect(falso.cliente.historial).toHaveBeenCalledWith('v2');
+  });
+
   it('muestra el mensaje propio enseguida y lo reemplaza al confirmarse, sin duplicarlo', async () => {
     await preparar();
     let confirmar!: () => void;

@@ -26,6 +26,8 @@ export interface DatosProgreso {
   >;
   alojamientos: AlojamientoVista[];
   actividades: ActividadVista[];
+  /** Fecha del dispositivo (P19): durante el viaje, lo que ya pasó deja de estar pendiente. */
+  hoy: string;
 }
 
 export interface Progreso {
@@ -60,10 +62,18 @@ function hito(
   };
 }
 
-export function calcularProgreso({ viaje, alojamientos, actividades }: DatosProgreso): Progreso {
-  const dias = diasEntre(viaje.fechaInicio, viaje.fechaFin);
+export function calcularProgreso({
+  viaje,
+  alojamientos,
+  actividades,
+  hoy,
+}: DatosProgreso): Progreso {
+  // Con el viaje en curso cuentan solo hoy y los días que vienen.
+  const dias = diasEntre(viaje.fechaInicio, viaje.fechaFin).filter((d) => d >= hoy);
   // RN-C3: el día de salida no es una noche.
-  const noches = dias.slice(0, -1);
+  const noches = diasEntre(viaje.fechaInicio, viaje.fechaFin)
+    .slice(0, -1)
+    .filter((n) => n >= hoy);
   const confirmados = alojamientos.filter((a) => a.estado === 'CONFIRMADA');
   const nochesLibres = noches.filter(
     (n) => !confirmados.some((a) => a.alojamiento.fechaDesde <= n && n < a.alojamiento.fechaHasta),
