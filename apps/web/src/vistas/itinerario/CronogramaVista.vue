@@ -51,7 +51,7 @@ onMounted(cargar);
   <section>
     <h2>Cronograma</h2>
     <AvisoMensaje v-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
-    <template v-else-if="cronograma">
+    <div v-else-if="cronograma" class="grilla grilla--calendario">
       <CalendarioViaje
         :inicio="actual.fechaInicio"
         :fin="actual.fechaFin"
@@ -61,7 +61,7 @@ onMounted(cargar);
         @elegir="elegir"
       />
       <DiaCronograma v-if="dia" :dia="dia" :viaje-id="actual.id" :es-hoy="dia.fecha === hoy" />
-    </template>
+    </div>
     <SiluetaCarga v-else :cantidad="2" />
   </section>
 </template>

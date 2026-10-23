@@ -80,7 +80,12 @@ async function enviar() {
 <template>
   <section>
     <h2>Proponer alojamiento</h2>
-    <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
+    <form
+      class="formulario formulario--con-mapa"
+      novalidate
+      @submit.prevent="enviar"
+      @focusout="alSalir"
+    >
       <CampoFormulario id="alojamiento-nombre" etiqueta="Nombre" :error="errores['nombre']">
         <input
           id="alojamiento-nombre"

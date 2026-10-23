@@ -43,10 +43,13 @@ test('CU10 y RN-A2: proponer una actividad que se superpone, ajustar el horario 
   await p.fill('#actividad-hora', '12:00');
   await p.getByRole('button', { name: 'Proponer' }).click();
 
-  await expect(p).toHaveURL(new RegExp(`/viajes/${viajeId}/actividades$`));
-  const tarjeta = p.locator('article', { hasText: 'Trekking al cerro' });
-  await expect(tarjeta).toContainText('Pendiente');
-  await expect(tarjeta).toContainText('12:00 a 13:30');
+  // Vuelve a la lista en el día de la actividad, que se ve como renglón y se abre al tocarlo.
+  await expect(p).toHaveURL(new RegExp(`/viajes/${viajeId}/actividades\\?dia=2026-12-11$`));
+  const renglon = p.locator('.renglon', { hasText: 'Trekking al cerro' });
+  await expect(renglon).toContainText('12:00');
+  await expect(renglon).toContainText('Pendiente');
+  await renglon.locator('.renglon__fila').click();
+  await expect(renglon.locator('article')).toContainText('12:00 a 13:30');
 });
 
 test('CU10: si la respuesta de proponer se pierde y se reintenta, queda una sola actividad', async ({
@@ -74,7 +77,7 @@ test('CU10: si la respuesta de proponer se pierde y se reintenta, queda una sola
   await p.getByRole('button', { name: /Proponer/ }).click();
   await expect(p.getByText('No se pudo contactar al servidor')).toBeVisible();
   await p.getByRole('button', { name: /Proponer/ }).click();
-  await expect(p).toHaveURL(/\/actividades$/);
+  await expect(p).toHaveURL(/\/actividades\?dia=2026-12-11$/);
 
   const { actividades } = await api<{ actividades: { actividad: { titulo: string } }[] }>(
     ana,
@@ -112,6 +115,7 @@ test('RN-R4: votar una opción que se denegó con la lista abierta muestra cómo
     horaInicio: '14:00',
   });
   await beto.page.goto(`/viajes/${viajeId}/actividades`);
+  await beto.page.locator('.renglon__fila', { hasText: 'Cerro Catedral' }).click();
   const catedral = beto.page.locator('article', { hasText: 'Cerro Catedral' });
   await expect(catedral.getByRole('button', { name: 'A favor' })).toBeVisible();
 

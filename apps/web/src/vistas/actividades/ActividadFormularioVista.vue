@@ -106,7 +106,8 @@ async function enviar() {
   try {
     if (originalId) await propuestas.proponerAlternativa(originalId, cuerpo);
     else await propuestas.proponerActividad(cuerpo);
-    await router.push(`/viajes/${actual.id}/actividades`);
+    // Vuelve al día de la propuesta, que es el que muestra la lista (un día por vez).
+    await router.push({ path: `/viajes/${actual.id}/actividades`, query: { dia: cuerpo.fecha } });
   } catch (e) {
     // RN-A2: el formulario queda como estaba para ajustar el horario.
     if (e instanceof ErrorDeApi && e.codigo === 'SUPERPOSICION_HORARIA')
@@ -131,7 +132,12 @@ async function enviar() {
       </p>
       <p>Si se confirma una de las opciones, las demás pendientes quedan denegadas.</p>
     </div>
-    <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
+    <form
+      class="formulario formulario--con-mapa"
+      novalidate
+      @submit.prevent="enviar"
+      @focusout="alSalir"
+    >
       <CampoFormulario id="actividad-titulo" etiqueta="Título" :error="errores['titulo']">
         <input
           id="actividad-titulo"

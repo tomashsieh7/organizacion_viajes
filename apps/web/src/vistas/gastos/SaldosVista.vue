@@ -32,72 +32,75 @@ onMounted(cargar);
     <SiluetaCarga v-if="!cargado" :cantidad="2" />
     <!-- Si no cargaron las deudas, solo el error: unos totales en cero parecerían reales. -->
     <AvisoMensaje v-else-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
-    <div v-else class="pestanas" role="tablist">
-      <button
-        type="button"
-        role="tab"
-        class="pestana pestana--debo"
-        :aria-selected="pestana === 'debo'"
-        @click="pestana = 'debo'"
-      >
-        <span class="pestana__rotulo">Debo<span class="solo-lectores">:</span></span>
-        <span
-          class="pestana__total monto"
-          :class="{ 'pestana__total--cero': !gastos.totalDebo }"
-          :style="largo(gastos.totalDebo)"
-          >{{ total(gastos.totalDebo) }}</span
+    <!-- En escritorio, los dos totales uno debajo del otro a la izquierda y la lista a la derecha. -->
+    <div v-else class="grilla grilla--lateral">
+      <div class="pestanas" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          class="pestana pestana--debo"
+          :aria-selected="pestana === 'debo'"
+          @click="pestana = 'debo'"
         >
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="pestana pestana--meDeben"
-        :aria-selected="pestana === 'meDeben'"
-        @click="pestana = 'meDeben'"
-      >
-        <span class="pestana__rotulo">Me deben<span class="solo-lectores">:</span></span>
-        <span
-          class="pestana__total monto"
-          :class="{ 'pestana__total--cero': !gastos.totalMeDeben }"
-          :style="largo(gastos.totalMeDeben)"
-          >{{ total(gastos.totalMeDeben) }}</span
-        >
-      </button>
-    </div>
-    <div v-if="cargado && !error" role="tabpanel">
-      <template v-if="pestana === 'debo'">
-        <EstadoVacio v-if="!gastos.debo.length" icono="🎉" titulo="No le debés nada a nadie." />
-        <ul class="saldos">
-          <FilaSaldo
-            v-for="d in gastos.debo"
-            :key="d.id"
-            :deuda="d"
-            :moneda="viaje.actual!.moneda"
-            :mi-id="miId"
-            sentido="debo"
+          <span class="pestana__rotulo">Debo<span class="solo-lectores">:</span></span>
+          <span
+            class="pestana__total monto"
+            :class="{ 'pestana__total--cero': !gastos.totalDebo }"
+            :style="largo(gastos.totalDebo)"
+            >{{ total(gastos.totalDebo) }}</span
           >
-            <RouterLink
-              class="boton boton--principal"
-              :to="`/viajes/${viaje.actual!.id}/saldos/pagar/${d.contraparte.id}`"
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="pestana pestana--meDeben"
+          :aria-selected="pestana === 'meDeben'"
+          @click="pestana = 'meDeben'"
+        >
+          <span class="pestana__rotulo">Me deben<span class="solo-lectores">:</span></span>
+          <span
+            class="pestana__total monto"
+            :class="{ 'pestana__total--cero': !gastos.totalMeDeben }"
+            :style="largo(gastos.totalMeDeben)"
+            >{{ total(gastos.totalMeDeben) }}</span
+          >
+        </button>
+      </div>
+      <div role="tabpanel">
+        <template v-if="pestana === 'debo'">
+          <EstadoVacio v-if="!gastos.debo.length" icono="🎉" titulo="No le debés nada a nadie." />
+          <ul class="saldos">
+            <FilaSaldo
+              v-for="d in gastos.debo"
+              :key="d.id"
+              :deuda="d"
+              :moneda="viaje.actual!.moneda"
+              :mi-id="miId"
+              sentido="debo"
             >
-              Pagar
-            </RouterLink>
-          </FilaSaldo>
-        </ul>
-      </template>
-      <template v-else>
-        <EstadoVacio v-if="!gastos.meDeben.length" icono="🤝" titulo="Nadie te debe nada." />
-        <ul class="saldos">
-          <FilaSaldo
-            v-for="d in gastos.meDeben"
-            :key="d.id"
-            :deuda="d"
-            :moneda="viaje.actual!.moneda"
-            :mi-id="miId"
-            sentido="meDeben"
-          />
-        </ul>
-      </template>
+              <RouterLink
+                class="boton boton--principal"
+                :to="`/viajes/${viaje.actual!.id}/saldos/pagar/${d.contraparte.id}`"
+              >
+                Pagar
+              </RouterLink>
+            </FilaSaldo>
+          </ul>
+        </template>
+        <template v-else>
+          <EstadoVacio v-if="!gastos.meDeben.length" icono="🤝" titulo="Nadie te debe nada." />
+          <ul class="saldos">
+            <FilaSaldo
+              v-for="d in gastos.meDeben"
+              :key="d.id"
+              :deuda="d"
+              :moneda="viaje.actual!.moneda"
+              :mi-id="miId"
+              sentido="meDeben"
+            />
+          </ul>
+        </template>
+      </div>
     </div>
   </section>
 </template>
@@ -110,6 +113,11 @@ onMounted(cargar);
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--esp-3);
   margin-bottom: var(--esp-4);
+}
+@media (min-width: 64rem) {
+  .pestanas {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .pestana {
   min-width: 0;

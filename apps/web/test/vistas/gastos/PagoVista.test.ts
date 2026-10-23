@@ -41,7 +41,8 @@ describe('PagoVista (CU23)', () => {
     const vista = await montar({
       deudas: async (_v, rol) => (rol === 'deudor' ? [deudaConAna(150_050)] : []),
     });
-    expect(vista.find('.saldo').text()).toMatch(/Le debés \$\s?1\.500,50 a Ana/);
+    expect(vista.find('label').text()).toBe('¿Cuánto le pagás a Ana?');
+    expect(vista.find('.saldo').text()).toMatch(/Le debés \$\s?1\.500,50/);
     await vista.find('button[type="button"]').trigger('click');
     expect((vista.find('#pago-monto').element as HTMLInputElement).value).toBe('1500,50');
   });

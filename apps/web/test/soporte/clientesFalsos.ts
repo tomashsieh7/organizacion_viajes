@@ -109,6 +109,7 @@ export function actividad(
     alternativaDe?: { id: string; titulo: string } | null;
     horaInicio?: string;
     duracionMin?: number;
+    fecha?: string;
   } = {},
 ): ActividadVista {
   const horaInicio = cambios.horaInicio ?? '10:00';
@@ -130,7 +131,7 @@ export function actividad(
     resueltaEn: null,
     actividad: {
       titulo,
-      fecha: '2026-12-11',
+      fecha: cambios.fecha ?? '2026-12-11',
       horaInicio,
       horaFin: sumarMinutos(horaInicio, duracionMin),
       duracionMin,

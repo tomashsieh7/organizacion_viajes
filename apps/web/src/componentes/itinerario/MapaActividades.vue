@@ -138,6 +138,13 @@ onBeforeUnmount(() => mapa?.remove());
   height: 26rem;
   border-radius: var(--radio);
   border: 1px solid var(--color-borde);
+  /* Las capas de Leaflet quedan dentro del mapa y no tapan la barra de navegación del celular. */
+  isolation: isolate;
+}
+@media (min-width: 64rem) {
+  .mapa-actividades {
+    height: 34rem;
+  }
 }
 /* El ícono lo crea Leaflet fuera del alcance del estilo del componente. */
 :deep(.marcador-actividad) {

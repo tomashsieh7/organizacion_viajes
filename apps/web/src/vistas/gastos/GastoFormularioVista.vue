@@ -9,6 +9,7 @@ import {
 } from '@viajes/compartido';
 import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
 import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
+import MontoGrande from '../../componentes/gastos/MontoGrande.vue';
 import SelectorDeudores from '../../componentes/gastos/SelectorDeudores.vue';
 import SelectorModoDivision from '../../componentes/gastos/SelectorModoDivision.vue';
 import SelectorPagador from '../../componentes/gastos/SelectorPagador.vue';
@@ -124,67 +125,75 @@ async function enviar() {
   <section>
     <h2>Anotar gasto</h2>
     <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
-      <CampoFormulario id="gasto-titulo" etiqueta="Título" :error="errores['titulo']">
-        <input
-          id="gasto-titulo"
-          v-model="datos.titulo"
-          :maxlength="LARGOS_MAXIMOS.titulo"
-          name="titulo"
-          placeholder="Cena en el centro"
-          v-bind="aria('titulo', 'gasto-titulo')"
-        />
-      </CampoFormulario>
-      <!-- El monto, protagonista: en grande, como en una app de pagos. -->
-      <CampoFormulario
-        id="gasto-monto"
-        :etiqueta="`Monto en ${actual.moneda.codigo}`"
-        :error="errores['monto']"
-      >
-        <div class="monto-grande">
-          <span class="monto-grande__simbolo" aria-hidden="true">{{
-            simboloMoneda(actual.moneda)
-          }}</span>
-          <input
+      <!-- En escritorio, qué y quién pagó a la izquierda, y entre quiénes se divide a la derecha. -->
+      <div class="grilla grilla--doble">
+        <div>
+          <CampoFormulario id="gasto-titulo" etiqueta="Título" :error="errores['titulo']">
+            <input
+              id="gasto-titulo"
+              v-model="datos.titulo"
+              :maxlength="LARGOS_MAXIMOS.titulo"
+              name="titulo"
+              placeholder="Cena en el centro"
+              v-bind="aria('titulo', 'gasto-titulo')"
+            />
+          </CampoFormulario>
+          <!-- El monto, protagonista: en grande, como en una app de pagos. -->
+          <CampoFormulario
             id="gasto-monto"
-            v-model="datos.monto"
-            name="monto"
-            inputmode="decimal"
-            placeholder="0"
-            v-bind="aria('monto', 'gasto-monto')"
+            :etiqueta="`Monto en ${actual.moneda.codigo}`"
+            :error="errores['monto']"
+          >
+            <MontoGrande
+              id="gasto-monto"
+              v-model="datos.monto"
+              :simbolo="simboloMoneda(actual.moneda)"
+              name="monto"
+              placeholder="0"
+              v-bind="aria('monto', 'gasto-monto')"
+            />
+          </CampoFormulario>
+          <CampoFormulario
+            id="gasto-categoria"
+            etiqueta="Categoría"
+            :error="errores['categoriaId']"
+          >
+            <!-- RN-G1: la categoría la elige quien anota; no se preselecciona ninguna. -->
+            <select
+              id="gasto-categoria"
+              v-model="datos.categoriaId"
+              name="categoriaId"
+              v-bind="aria('categoriaId', 'gasto-categoria')"
+            >
+              <option value="" disabled>Elegí una categoría</option>
+              <option v-for="c in gastos.categorias" :key="c.id" :value="c.id">
+                {{ c.nombre }}
+              </option>
+            </select>
+          </CampoFormulario>
+          <SelectorPagador
+            v-model="datos.pagadoPorId"
+            :participantes="viaje.participantes"
+            :mi-id="miId"
           />
         </div>
-      </CampoFormulario>
-      <CampoFormulario id="gasto-categoria" etiqueta="Categoría" :error="errores['categoriaId']">
-        <!-- RN-G1: la categoría la elige quien anota; no se preselecciona ninguna. -->
-        <select
-          id="gasto-categoria"
-          v-model="datos.categoriaId"
-          name="categoriaId"
-          v-bind="aria('categoriaId', 'gasto-categoria')"
-        >
-          <option value="" disabled>Elegí una categoría</option>
-          <option v-for="c in gastos.categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
-        </select>
-      </CampoFormulario>
-      <SelectorPagador
-        v-model="datos.pagadoPorId"
-        :participantes="viaje.participantes"
-        :mi-id="miId"
-      />
-      <SelectorDeudores
-        v-model="deudores"
-        :participantes="viaje.participantes"
-        :error="errores['deudores']"
-      />
-      <SelectorModoDivision v-model="datos.modo" />
-      <TablaPartes
-        v-model="montos"
-        :modo="datos.modo"
-        :total="total"
-        :deudores="elegidos"
-        :moneda="actual.moneda"
-      />
-      <p v-if="errores['partes']" class="error-partes" role="alert">{{ errores['partes'] }}</p>
+        <div>
+          <SelectorDeudores
+            v-model="deudores"
+            :participantes="viaje.participantes"
+            :error="errores['deudores']"
+          />
+          <SelectorModoDivision v-model="datos.modo" />
+          <TablaPartes
+            v-model="montos"
+            :modo="datos.modo"
+            :total="total"
+            :deudores="elegidos"
+            :moneda="actual.moneda"
+          />
+          <p v-if="errores['partes']" class="error-partes" role="alert">{{ errores['partes'] }}</p>
+        </div>
+      </div>
       <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
       <div class="acciones">
         <RouterLink class="boton" :to="`/viajes/${actual.id}/gastos`">Cancelar</RouterLink>

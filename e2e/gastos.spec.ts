@@ -33,7 +33,8 @@ test('CU20, CU21 y CU23: anotar un gasto con división arbitraria y pagar parte 
   const fila = t.locator('.fila-saldo', { hasText: 'Ana' });
   await expect(fila).toContainText('$ 600,00');
   await fila.getByRole('link', { name: 'Pagar' }).click();
-  await expect(t.locator('.saldo')).toContainText('Le debés $ 600,00 a Ana');
+  await expect(t.getByLabel('¿Cuánto le pagás a Ana?')).toBeVisible();
+  await expect(t.locator('.saldo')).toContainText('Le debés $ 600,00');
   await t.fill('#pago-monto', '700');
   await expect(t.getByRole('alert')).toContainText('El monto supera lo que debés');
   await t.fill('#pago-monto', '250');

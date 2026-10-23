@@ -56,20 +56,25 @@ async function confirmarEliminacion() {
     }}</AvisoMensaje>
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <AvisoMensaje v-if="aviso" tipo="exito">{{ aviso }}</AvisoMensaje>
-    <ListaParticipantes
-      :participantes="store.participantes"
-      :soy-admin="store.soyAdmin"
-      :mi-id="miId()"
-      @eliminar="aEliminar = $event"
-    />
-    <FormularioAgregarViajero v-if="store.soyAdmin" />
-    <div class="acciones">
-      <button v-if="store.soyAdmin" class="boton" type="button" @click="dialogo = 'traspaso'">
-        Transferir la administración
-      </button>
-      <button class="boton boton--peligro" type="button" @click="dialogo = 'salir'">
-        Salir del grupo
-      </button>
+    <!-- En escritorio, la lista a la izquierda y agregar, traspasar y salir a la derecha. -->
+    <div class="grilla grilla--doble">
+      <ListaParticipantes
+        :participantes="store.participantes"
+        :soy-admin="store.soyAdmin"
+        :mi-id="miId()"
+        @eliminar="aEliminar = $event"
+      />
+      <div>
+        <FormularioAgregarViajero v-if="store.soyAdmin" />
+        <div class="acciones">
+          <button v-if="store.soyAdmin" class="boton" type="button" @click="dialogo = 'traspaso'">
+            Transferir la administración
+          </button>
+          <button class="boton boton--peligro" type="button" @click="dialogo = 'salir'">
+            Salir del grupo
+          </button>
+        </div>
+      </div>
     </div>
 
     <DialogoModal v-if="aEliminar" titulo="Eliminar participante" @cerrar="aEliminar = null">

@@ -130,6 +130,8 @@ onErrorCaptured((error) => {
   --radio-grande: 18px;
   --alto-control: 2.75rem;
   --alto-barra-inferior: 4rem;
+  /* Alto del encabezado de la aplicación: un control más su relleno. */
+  --alto-encabezado: calc(var(--alto-control) + 2 * var(--esp-2));
   --duracion: 150ms;
 
   font-family: var(--fuente-texto);
@@ -337,6 +339,28 @@ a:hover {
   border-radius: var(--radio-grande);
   padding: var(--esp-5) var(--esp-4);
 }
+/*
+ * Formularios con mapa: en escritorio, los campos a la izquierda y la ubicación con su mapa a la
+ * derecha. El mapa ocupa varias filas para que los campos no queden separados por su altura.
+ */
+@media (min-width: 64rem) {
+  .formulario--con-mapa {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--esp-6);
+    align-items: start;
+  }
+  .formulario--con-mapa > * {
+    grid-column: 1;
+  }
+  .formulario--con-mapa > .ubicacion {
+    grid-column: 2;
+    grid-row: 1 / span 8;
+  }
+  .formulario--con-mapa > .acciones {
+    grid-column: 1 / -1;
+  }
+}
 .fila {
   display: flex;
   gap: var(--esp-3);
@@ -352,6 +376,127 @@ a:hover {
   align-items: center;
   margin-top: var(--esp-4);
   flex-wrap: wrap;
+}
+
+/*
+ * Grillas de contenido: una columna en celular y tablet; en escritorio (desde 64rem), las listas de
+ * tarjetas pasan a dos columnas y las pantallas con dos bloques los ponen uno al lado del otro.
+ */
+.grilla {
+  display: grid;
+  /* Entre filas separa el margen propio de cada tarjeta. */
+  column-gap: var(--esp-4);
+  align-items: start;
+}
+.grilla > * {
+  min-width: 0;
+}
+@media (min-width: 64rem) {
+  .grilla--doble {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /*
+   * Tarjetas parejas por fila: las dos de cada fila miden lo mismo, con los votos y botones
+   * alineados abajo; la descripción larga se corta en dos renglones y al tocarla se ve entera.
+   */
+  .grilla--pareja {
+    align-items: stretch;
+  }
+  .grilla--pareja .descripcion:not(.descripcion--abierta) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  /* Un bloque angosto fijo (calendario, billetera, totales) y el resto del ancho para el detalle. */
+  .grilla--lateral {
+    grid-template-columns: 22rem minmax(0, 1fr);
+  }
+  /*
+   * El calendario es una ayuda para elegir el día, no lo principal: en escritorio va a la derecha
+   * y queda a la vista al bajar. En el DOM va primero, así en celular queda arriba. Un bloque
+   * `.grilla__arriba` opcional (el filtro de Actividades) ocupa todo el ancho por encima.
+   */
+  .grilla--calendario {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    grid-template-areas: 'contenido calendario';
+  }
+  .grilla--calendario:has(> .grilla__arriba) {
+    grid-template-areas:
+      'arriba arriba'
+      'contenido calendario';
+  }
+  .grilla--calendario > :first-child {
+    grid-area: calendario;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--alto-encabezado) + var(--esp-4));
+  }
+  .grilla--calendario > .grilla__arriba {
+    grid-area: arriba;
+  }
+  .grilla--calendario > :last-child:not(:first-child) {
+    grid-area: contenido;
+  }
+}
+
+/*
+ * Agenda de un día (Cronograma y Mapa): cada actividad es un renglón con su número, el mismo del
+ * marcador en el mapa, el horario en una columna fija y el título con la ubicación debajo.
+ */
+.agenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.agenda__fila {
+  display: grid;
+  grid-template-columns: 1.75rem 7.5rem minmax(0, 1fr);
+  gap: var(--esp-1) var(--esp-3);
+  align-items: baseline;
+  padding: var(--esp-2) 0;
+}
+.agenda__fila + .agenda__fila {
+  border-top: 1px solid var(--color-borde);
+}
+.agenda__numero {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--color-acento);
+  color: var(--color-sobre-acento);
+  font-size: 0.85rem;
+  font-weight: 700;
+  align-self: center;
+}
+.agenda__numero--sigue {
+  background: var(--color-superficie-alt);
+  color: var(--color-texto-secundario);
+}
+.agenda__hora {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.agenda__texto {
+  display: flex;
+  flex-direction: column;
+}
+.agenda__detalle {
+  font-size: 0.875rem;
+  color: var(--color-texto-secundario);
+}
+/* En celular el horario pasa arriba del título para dejarle el ancho. */
+@media (max-width: 29.99rem) {
+  .agenda__fila {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+  }
+  .agenda__texto {
+    grid-column: 2;
+  }
 }
 
 /* Controles de formulario: 44 px de alto para tocarlos con comodidad. */
@@ -523,46 +668,6 @@ label {
     clip-path: inset(50%);
     white-space: nowrap;
   }
-}
-/* Monto protagonista, como en una app de pagos: grande, centrado y con el símbolo adelante. */
-.monto-grande {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: var(--esp-2);
-  padding: var(--esp-3) var(--esp-4);
-  border: 1px solid var(--color-borde-fuerte);
-  border-radius: var(--radio-grande);
-  background: var(--color-superficie);
-}
-.monto-grande:focus-within {
-  outline: 2px solid var(--color-acento);
-  outline-offset: 2px;
-}
-.monto-grande__simbolo {
-  font-family: var(--fuente-titulos);
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--color-texto-secundario);
-}
-.monto-grande input {
-  width: 100%;
-  min-width: 0;
-  max-width: 14rem;
-  border: none;
-  background: transparent;
-  padding: 0;
-  font-family: var(--fuente-titulos);
-  font-size: 2.25rem;
-  font-weight: 800;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-.monto-grande input:focus {
-  outline: none;
-}
-.monto-grande:has(input[aria-invalid='true']) {
-  border-color: var(--color-error);
 }
 .saltar {
   position: absolute;

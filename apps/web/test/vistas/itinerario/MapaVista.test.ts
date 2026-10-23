@@ -95,7 +95,7 @@ describe('MapaVista', () => {
     await flushPromises();
     expect(replace).toHaveBeenCalledWith({ query: { dia: '2026-12-12' } });
     expect(mapa).toHaveBeenLastCalledWith('v1', expect.any(String), '2026-12-12');
-    expect(vista.find('.orden').text()).toContain('10:00 · Kayak');
+    expect(vista.find('.orden').text()).toMatch(/1\s*10:00 a \d\d:\d\d\s*Kayak/);
     expect(vista.find('[role="status"]').exists()).toBe(false);
   });
 
@@ -186,7 +186,9 @@ describe('MapaVista', () => {
     const obtenerActividad = vi.fn(async () => actividad('b', 'Boliche', { estado: 'CONFIRMADA' }));
     const vista = await montar(mapa, { obtenerActividad });
     const sigue = vista.find('.siguen');
-    expect(sigue.text()).toContain('Hasta 03:00 · Boliche · Centro · sigue del día anterior');
+    expect(sigue.find('.agenda__hora').text()).toBe('Hasta 03:00');
+    expect(sigue.find('strong').text()).toBe('Boliche');
+    expect(sigue.find('.agenda__detalle').text()).toContain('Centro · sigue del día anterior');
     expect(vista.find('[role="status"]').exists()).toBe(false);
     await sigue.find('button').trigger('click');
     await flushPromises();

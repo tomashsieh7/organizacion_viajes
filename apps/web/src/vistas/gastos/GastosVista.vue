@@ -57,63 +57,67 @@ onMounted(cargar);
     <h2 class="solo-lectores">Gastos</h2>
     <SiluetaCarga v-if="!cargado" />
     <AvisoMensaje v-else-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
-    <template v-else>
-      <div class="billetera panel">
-        <p class="billetera__rotulo">
-          {{ balance > 0 ? 'Te deben' : balance < 0 ? 'Debés' : 'Estás al día' }}
-        </p>
-        <p
-          class="billetera__monto monto"
-          :class="{ 'billetera__monto--debo': balance < 0, 'billetera__monto--cero': !balance }"
-        >
-          {{ monto(Math.abs(balance)) }}
-        </p>
-        <p class="billetera__detalle">
-          Debés {{ monto(gastos.totalDebo) }} · Te deben {{ monto(gastos.totalMeDeben) }}
-        </p>
-      </div>
-      <nav class="accesos" aria-label="Accesos rápidos">
-        <RouterLink :to="ruta('gastos/nuevo')" class="acceso acceso--principal">
-          <span class="acceso__icono"><IconoLinea nombre="mas" :tamano="22" /></span>
-          Anotar gasto
-        </RouterLink>
-        <RouterLink :to="ruta('saldos')" class="acceso">
-          <span class="acceso__icono"><IconoLinea nombre="pagar" :tamano="22" /></span>
-          Pagar
-        </RouterLink>
-        <RouterLink :to="`${ruta('saldos')}?ver=meDeben`" class="acceso">
-          <span class="acceso__icono"><IconoLinea nombre="personas" :tamano="22" /></span>
-          Me deben
-        </RouterLink>
-      </nav>
-
-      <h3 class="actividad__titulo">Actividad</h3>
-      <EstadoVacio
-        v-if="!porDia.length"
-        icono="🧾"
-        titulo="Todavía no hay gastos anotados."
-        descripcion="Anotá lo que pagaste para el grupo y la app calcula quién le debe a quién."
-      />
-      <section v-for="g in porDia" :key="g.dia" class="dia" :aria-label="g.dia">
-        <h4 class="dia__titulo">{{ g.dia }}</h4>
-        <div class="panel lista">
-          <template v-for="m in g.movimientos" :key="m.id">
-            <TarjetaGasto
-              v-if="m.tipo === 'gasto'"
-              :gasto="m.gasto"
-              :moneda="viaje.actual!.moneda"
-              :mi-id="sesion.usuario?.id ?? ''"
-            />
-            <FilaPago
-              v-else
-              :pago="m.pago"
-              :moneda="viaje.actual!.moneda"
-              :mi-id="sesion.usuario?.id ?? ''"
-            />
-          </template>
+    <!-- En escritorio, la billetera y los accesos a la izquierda y la actividad a la derecha. -->
+    <div v-else class="grilla grilla--lateral">
+      <div>
+        <div class="billetera panel">
+          <p class="billetera__rotulo">
+            {{ balance > 0 ? 'Te deben' : balance < 0 ? 'Debés' : 'Estás al día' }}
+          </p>
+          <p
+            class="billetera__monto monto"
+            :class="{ 'billetera__monto--debo': balance < 0, 'billetera__monto--cero': !balance }"
+          >
+            {{ monto(Math.abs(balance)) }}
+          </p>
+          <p class="billetera__detalle">
+            Debés {{ monto(gastos.totalDebo) }} · Te deben {{ monto(gastos.totalMeDeben) }}
+          </p>
         </div>
-      </section>
-    </template>
+        <nav class="accesos" aria-label="Accesos rápidos">
+          <RouterLink :to="ruta('gastos/nuevo')" class="acceso acceso--principal">
+            <span class="acceso__icono"><IconoLinea nombre="mas" :tamano="22" /></span>
+            Anotar gasto
+          </RouterLink>
+          <RouterLink :to="ruta('saldos')" class="acceso">
+            <span class="acceso__icono"><IconoLinea nombre="pagar" :tamano="22" /></span>
+            Pagar
+          </RouterLink>
+          <RouterLink :to="`${ruta('saldos')}?ver=meDeben`" class="acceso">
+            <span class="acceso__icono"><IconoLinea nombre="personas" :tamano="22" /></span>
+            Me deben
+          </RouterLink>
+        </nav>
+      </div>
+      <div>
+        <h3 class="actividad__titulo">Actividad</h3>
+        <EstadoVacio
+          v-if="!porDia.length"
+          icono="🧾"
+          titulo="Todavía no hay gastos anotados."
+          descripcion="Anotá lo que pagaste para el grupo y la app calcula quién le debe a quién."
+        />
+        <section v-for="g in porDia" :key="g.dia" class="dia" :aria-label="g.dia">
+          <h4 class="dia__titulo">{{ g.dia }}</h4>
+          <div class="panel lista">
+            <template v-for="m in g.movimientos" :key="m.id">
+              <TarjetaGasto
+                v-if="m.tipo === 'gasto'"
+                :gasto="m.gasto"
+                :moneda="viaje.actual!.moneda"
+                :mi-id="sesion.usuario?.id ?? ''"
+              />
+              <FilaPago
+                v-else
+                :pago="m.pago"
+                :moneda="viaje.actual!.moneda"
+                :mi-id="sesion.usuario?.id ?? ''"
+              />
+            </template>
+          </div>
+        </section>
+      </div>
+    </div>
   </section>
 </template>
 

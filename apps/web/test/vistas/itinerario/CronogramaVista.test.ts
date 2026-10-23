@@ -94,7 +94,10 @@ describe('CronogramaVista', () => {
     await flushPromises();
     expect(replace).toHaveBeenCalledWith({ query: { dia: '2026-12-11' } });
     const dia = vista.find('.dia');
-    expect(dia.text()).toContain('10:00 a 12:00 · Kayak · Bahía López');
+    const fila = dia.find('.agenda__fila');
+    expect(fila.find('.agenda__hora').text()).toBe('10:00 a 12:00');
+    expect(fila.find('strong').text()).toBe('Kayak');
+    expect(fila.find('.agenda__detalle').text()).toContain('Bahía López');
     expect(dia.find('a').attributes('href')).toBe('/viajes/v1/mapa?actividad=k');
     expect(dia.text()).not.toContain('Noche en');
   });

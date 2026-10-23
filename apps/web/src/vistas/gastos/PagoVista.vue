@@ -6,6 +6,7 @@ import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
 import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
 import IconoLinea from '../../componentes/base/IconoLinea.vue';
 import AvisoExcedeDeuda from '../../componentes/gastos/AvisoExcedeDeuda.vue';
+import MontoGrande from '../../componentes/gastos/MontoGrande.vue';
 import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { useCelebracion } from '../../composables/useCelebracion';
 import { useGastosStore } from '../../stores/gastos';
@@ -135,28 +136,24 @@ async function pagar() {
       <RouterLink class="boton boton--principal" :to="volver">Listo</RouterLink>
     </div>
     <template v-else-if="deuda">
-      <p class="saldo">
-        Le debés <strong>{{ formatearMonto(deuda.monto, actual.moneda) }}</strong> a
-        {{ nombreVisible(deuda.contraparte) }}.
-      </p>
       <form class="formulario" novalidate @submit.prevent="pagar">
+        <!-- Como en Mercado Pago: la pregunta, el monto en grande y debajo lo que se debe. -->
         <CampoFormulario
           id="pago-monto"
-          :etiqueta="`Monto en ${actual.moneda.codigo}`"
+          class="campo-monto"
+          :etiqueta="`¿Cuánto le pagás a ${nombreVisible(deuda.contraparte)}?`"
           :error="errorMonto"
         >
-          <div class="monto-grande">
-            <span class="monto-grande__simbolo" aria-hidden="true">{{
-              simboloMoneda(actual.moneda)
-            }}</span>
-            <input
-              id="pago-monto"
-              v-model="texto"
-              inputmode="decimal"
-              placeholder="0"
-              :aria-invalid="errorMonto ? 'true' : undefined"
-            />
-          </div>
+          <MontoGrande
+            id="pago-monto"
+            v-model="texto"
+            :simbolo="simboloMoneda(actual.moneda)"
+            placeholder="0"
+            :aria-invalid="errorMonto ? 'true' : undefined"
+          />
+          <p class="saldo">
+            Le debés <strong>{{ formatearMonto(deuda.monto, actual.moneda) }}</strong>
+          </p>
           <button type="button" class="boton boton--chico pagar-todo" @click="pagarTodo">
             Pagar el total
           </button>
@@ -181,8 +178,29 @@ async function pagar() {
 </template>
 
 <style scoped>
+/* El pago es un formulario corto: en escritorio no se estira a todo el ancho. */
+@media (min-width: 64rem) {
+  section {
+    max-width: 34rem;
+  }
+}
+/* La pregunta, el monto, lo que se debe y el atajo, todo centrado. */
+.campo-monto {
+  align-items: center;
+  text-align: center;
+}
+.campo-monto :deep(label) {
+  font-family: var(--fuente-titulos);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.saldo {
+  margin: var(--esp-2) 0 0;
+  color: var(--color-texto-secundario);
+}
 .pagar-todo {
-  align-self: center;
+  border-color: var(--color-accion-borde);
+  background: var(--color-accion-suave);
 }
 .nota {
   color: var(--color-texto-secundario);
