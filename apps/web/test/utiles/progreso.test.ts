@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AlojamientoVista } from '@viajes/compartido';
-import { calcularProgreso, cuentaRegresiva } from '../../src/utiles/progreso';
+import { calcularProgreso, colorDelProgreso, cuentaRegresiva } from '../../src/utiles/progreso';
 import { actividad } from '../soporte/clientesFalsos';
 
 /** Un día antes de que empiece el viaje: todo está por delante. */
@@ -26,6 +26,26 @@ function alojamiento(
     ...cambios,
   } as unknown as AlojamientoVista;
 }
+
+describe('colorDelProgreso', () => {
+  const tono = (p: number) => Number(/^hsl\((\d+) /.exec(colorDelProgreso(p))![1]);
+
+  it('cambia cada vez que se pasa un 15 % y recién desde el 90 % empieza a volverse verde', () => {
+    expect([0, 14, 15, 29, 30, 44, 45, 59, 60, 74, 75, 89].map(tono)).toEqual([
+      4, 4, 14, 14, 24, 24, 34, 34, 42, 42, 48, 48,
+    ]);
+    expect(tono(90)).toBe(110);
+    expect(tono(99)).toBe(110);
+    expect(tono(100)).toBe(140);
+  });
+
+  it('el tono nunca retrocede al avanzar, y los valores fuera de rango se acotan', () => {
+    const tonos = Array.from({ length: 101 }, (_, p) => tono(p));
+    expect(tonos.every((t, i) => i === 0 || t >= tonos[i - 1]!)).toBe(true);
+    expect(colorDelProgreso(-5)).toBe(colorDelProgreso(0));
+    expect(colorDelProgreso(130)).toBe(colorDelProgreso(100));
+  });
+});
 
 describe('calcularProgreso', () => {
   it('un viaje recién creado arranca bajo: sin propuestas no hay votos ni decisiones cumplidas', () => {
