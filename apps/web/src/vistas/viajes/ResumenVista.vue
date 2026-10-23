@@ -252,8 +252,8 @@ onMounted(cargar);
   border-radius: var(--radio);
 }
 .paso--principal {
-  border-color: var(--color-acento);
-  background: var(--color-acento-suave);
+  border-color: var(--color-accion-borde);
+  background: var(--color-accion-suave);
 }
 .paso__icono {
   flex: none;

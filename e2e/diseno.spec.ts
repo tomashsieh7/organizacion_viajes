@@ -106,3 +106,34 @@ test('Con nombres, títulos y montos largos tampoco se desborda nada en celular'
   const etiqueta = ana.page.locator('.etiqueta', { hasText: 'Admin' }).first();
   expect((await etiqueta.boundingBox())!.height).toBeLessThan(30);
 });
+
+test('El modo de color sigue al sistema hasta que se elige otro, y se recuerda al volver', async ({
+  page,
+}) => {
+  const fondo = () =>
+    page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+  const tema = () => page.evaluate(() => document.documentElement.dataset['tema']);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/ingresar');
+  expect(await tema()).toBe('oscuro');
+  expect(await fondo()).toBe('rgb(31, 31, 31)');
+
+  await page.getByRole('button', { name: 'Modo: Automático' }).click();
+  await page.getByRole('button', { name: 'Claro', exact: true }).click();
+  expect(await tema()).toBe('claro');
+  expect(await fondo()).toBe('rgb(250, 246, 238)');
+
+  // Lo elegido gana sobre el sistema y ya está aplicado antes de que cargue la app.
+  await page.route('**/src/main.ts', (r) => r.abort());
+  await page.reload();
+  expect(await tema()).toBe('claro');
+  expect(await fondo()).toBe('rgb(250, 246, 238)');
+  await page.unroute('**/src/main.ts');
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Modo: Claro' }).click();
+  await page.getByRole('button', { name: 'Automático', exact: true }).click();
+  expect(await tema()).toBe('oscuro');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect.poll(tema).toBe('claro');
+});

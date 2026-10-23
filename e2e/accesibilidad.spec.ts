@@ -3,7 +3,7 @@ import { api, expect, nuevoViajero, test, viajeCon } from './soporte/fixtures.js
 
 /**
  * WCAG 2.2 AA con axe en las pantallas principales, con datos en cada una, con ancho de escritorio
- * y de celular. La app es solo clara, aunque el sistema esté en modo oscuro. Un contraste bajo o un
+ * y de celular, en modo claro y en oscuro (el que sigue al sistema). Un contraste bajo o un
  * control sin nombre hace fallar la prueba con el detalle de cada problema.
  */
 test('Las pantallas principales no tienen problemas de accesibilidad que detecte axe', async ({
@@ -61,10 +61,11 @@ test('Las pantallas principales no tienen problemas de accesibilidad que detecte
     `/viajes/${v}/saldos/pagar/${ana.id}`,
   ];
   const problemas: string[] = [];
-  // El celular en modo oscuro confirma que la app se sigue viendo clara.
+  // Sin elección guardada, la app sigue al sistema: así se recorre también el modo oscuro.
   for (const [esquema, ancho] of [
     ['light', 1280],
     ['dark', 360],
+    ['dark', 1280],
   ] as const) {
     await p.emulateMedia({ colorScheme: esquema });
     await p.setViewportSize({ width: ancho, height: 800 });

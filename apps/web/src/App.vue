@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router';
 import AvisoCelebracion from './componentes/base/AvisoCelebracion.vue';
 import AvisoMensaje from './componentes/base/AvisoMensaje.vue';
 import IconoLinea from './componentes/base/IconoLinea.vue';
+import SelectorTema from './componentes/base/SelectorTema.vue';
+import { useTema } from './composables/useTema';
 import { useSesionStore } from './stores/sesion';
 
 const sesion = useSesionStore();
@@ -14,6 +16,7 @@ const contenido = ref<HTMLElement | null>(null);
 const anuncio = ref('');
 /** Un error que ningún componente manejó: se avisa en lugar de dejar la pantalla a medias. */
 const errorInesperado = ref(false);
+useTema().iniciar();
 
 async function cerrarSesion() {
   await sesion.cerrarSesion();
@@ -52,9 +55,12 @@ onErrorCaptured((error) => {
         >Organizador de viajes</span
       ><span class="marca__corto">Viajes</span>
     </RouterLink>
-    <div v-if="sesion.usuario" class="usuario">
-      <span class="usuario__nombre">{{ sesion.usuario.nombre }}</span>
-      <button class="boton boton--chico" type="button" @click="cerrarSesion">Cerrar sesión</button>
+    <div class="usuario">
+      <span v-if="sesion.usuario" class="usuario__nombre">{{ sesion.usuario.nombre }}</span>
+      <SelectorTema />
+      <button v-if="sesion.usuario" class="boton boton--chico" type="button" @click="cerrarSesion">
+        Cerrar sesión
+      </button>
     </div>
   </header>
   <div id="contenido" ref="contenido" tabindex="-1" class="contenido">
@@ -71,29 +77,35 @@ onErrorCaptured((error) => {
 
 <style>
 /*
- * Base visual: variables de diseño (colores, espaciado, tipografía) y estilos comunes. Fondo
- * blanco con grises suaves; el verde azulado es el color de las acciones y los enlaces, su versión
- * oscura va en la barra de arriba, y el coral se reserva para los detalles que acompañan el viaje
- * (cuenta regresiva, progreso, franjas y el botón flotante), nunca para dinero ni estados. Verde,
- * naranja tostado y rojo quedan para los estados. Solo hay modo claro. Todo cumple AA.
+ * Base visual: variables de diseño (colores, espaciado, tipografía) y estilos comunes. En claro, fondo
+ * crema con tarjetas casi blancas; en oscuro, la paleta "Noche petróleo". La mostaza es el color
+ * de la acción principal (botones principales, botón flotante e ícono de la marca); el verde
+ * azulado, el de los enlaces, las pestañas y los detalles que acompañan el viaje (cuenta regresiva,
+ * progreso y franjas), y su versión oscura va en la barra de arriba. Verde, naranja tostado y rojo
+ * quedan para los estados; la mostaza nunca se usa en montos ni en estados.
+ * El modo lo elige cada dispositivo (`useTema`) con `data-tema` en `<html>`. Todo cumple AA.
  */
 :root {
   color-scheme: light;
   --color-texto: #1c2230;
   --color-texto-secundario: #59606e;
-  --color-fondo: #ffffff;
-  --color-superficie: #ffffff;
-  --color-superficie-alt: #f3f4f7;
-  --color-borde: #e3e5ea;
-  --color-borde-fuerte: #8b909b;
+  --color-fondo: #faf6ee;
+  --color-superficie: #fffdf8;
+  --color-superficie-alt: #f3eee4;
+  --color-borde: #e7e0d3;
+  --color-borde-fuerte: #8a8478;
   --color-acento: #0a6a77;
   --color-sobre-acento: #ffffff;
   --color-acento-suave: #dff1f2;
   --color-barra: #083a46;
   --color-sobre-barra: #ffffff;
   --color-sobre-barra-secundario: #cfe3e7;
-  --color-destacado: #ff8f6b;
-  --color-sobre-destacado: #2e0f05;
+  --color-destacado: #0a6a77;
+  --color-sobre-destacado: #ffffff;
+  --color-accion: #f2b53a;
+  --color-sobre-accion: #2b1d00;
+  --color-accion-suave: #fdf1d6;
+  --color-accion-borde: #c98f17;
   --color-exito: #15803d;
   --color-exito-suave: #dcfce7;
   --color-error: #b91c1c;
@@ -101,11 +113,12 @@ onErrorCaptured((error) => {
   --color-aviso: #9a4a00;
   --color-aviso-suave: #ffedd8;
   --color-neutro: #59606e;
-  --color-neutro-suave: #f3f4f7;
-  --sombra: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 14px rgb(0 0 0 / 0.06);
+  --color-neutro-suave: #f3eee4;
+  --sombra: 0 1px 2px rgb(60 40 10 / 0.05), 0 4px 14px rgb(60 40 10 / 0.06);
   --sombra-elevada: 0 10px 30px rgb(0 0 0 / 0.18);
   --fondo-modal: rgb(0 0 0 / 0.5);
-  --fuente-titulos: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif;
+  --fuente-titulos: 'Poppins', system-ui, sans-serif;
+  --fuente-texto: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   --esp-1: 0.25rem;
   --esp-2: 0.5rem;
@@ -119,17 +132,54 @@ onErrorCaptured((error) => {
   --alto-barra-inferior: 4rem;
   --duracion: 150ms;
 
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--fuente-texto);
   font-size: 100%;
   line-height: 1.5;
   color: var(--color-texto);
   background: var(--color-fondo);
   -webkit-text-size-adjust: 100%;
+}
+/*
+ * Modo oscuro "Carbón": grises neutros, tarjetas más claras que el fondo con borde visible,
+ * celeste para enlaces y pestañas, celeste pastel con texto oscuro para la cuenta regresiva, y la
+ * misma mostaza para la acción principal. El contraste AA está calculado sobre estos fondos.
+ */
+:root[data-tema='oscuro'] {
+  color-scheme: dark;
+  --color-texto: #f2f2f2;
+  --color-texto-secundario: #b8b8b8;
+  --color-fondo: #1f1f1f;
+  --color-superficie: #333333;
+  --color-superficie-alt: #3d3d3d;
+  --color-borde: #6e6e6e;
+  --color-borde-fuerte: #9a9a9a;
+  --color-acento: #3fc3d8;
+  --color-sobre-acento: #062a30;
+  --color-acento-suave: #1d3d42;
+  --color-barra: #1f1f1f;
+  --color-sobre-barra: #f2f2f2;
+  --color-sobre-barra-secundario: #b8b8b8;
+  --color-destacado: #a9d5dd;
+  --color-sobre-destacado: #12343a;
+  --color-accion: #f2b53a;
+  --color-sobre-accion: #2b1d00;
+  --color-accion-suave: rgb(0 0 0 / 0.08);
+  --color-accion-borde: rgb(255 255 255 / 0.16);
+  --color-exito: #62d48e;
+  --color-exito-suave: #22402e;
+  --color-error: #ff8099;
+  --color-error-suave: #4a2830;
+  --color-aviso: #ffa463;
+  --color-aviso-suave: #4a3221;
+  --color-neutro: #b8b8b8;
+  --color-neutro-suave: #3d3d3d;
+  --sombra: none;
+  --sombra-elevada: 0 10px 30px rgb(0 0 0 / 0.6);
+  --fondo-modal: rgb(0 0 0 / 0.7);
+}
+/* En oscuro la barra es del color del fondo; una línea gris la separa del contenido. */
+:root[data-tema='oscuro'] .barra {
+  border-bottom-color: var(--color-borde);
 }
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -225,7 +275,7 @@ a:hover {
   text-decoration: none;
 }
 .marca__icono {
-  color: var(--color-destacado);
+  color: var(--color-accion);
 }
 .usuario {
   display: flex;
@@ -363,12 +413,12 @@ label {
   background: var(--color-superficie-alt);
 }
 .boton--principal {
-  background: var(--color-acento);
-  border-color: var(--color-acento);
-  color: var(--color-sobre-acento);
+  background: var(--color-accion);
+  border-color: var(--color-accion);
+  color: var(--color-sobre-accion);
 }
 .boton--principal:hover:not(:disabled) {
-  background: var(--color-acento);
+  background: var(--color-accion);
   filter: brightness(1.1);
 }
 .boton--peligro {
@@ -453,13 +503,13 @@ label {
     width: 3.5rem;
     height: 3.5rem;
     padding: 0;
-    border-color: var(--color-destacado);
-    background: var(--color-destacado);
-    color: var(--color-sobre-destacado);
+    border-color: var(--color-accion);
+    background: var(--color-accion);
+    color: var(--color-sobre-accion);
     box-shadow: var(--sombra-elevada);
   }
   .accion-flotante:hover:not(:disabled) {
-    background: var(--color-destacado);
+    background: var(--color-accion);
   }
   /* Lugar para que el último elemento de la lista no quede debajo del botón. */
   .pagina.con-barra-inferior:has(.accion-flotante) {

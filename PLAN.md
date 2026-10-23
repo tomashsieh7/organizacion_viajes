@@ -674,13 +674,17 @@ Las rutas de un viaje se anidan bajo `/viajes/:viajeId`, con un diseño común (
 ### 7.1.1 Pautas de interfaz
 
 Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegación de Material 3:
-- **Variables de diseño:** `App.vue` define colores semánticos con contraste AA verificado. La app es solo clara, aunque el sistema esté en modo oscuro. También define el espaciado en múltiplos de 4 px y una tipografía de 16 px con interlineado de 1,5; los títulos usan la fuente redondeada del sistema.
-- **Colores con el contraste de las apps de viaje:** fondo blanco, un color oscuro de base y uno brillante para los detalles.
-  - los neutros son grises suaves y las tarjetas se separan del fondo blanco con borde y sombra;
-  - el verde azulado es el color de las acciones: acción principal, enlaces y pestaña activa;
+- **Variables de diseño:** `App.vue` define colores semánticos con contraste AA verificado en los dos modos. También define el espaciado en múltiplos de 4 px y una tipografía de 16 px con interlineado de 1,5.
+- **Modo claro y oscuro:** la app arranca siguiendo al sistema y el botón del encabezado ofrece Claro, Oscuro y Automático. La elección se guarda en cada dispositivo (`useTema`, clave `tema` del almacenamiento local) y se aplica con `data-tema` en `<html>`; un script en `index.html` la aplica antes de dibujar, así no se ve un destello del otro modo. El oscuro es la paleta "Carbón", tomada de una referencia del usuario: grises neutros (fondo `#1f1f1f`, tarjetas `#333333` con borde gris visible `#6e6e6e`), celeste `#3fc3d8` para enlaces y pestañas, celeste pastel `#a9d5dd` con texto oscuro para la cuenta regresiva y la misma mostaza para la acción principal; el rojo de las deudas es un rosado (`#ff8099`) y "Pendiente" un naranja (`#ffa463`) que se separa de la mostaza. La barra de arriba es del color del fondo, con una línea gris debajo. Los mapas siguen claros. El botón del encabezado muestra un sol o una luna según el modo que se ve, también en automático.
+- **Tipografía:** Poppins en los títulos e Inter en el texto, servidas por la propia app (`@fontsource`), sin pedidos a Google. Para un texto en castellano se bajan unos 65 kB.
+- **Colores con el contraste de las apps de viaje:** en claro, fondo crema (`#faf6ee`) con tarjetas casi blancas (`#fffdf8`), un color oscuro de base y uno brillante para la acción principal.
+  - los neutros son cálidos y las tarjetas se separan del fondo con borde y sombra;
+  - el verde azulado es el color de los enlaces, la pestaña activa y lo elegido (días, personas, hitos cumplidos);
   - su versión oscura va en la barra de arriba, con el texto en blanco;
-  - el coral acompaña el viaje y no es una señal: cuenta regresiva, anillo de progreso, franja de la portada y de las tarjetas de la lista, ícono de la marca y el botón flotante en celular. Nunca se usa en montos ni en estados, para no confundirse con el rojo de las deudas;
-  - verde, naranja tostado y rojo se reservan para los estados (propuestas, saldos y errores); "Pendiente" usa naranja tostado y no amarillo, para separarse del coral;
+  - la mostaza (`#f2b53a`, con texto oscuro) es el color de la acción principal: botones principales, el paso destacado de Lo próximo, "Anotar gasto", el botón flotante en celular y el ícono de la marca (paleta E, elegida por el usuario en lugar del coral). Nunca se usa en montos ni en estados;
+  - el verde azulado acompaña el viaje: cuenta regresiva, franja de la portada y de las tarjetas de la lista;
+  - el anillo de progreso cambia de color con el porcentaje (`colorDelProgreso`): cada vez que se pasa un 15 % se acerca un paso más de rojo a amarillo, desde el 90 % empieza a ser verde y al 100 % es verde pleno. El porcentaje escrito en el centro sigue llevando la información;
+  - verde, naranja tostado y rojo se reservan para los estados (propuestas, saldos y errores); "Pendiente" usa naranja tostado y no amarillo, para separarse de la mostaza;
   - hay una sola acción principal por pantalla.
 - **Íconos:** de línea y de un solo color (`IconoLinea`, que toma el color del texto). Los emojis quedan para las celebraciones y los estados vacíos.
 - **Controles y foco:** los controles miden 44 px de alto y el foco del teclado siempre se ve.
@@ -696,7 +700,7 @@ Se siguen las heurísticas de Nielsen, WCAG 2.2 nivel AA y las pautas de navegac
 - **Teclado y lectores de pantalla:** el enlace "Saltar al contenido" lleva el foco más allá del encabezado y los menús (WCAG 2.4.1), y al cambiar de página una región `aria-live` anuncia el título nuevo sin mover el foco. En los diálogos (`DialogoModal`), Tab y Mayús + Tab dan la vuelta dentro del diálogo y el foco no pasa a la página de atrás.
 - **Errores inesperados:** si un componente falla sin manejar el error, `App.vue` lo captura (`onErrorCaptured`), lo registra en la consola y muestra un aviso para recargar, que se quita al cambiar de página.
 - **Títulos de página:** cada ruta define su título (`meta.titulo`) y la pestaña muestra, por ejemplo, "Saldos · Organizador de viajes" (WCAG 2.4.2).
-- **Control automático:** `e2e/accesibilidad.spec.ts` pasa axe (`@axe-core/playwright`, reglas WCAG 2.2 A y AA) por las pantallas principales a ancho de escritorio y de celular; en celular, con el sistema en modo oscuro, para confirmar que la app se sigue viendo clara. Cualquier problema que detecte hace fallar el CI. Los días fuera del viaje en el calendario usan el gris secundario sin transparencia, y el enlace del crédito del mapa va subrayado.
+- **Control automático:** `e2e/accesibilidad.spec.ts` pasa axe (`@axe-core/playwright`, reglas WCAG 2.2 A y AA) por las pantallas principales en claro a ancho de escritorio y en oscuro a ancho de escritorio y de celular. Cualquier problema que detecte hace fallar el CI. Los días fuera del viaje en el calendario usan el gris secundario sin transparencia, y el enlace del crédito del mapa va subrayado.
 - **Fechas:** se escriben con el mes abreviado en toda la interfaz ("10 al 16 dic 2026", "14 oct 2026", "jueves 10 dic"), con `formatearRango`, `formatearDia`, `formatearHorario`, `formatearHora` (siempre con 24 horas) y `etiquetaDelDia` ("Hoy", "Ayer", "24 sep") de `utiles/formato.ts` y `nombreDelDia` de `utiles/fechas.ts`.
 - **Textos y montos largos:**
   - cada campo de texto tiene el mismo largo máximo que su esquema (`LARGOS_MAXIMOS` en `packages/compartido`), con el mensaje "Puede tener hasta N caracteres";

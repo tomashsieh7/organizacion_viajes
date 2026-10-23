@@ -1,5 +1,10 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+// Fuentes servidas por la propia app (PLAN 7.1.1): Poppins en los títulos e Inter en el texto.
+import '@fontsource/poppins/600.css';
+import '@fontsource/poppins/700.css';
+import '@fontsource/poppins/800.css';
+import '@fontsource-variable/inter/wght.css';
 import App from './App.vue';
 import { crearRouter } from './router';
 import { CLIENTE_AUTH, ClienteAuthHttp } from './clientes/auth';
