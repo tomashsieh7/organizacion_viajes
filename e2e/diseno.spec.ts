@@ -197,6 +197,36 @@ test('En escritorio el calendario va a la derecha, y en Actividades el filtro va
   expect(cel.filtro.y).toBeLessThan(cel.lista.y);
 });
 
+test('En el chat del celular, la página no deja bajar más allá del campo para escribir', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const v = await viajeCon(ana);
+  const p = ana.page;
+  await p.setViewportSize({ width: 390, height: 844 });
+  await p.goto(`/viajes/${v}/chat`);
+  // Lo que queda por debajo del campo para escribir (el lugar de la barra de navegación).
+  const sobrante = () =>
+    p.evaluate(() => {
+      const campo = document.querySelector('#mensaje')!.closest('form')!.getBoundingClientRect();
+      return Math.round(document.documentElement.scrollHeight - (campo.bottom + window.scrollY));
+    });
+  const enviar = async (i: number) => {
+    await p.fill(
+      '#mensaje',
+      `Mensaje ${i}: ${'un texto largo que ocupa varios renglones '.repeat(3)}`,
+    );
+    await p.press('#mensaje', 'Enter');
+    await expect(p.locator('.mensaje')).toHaveCount(i);
+  };
+  await enviar(1);
+  const conUno = await sobrante();
+  // Mensajes largos y propios: cada uno lleva el nombre solo para lectores de pantalla, que no
+  // tiene que estirar la página aunque la lista de mensajes se desplace.
+  for (let i = 2; i <= 10; i++) await enviar(i);
+  expect(await sobrante()).toBe(conUno);
+});
+
 test('El modo de color sigue al sistema hasta que se elige otro, y se recuerda al volver', async ({
   page,
 }) => {
