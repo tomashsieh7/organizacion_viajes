@@ -1,6 +1,7 @@
 import type { AlojamientoVista, EstadoPropuesta } from '@viajes/compartido';
 import type { RangoFechas } from '../../../comun/valores/rangoFechas.js';
 import type { Propuesta } from '../../propuestas/dominio/propuesta.js';
+import type { ConsultaFechasDeViaje } from '../../propuestas/dominio/puertos.js';
 
 export interface DetalleAlojamiento {
   nombre: string;
@@ -17,6 +18,7 @@ export interface RepositorioAlojamientos {
 
 export interface ReposAlojamientos {
   alojamientos: RepositorioAlojamientos;
+  fechas: ConsultaFechasDeViaje;
 }
 
 export interface ConsultaAlojamientos {

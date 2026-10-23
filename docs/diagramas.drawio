@@ -207,6 +207,12 @@
         <mxCell id="cu-2" style="endArrow=none;startArrow=none;html=1;strokeColor=light-dark(#000000,#FFFFFF);entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="3K0EtL52pJd3sbR3FNGn-90" target="cu-1">
           <mxGeometry as="geometry" relative="1" />
         </mxCell>
+        <mxCell id="cu-datos-1" value="Modificando datos del viaje" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=13;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="392" y="1832" width="200" height="42" />
+        </mxCell>
+        <mxCell id="cu-datos-2" style="endArrow=none;startArrow=none;html=1;strokeColor=light-dark(#000000,#FFFFFF);entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="3K0EtL52pJd3sbR3FNGn-90" target="cu-datos-1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
         <mxCell id="cu-3" value="Cerrando sesión" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FEFECE;strokeColor=light-dark(#000000,#FFFFFF);fontSize=13;" vertex="1" parent="1">
           <mxGeometry as="geometry" x="640" y="1384" width="150" height="38" />
         </mxCell>
@@ -2249,6 +2255,9 @@
         </mxCell>
         <mxCell id="xZNIfwamf_zNV6Y1D581-89" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=center;verticalAlign=middle;" value="Viajero ve el progreso del viaje, los próximos pasos y la cuenta regresiva" vertex="1">
           <mxGeometry height="70" width="180" x="430" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-datos-1" value="Admin modifica nombre, destino y fechas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="430" y="910" width="180" height="70" />
         </mxCell>
         <mxCell id="sm-1" value="Admin transfiere la administración" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry as="geometry" x="430" y="750" width="180" height="70" />

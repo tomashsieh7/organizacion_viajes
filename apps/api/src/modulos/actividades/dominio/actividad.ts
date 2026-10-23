@@ -1,7 +1,9 @@
+import { moverDia, type PlanDeReacomodo } from '@viajes/compartido';
 import { ErrorDeDominio } from '../../../comun/errores.js';
 import type { Coordenadas } from '../../../comun/valores/coordenadas.js';
 import type { Fecha } from '../../../comun/valores/fecha.js';
 import { Intervalo } from '../../../comun/valores/intervalo.js';
+import { RangoFechas } from '../../../comun/valores/rangoFechas.js';
 import { Propuesta } from '../../propuestas/dominio/propuesta.js';
 
 export interface DetalleActividad {
@@ -59,6 +61,20 @@ export class Actividad {
       this.detalle.horaInicio,
       this.detalle.duracionMin,
     );
+  }
+
+  /** RN-V2: el rango de un solo día que la actividad ocupa en el viaje. */
+  get dias(): RangoFechas {
+    return RangoFechas.crear(this.detalle.fecha, this.detalle.fecha);
+  }
+
+  get titulo(): string {
+    return this.detalle.titulo;
+  }
+
+  /** RN-V2: pasa al día que el plan le asigna, con el mismo horario, votos y estado. */
+  reacomodar(plan: PlanDeReacomodo): void {
+    this.detalle.fecha = moverDia(plan, this.detalle.fecha);
   }
 
   /** Id que identifica al grupo de opciones: el de la original. */

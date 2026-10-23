@@ -1,4 +1,4 @@
-import { expect, nuevoViajero, test, viajeCon } from './soporte/fixtures.js';
+import { api, expect, nuevoViajero, test, viajeCon } from './soporte/fixtures.js';
 
 test('CU24 y CU04: transferir la administración y salir del grupo', async ({ browser }) => {
   const ana = await nuevoViajero(browser, 'Ana');
@@ -79,4 +79,63 @@ test('CU03: si se pierde la respuesta al eliminar, la lista muestra que la perso
   await expect(p.getByText('No se pudo contactar al servidor')).toBeVisible();
   await expect(p.getByRole('button', { name: 'Eliminar a Carla' })).toHaveCount(0);
   await expect(p.locator('li', { hasText: 'Carla' })).toHaveCount(0);
+});
+
+test('CU27: el Admin corre el viaje una semana desde Gestión del grupo y las propuestas lo siguen', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const tomas = await nuevoViajero(browser, 'Tomás');
+  const viajeId = await viajeCon(ana, tomas);
+  const kayak = await api<{ actividad: { id: string } }>(
+    tomas,
+    'POST',
+    `/viajes/${viajeId}/actividades`,
+    {
+      titulo: 'Kayak',
+      ubicacion: 'Lago',
+      latitud: -41.1,
+      longitud: -71.4,
+      fecha: '2026-12-15',
+      horaInicio: '10:00',
+      duracionMin: 60,
+    },
+  );
+
+  const p = ana.page;
+  await p.goto(`/viajes/${viajeId}/resumen`);
+  await p.getByRole('link', { name: '2 viajeros, gestión del grupo' }).click();
+  await expect(p.getByRole('heading', { name: 'Gestión del grupo' })).toBeVisible();
+  await p.getByRole('button', { name: 'Editar' }).click();
+  const dialogo = p.getByRole('dialog');
+
+  // Achicado, el kayak del martes 15 queda afuera y no se puede guardar.
+  await dialogo.getByLabel('Hasta').fill('2026-12-13');
+  await expect(dialogo.getByText('Quedan afuera 1 propuesta.')).toBeVisible();
+  await expect(dialogo.getByRole('button', { name: 'Guardar' })).toBeDisabled();
+  await dialogo.getByText('Ver cuáles').click();
+  await expect(dialogo.getByRole('link', { name: /Kayak/ })).toBeVisible();
+
+  // Corrido una semana, se avisa y al guardar el kayak pasa al martes 22.
+  await dialogo.getByLabel('Desde').fill('2026-12-17');
+  await dialogo.getByLabel('Hasta').fill('2026-12-23');
+  await expect(
+    dialogo.getByText('Al guardar, las propuestas se corren 1 semana para adelante.'),
+  ).toBeVisible();
+  await dialogo.getByLabel('Nombre').fill('Bariloche corrido');
+  await dialogo.getByRole('button', { name: 'Guardar' }).click();
+  await expect(p.getByText('Las propuestas se corrieron 1 semana para adelante.')).toBeVisible();
+  await expect(p.getByRole('heading', { level: 1 })).toHaveText('Bariloche corrido');
+
+  const { actividad } = await api<{ actividad: { actividad: { fecha: string } } }>(
+    tomas,
+    'GET',
+    `/viajes/${viajeId}/actividades/${kayak.actividad.id}`,
+  );
+  expect(actividad.actividad.fecha).toBe('2026-12-22');
+
+  // Un viajero ve los datos pero no puede editarlos.
+  await tomas.page.goto(`/viajes/${viajeId}/participantes`);
+  await expect(tomas.page.getByText('17 al 23 dic 2026').first()).toBeVisible();
+  await expect(tomas.page.getByRole('button', { name: 'Editar' })).toHaveCount(0);
 });

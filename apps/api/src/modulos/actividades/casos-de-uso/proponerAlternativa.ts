@@ -14,7 +14,6 @@ export class ProponerAlternativa {
     autorId: string,
     datos: DatosActividadNueva,
   ): Promise<string> {
-    await exigirFechaDelViaje(this.deps.fechas, viajeId, datos.fecha);
     const nueva = datosDeActividad(autorId, datos, this.deps.reloj.ahora());
     await proponerUnaVez(
       this.deps.origenes,
@@ -23,6 +22,7 @@ export class ProponerAlternativa {
         this.deps.unidad.ejecutar(async (repos) => {
           // La agenda primero y después la actividad elegida, en el mismo orden que la resolución.
           await repos.actividades.compartirAgenda(viajeId);
+          await exigirFechaDelViaje(repos.fechas, viajeId, datos.fecha);
           const elegida = await repos.actividades.obtenerParaModificar(viajeId, actividadId);
           if (!elegida)
             throw new ErrorDeDominio('NO_ENCONTRADO', 'NO_ENCONTRADO', 'La actividad no existe');

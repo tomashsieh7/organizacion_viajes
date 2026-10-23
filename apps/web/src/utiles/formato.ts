@@ -52,6 +52,12 @@ export function formatearRango(desde: string, hasta: string): string {
   return `${d1} al ${fin}`;
 }
 
+/** RN-V2: "1 semana para adelante" o "2 semanas para atrás". */
+export function semanasCorridas(semanas: number): string {
+  const n = Math.abs(semanas);
+  return `${n} ${n === 1 ? 'semana' : 'semanas'} ${semanas > 0 ? 'para adelante' : 'para atrás'}`;
+}
+
 /** Día de un instante ISO en la zona del dispositivo, con el mismo estilo: "14 oct 2026". */
 export function formatearDia(instante: string): string {
   const d = new Date(instante);

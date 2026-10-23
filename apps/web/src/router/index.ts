@@ -33,7 +33,7 @@ const rutas: RouteRecordRaw[] = [
       {
         path: 'participantes',
         component: () => import('../vistas/viajes/ParticipantesVista.vue'),
-        meta: { titulo: 'Participantes' },
+        meta: { titulo: 'Gestión del grupo' },
       },
       {
         path: 'alojamientos',

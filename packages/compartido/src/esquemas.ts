@@ -131,6 +131,24 @@ export const esquemaInicioSesion = z.object({
 });
 export type DatosInicioSesion = z.input<typeof esquemaInicioSesion>;
 
+/** RN-X7 y RN-X8: datos del viaje que se eligen al crearlo y que el Admin puede cambiar (RN-V1). */
+const datosViaje = {
+  nombre: textoDeUnaLinea(LARGOS_MAXIMOS.nombreViaje, 'Ingresá un nombre'),
+  destino: textoDeUnaLinea(LARGOS_MAXIMOS.destino, 'Ingresá un destino'),
+  fechaInicio: fechaDeViaje,
+  fechaFin: fechaDeViaje,
+};
+type FechasDeViaje = { fechaInicio: string; fechaFin: string };
+type ReglaDeFechas = [(v: FechasDeViaje) => boolean, { message: string; path: string[] }];
+const FECHAS_EN_ORDEN: ReglaDeFechas = [
+  (v: FechasDeViaje) => v.fechaInicio <= v.fechaFin,
+  { message: 'La fecha de inicio no puede ser posterior a la de fin', path: ['fechaFin'] },
+];
+const HASTA_UN_ANIO: ReglaDeFechas = [
+  (v: FechasDeViaje) => v.fechaFin <= unAnioDespues(v.fechaInicio),
+  { message: 'Un viaje puede durar hasta un año', path: ['fechaFin'] },
+];
+
 export const esquemaViajeNuevo = z
   .object({
     /**
@@ -138,21 +156,19 @@ export const esquemaViajeNuevo = z
      * el servidor reconoce el viaje ya creado y no lo duplica.
      */
     id: z.uuid().optional(),
-    nombre: textoDeUnaLinea(LARGOS_MAXIMOS.nombreViaje, 'Ingresá un nombre'),
-    destino: textoDeUnaLinea(LARGOS_MAXIMOS.destino, 'Ingresá un destino'),
-    fechaInicio: fechaDeViaje,
-    fechaFin: fechaDeViaje,
+    ...datosViaje,
     monedaCodigo: z.string().length(3, 'Elegí una moneda'),
   })
-  .refine((v) => v.fechaInicio <= v.fechaFin, {
-    message: 'La fecha de inicio no puede ser posterior a la de fin',
-    path: ['fechaFin'],
-  })
-  .refine((v) => v.fechaFin <= unAnioDespues(v.fechaInicio), {
-    message: 'Un viaje puede durar hasta un año',
-    path: ['fechaFin'],
-  });
+  .refine(...FECHAS_EN_ORDEN)
+  .refine(...HASTA_UN_ANIO);
 export type DatosViajeNuevo = z.input<typeof esquemaViajeNuevo>;
+
+/** CU27: lo que el Admin cambia del viaje; la moneda no se edita (RN-V1). */
+export const esquemaDatosViaje = z
+  .object(datosViaje)
+  .refine(...FECHAS_EN_ORDEN)
+  .refine(...HASTA_UN_ANIO);
+export type DatosViaje = z.input<typeof esquemaDatosViaje>;
 
 export const esquemaAgregarViajero = z.object({ email: esquemaEmail });
 

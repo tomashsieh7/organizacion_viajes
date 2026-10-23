@@ -100,6 +100,10 @@ export class Propuesta {
   get estado() {
     return this.datos.estado;
   }
+  /** Pendiente o confirmada: las denegadas y canceladas ya no ocupan lugar en el viaje (RN-V3). */
+  get sigueEnJuego(): boolean {
+    return this.datos.estado === 'PENDIENTE' || this.datos.estado === 'CONFIRMADA';
+  }
 
   /** RN-X3: un voto por viajero; votar de nuevo reemplaza el valor. Quien propone también vota (P7). */
   votar(usuarioId: string, valor: ValorVoto, ahora: Date): void {

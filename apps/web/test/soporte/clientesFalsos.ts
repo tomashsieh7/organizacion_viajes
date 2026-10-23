@@ -63,6 +63,7 @@ export function clienteViajesFalso(parcial: Partial<ClienteViajes> = {}): Client
     listar: async () => [],
     crear: noImplementado,
     obtener: async () => detalle('ADMIN'),
+    modificarDatos: noImplementado,
     participantes: async () => [
       { usuarioId: 'ana', nombre: 'Ana', apodo: null, rol: 'ADMIN' },
       TOMAS,

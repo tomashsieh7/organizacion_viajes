@@ -92,6 +92,24 @@ export class Viaje {
   }
 
   /**
+   * CU27, RN-V1: el Admin cambia el nombre, el destino y las fechas; la moneda queda. Reacomodar
+   * las propuestas a las fechas nuevas le toca al caso de uso (RN-V2).
+   */
+  modificarDatos(
+    solicitanteId: string,
+    datos: { nombre: string; destino: string; fechaInicio: string; fechaFin: string },
+  ): void {
+    this.exigirAdmin(solicitanteId);
+    const rango = RangoFechas.crear(datos.fechaInicio, datos.fechaFin);
+    Object.assign(this.datos, {
+      nombre: datos.nombre,
+      destino: datos.destino,
+      fechaInicio: rango.desde,
+      fechaFin: rango.hasta,
+    });
+  }
+
+  /**
    * RN-M1 (P19): el día que muestra el mapa si no se eligió otro. Hoy, si cae dentro del viaje
    * aunque no tenga actividades; si no, el primer día con actividades confirmadas; y si no hay
    * ninguna, el primer día del viaje.

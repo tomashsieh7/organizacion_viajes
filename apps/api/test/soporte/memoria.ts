@@ -91,6 +91,7 @@ import type {
 } from '../../src/modulos/auth/dominio/puertos.js';
 import type {
   Acceso,
+  AgendaDelViaje,
   BuscadorDeUsuarios,
   ConsultaDeudas,
   ConsultaSaldosPendientes,
@@ -101,6 +102,8 @@ import type {
   RetiroDeVotos,
 } from '../../src/modulos/viajes/dominio/puertos.js';
 import { tipoDeAcceso } from '../../src/modulos/viajes/dominio/membresia.js';
+import type { PropuestaReacomodable } from '../../src/modulos/viajes/dominio/reacomodo.js';
+import { Alojamiento } from '../../src/modulos/alojamientos/dominio/alojamiento.js';
 import { Viaje, type DatosViaje } from '../../src/modulos/viajes/dominio/viaje.js';
 
 export interface BaseEnMemoria {
@@ -374,11 +377,45 @@ export class BuscadorDeUsuariosEnMemoria implements BuscadorDeUsuarios {
   }
 }
 
+export class AgendaDelViajeEnMemoria implements AgendaDelViaje {
+  constructor(private readonly base: BaseEnMemoria) {}
+
+  async propuestas(viajeId: string): Promise<PropuestaReacomodable[]> {
+    return this.base.propuestas
+      .filter((fila) => fila.datos.viajeId === viajeId)
+      .flatMap((fila): PropuestaReacomodable[] => {
+        const propuesta = Propuesta.reconstruir(structuredClone(fila.datos));
+        if (fila.actividad)
+          return [Actividad.reconstruir(propuesta, structuredClone(fila.actividad))];
+        if (!fila.alojamiento) return [];
+        const { nombre, fechaDesde, fechaHasta } = fila.alojamiento;
+        return [
+          Alojamiento.reconstruir(propuesta, {
+            nombre,
+            estadia: RangoFechas.crear(fechaDesde, fechaHasta),
+          }),
+        ];
+      });
+  }
+
+  async guardar(movidas: PropuestaReacomodable[]): Promise<void> {
+    for (const p of movidas) {
+      const fila = this.base.propuestas.find((f) => f.datos.id === p.id)!;
+      if (fila.actividad) fila.actividad.fecha = p.dias.desde;
+      if (fila.alojamiento) {
+        fila.alojamiento.fechaDesde = p.dias.desde;
+        fila.alojamiento.fechaHasta = p.dias.hasta;
+      }
+    }
+  }
+}
+
 export function reposViajesEnMemoria(base: BaseEnMemoria): ReposViajes {
   return {
     viajes: new RepositorioViajesEnMemoria(base),
     deudas: new ConsultaDeudasEnMemoria(base),
     votos: new RetiroDeVotosEnMemoria(base),
+    agenda: new AgendaDelViajeEnMemoria(base),
   };
 }
 

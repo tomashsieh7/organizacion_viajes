@@ -64,6 +64,7 @@ beforeEach(() => {
   });
   unidadAlojamientos = new UnidadDeTrabajoEnMemoria(base, (e) => ({
     alojamientos: new RepositorioAlojamientosEnMemoria(e),
+    fechas: new ConsultaFechasDeViajeEnMemoria(e),
   }));
 });
 
@@ -79,7 +80,6 @@ function unidadDePropuestasSobre(estado: BaseEnMemoria) {
 const proponer = (fechaDesde = '2026-12-10', fechaHasta = '2026-12-13') =>
   new ProponerAlojamiento(
     unidadAlojamientos,
-    new ConsultaFechasDeViajeEnMemoria(base),
     reloj,
     new ConsultaOrigenesDePropuestasEnMemoria(unidadAlojamientos.confirmado),
   ).ejecutar(VIAJE, 'tomas', {

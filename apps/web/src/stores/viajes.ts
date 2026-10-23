@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia';
 import { computed, inject, ref } from 'vue';
 import type {
+  DatosViaje,
   DatosViajeNuevo,
   DetalleViaje,
   Moneda,
   Participante,
+  Reacomodo,
   ResumenViaje,
 } from '@viajes/compartido';
 import { CLIENTE_VIAJES } from '../clientes/viajes';
@@ -49,6 +51,17 @@ export const useViajeStore = defineStore('viaje', () => {
       participantes.value = [];
     }
     actual.value = await cliente!.obtener(viajeId);
+  }
+
+  /** CU27: el viaje abierto pasa a mostrar los datos nuevos; devuelve cómo se reacomodó. */
+  async function modificarDatos(datos: DatosViaje): Promise<Reacomodo> {
+    const { viaje, reacomodo } = await cliente!.modificarDatos(actual.value!.id, datos);
+    actual.value = viaje;
+    const { nombre, destino, fechaInicio, fechaFin } = viaje;
+    viajes.value = viajes.value.map((v) =>
+      v.id === viaje.id ? { ...v, nombre, destino, fechaInicio, fechaFin } : v,
+    );
+    return reacomodo;
   }
 
   async function cargarParticipantes() {
@@ -105,6 +118,7 @@ export const useViajeStore = defineStore('viaje', () => {
     cargarMonedas,
     crearViaje,
     abrir,
+    modificarDatos,
     cargarParticipantes,
     agregarViajero,
     eliminarParticipante,

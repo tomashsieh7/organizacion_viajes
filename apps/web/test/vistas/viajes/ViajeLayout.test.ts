@@ -101,12 +101,15 @@ describe('ViajeLayout', () => {
     expect(pestanas[1]!.attributes('aria-current')).toBeUndefined();
   });
 
-  it('Participantes se abre desde la portada y cuenta como parte de Inicio', async () => {
+  it('CU27: Gestión del grupo se abre desde la portada y cuenta como parte de Inicio', async () => {
     ruta = '/viajes/v1/participantes';
     const { vista } = montar();
     await flushPromises();
     const viajeros = vista.find('a.portada__viajeros');
+    // El engranaje se ve; para el lector de pantalla, el enlace dice a dónde lleva (CU27).
     expect(viajeros.text()).toBe('2 viajeros');
+    expect(viajeros.attributes('aria-label')).toBe('2 viajeros, gestión del grupo');
+    expect(viajeros.find('.portada__engranaje svg').exists()).toBe(true);
     expect(viajeros.attributes('aria-current')).toBe('page');
     expect(vista.find('nav.grupos [aria-current="page"] .grupo__nombre').text()).toBe('Inicio');
     // Inicio tiene una sola sección: no hay pestañas.

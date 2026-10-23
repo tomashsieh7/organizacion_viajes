@@ -23,6 +23,7 @@ import { ConsultarViajes } from './modulos/viajes/casos-de-uso/consultarViajes.j
 import { CrearViaje } from './modulos/viajes/casos-de-uso/crearViaje.js';
 import { EliminarParticipante } from './modulos/viajes/casos-de-uso/eliminarParticipante.js';
 import { SalirDelViaje } from './modulos/viajes/casos-de-uso/salirDelViaje.js';
+import { ModificarDatosDelViaje } from './modulos/viajes/casos-de-uso/modificarDatosDelViaje.js';
 import { TransferirAdministracion } from './modulos/viajes/casos-de-uso/transferirAdministracion.js';
 import type { DependenciasViajes } from './modulos/viajes/casos-de-uso/dependencias.js';
 import type { ConsultaViajes, ReposViajes } from './modulos/viajes/dominio/puertos.js';
@@ -70,7 +71,7 @@ import { PropuestasConAgendaBloqueadaPrimero } from './modulos/actividades/casos
 import { ReglaOpcionesAlConfirmar } from './modulos/actividades/casos-de-uso/reglaOpcionesAlConfirmar.js';
 import { ReglaSuperposicionAlConfirmar } from './modulos/actividades/casos-de-uso/reglaSuperposicionAlConfirmar.js';
 import type {
-  ReposActividades,
+  ReposProponerActividad,
   ReposResolucionConActividades,
 } from './modulos/actividades/dominio/puertos.js';
 import { ConsultaActividadesPrisma } from './modulos/actividades/infraestructura/consultaActividadesPrisma.js';
@@ -84,6 +85,7 @@ import { ConsultaSaldosPendientesPrisma } from './modulos/viajes/infraestructura
 import { ConsultaViajesPrisma } from './modulos/viajes/infraestructura/consultaViajesPrisma.js';
 import { LectorDeViajesCompartidoPrisma } from './modulos/viajes/infraestructura/lectorDeViajesCompartidoPrisma.js';
 import { RepositorioViajesPrisma } from './modulos/viajes/infraestructura/repositorioViajesPrisma.js';
+import { AgendaDelViajePrisma } from './modulos/viajes/infraestructura/agendaDelViajePrisma.js';
 import { RetiroDeVotosPrisma } from './modulos/viajes/infraestructura/retiroDeVotosPrisma.js';
 
 /** RN-G4: estrategia de división para cada modo; un modo nuevo se agrega acá (abierto/cerrado). */
@@ -114,6 +116,7 @@ export interface Contenedor {
     eliminarParticipante: EliminarParticipante;
     salirDelViaje: SalirDelViaje;
     transferirAdministracion: TransferirAdministracion;
+    modificarDatos: ModificarDatosDelViaje;
     consultar: ConsultarViajes;
     consultas: ConsultaViajes;
     consultarAcceso: ConsultarAcceso;
@@ -178,6 +181,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
     viajes: new RepositorioViajesPrisma(tx),
     deudas: new ConsultaDeudasPrisma(tx),
     votos: new RetiroDeVotosPrisma(tx),
+    agenda: new AgendaDelViajePrisma(tx),
   }));
   const depsViajes: DependenciasViajes = { unidad: unidadViajes, eventos, reloj };
   const consultasViajes = new ConsultaViajesPrisma(prisma);
@@ -192,13 +196,13 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   const consultasPropuestas = new ConsultaPropuestasPrisma(prisma);
 
   // Actividades
-  const unidadActividades = new UnidadDeTrabajoPrisma<ReposActividades>(prisma, (tx) => ({
+  const unidadActividades = new UnidadDeTrabajoPrisma<ReposProponerActividad>(prisma, (tx) => ({
     actividades: new RepositorioActividadesPrisma(tx, new RepositorioPropuestasPrisma(tx)),
+    fechas: new ConsultaFechasDeViajePrisma(tx),
   }));
   const origenesDePropuestas = new ConsultaOrigenesDePropuestasPrisma(prisma);
   const depsActividades: DependenciasProponerActividad = {
     unidad: unidadActividades,
-    fechas: new ConsultaFechasDeViajePrisma(prisma),
     reloj,
     origenes: origenesDePropuestas,
   };
@@ -235,6 +239,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
   // Alojamientos
   const unidadAlojamientos = new UnidadDeTrabajoPrisma<ReposAlojamientos>(prisma, (tx) => ({
     alojamientos: new RepositorioAlojamientosPrisma(tx),
+    fechas: new ConsultaFechasDeViajePrisma(tx),
   }));
 
   return {
@@ -254,6 +259,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       eliminarParticipante: new EliminarParticipante(depsViajes),
       salirDelViaje: new SalirDelViaje(depsViajes),
       transferirAdministracion: new TransferirAdministracion(depsViajes),
+      modificarDatos: new ModificarDatosDelViaje(depsViajes),
       consultar: new ConsultarViajes(consultasViajes, new ConsultaDeudasPrisma(prisma)),
       consultas: consultasViajes,
       consultarAcceso: new ConsultarAcceso(viajesSinBloqueo, saldosPendientes),
@@ -319,12 +325,7 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       mapa: new ConsultarMapa(viajesSinBloqueo, consultaItinerario),
     },
     alojamientos: {
-      proponer: new ProponerAlojamiento(
-        unidadAlojamientos,
-        new ConsultaFechasDeViajePrisma(prisma),
-        reloj,
-        origenesDePropuestas,
-      ),
+      proponer: new ProponerAlojamiento(unidadAlojamientos, reloj, origenesDePropuestas),
       consultar: new ConsultarAlojamientos(new ConsultaAlojamientosPrisma(prisma)),
     },
   };
