@@ -94,8 +94,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Los navegadores de Playwright se guardan entre corridas; sin cambios en el lockfile solo se
-      # instalan las dependencias del sistema.
+      # Los navegadores de Playwright se guardan entre corridas. Con la caché no se instalan las
+      # dependencias del sistema: la imagen de ubuntu-latest ya trae las que usa Chromium sin
+      # ventana, y bajarlas con apt dependía de la velocidad del espejo de Ubuntu (a veces 9
+      # minutos). Si un cambio de imagen deja afuera alguna, Chromium no arranca y los e2e lo dicen.
       - name: Recuperar los navegadores de Playwright
         id: navegadores
         uses: actions/cache@v6
@@ -104,8 +106,6 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - if: steps.navegadores.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
-      - if: steps.navegadores.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
       - run: npm run e2e
       - name: Guardar el reporte si falla
         if: failure()

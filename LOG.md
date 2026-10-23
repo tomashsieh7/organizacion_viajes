@@ -2257,3 +2257,15 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Documentación:** PLAN.md (la pantalla Resumen). El diagrama no cambia.
 - **Documentación:** también PLAN.md (RN-X9).
 - **Verificación:** lint, cobertura con sus mínimos, 390 pruebas de la API, 273 de la web y 29 e2e en verde; knip solo informa los falsos positivos conocidos.
+
+## 2026-10-22 22:03 — Merge del PR #50
+
+- Con la autorización del usuario ("si"), el PR #50 (Inicio según el momento del viaje, viajes de un día y chat sin mensajes perdidos al entrar) se mergeó a `main` en `e7e31b7`, fijando la cabeza verificada `6d4323c`. El CI pasó los tres trabajos, sin conflictos ni comentarios, aunque los e2e tardaron 11 minutos.
+
+## 2026-10-23 — Por qué los e2e del CI tardaban a veces 11 o 12 minutos
+
+- **Pedido del usuario:** investigar la demora ("si, investigá y sumá la entrada del LOG ahí").
+- **Causa:** el paso `npx playwright install-deps chromium` tardó 531 s en el PR #50, contra 11 s en el PR #49. Las pruebas en sí tardaron lo mismo en los dos casos, unos 98 s. Según el log, apt bajó 25 MB desde `azure.archive.ubuntu.com` a 47,6 kB/s (8 min 41 s).
+- **Qué se instalaba:** las bibliotecas que usa Chromium ya venían en la imagen ("already the newest version"). Se bajaban fuentes para otros alfabetos, xvfb y actualizaciones menores de libglib y libnss3, que las pruebas sin ventana no necesitan.
+- **Cambio** (aprobado por el usuario con "si"): con la caché de navegadores, el workflow ya no corre `install-deps`. Sin caché, porque cambió el lockfile, sigue corriendo `install --with-deps`. Si una imagen nueva dejara afuera alguna biblioteca, Chromium no arrancaría y los e2e fallarían con un error claro.
+- **Alternativa descartada:** correr los e2e en la imagen Docker de Playwright. Obliga a cambiar cómo se conecta la base y a bajar más de 1 GB por corrida.
