@@ -92,7 +92,7 @@ onErrorCaptured((error) => {
   --color-fondo: #faf6ee;
   --color-superficie: #fffdf8;
   --color-superficie-alt: #f3eee4;
-  --color-borde: #e7e0d3;
+  --color-borde: #ddd5c6;
   --color-borde-fuerte: #8a8478;
   --color-acento: #0a6a77;
   --color-sobre-acento: #ffffff;
@@ -114,7 +114,6 @@ onErrorCaptured((error) => {
   --color-aviso-suave: #ffedd8;
   --color-neutro: #59606e;
   --color-neutro-suave: #f3eee4;
-  --sombra: 0 1px 2px rgb(60 40 10 / 0.05), 0 4px 14px rgb(60 40 10 / 0.06);
   --sombra-elevada: 0 10px 30px rgb(0 0 0 / 0.18);
   --fondo-modal: rgb(0 0 0 / 0.5);
   --fuente-titulos: 'Poppins', system-ui, sans-serif;
@@ -175,7 +174,6 @@ onErrorCaptured((error) => {
   --color-aviso-suave: #4a3221;
   --color-neutro: #b8b8b8;
   --color-neutro-suave: #3d3d3d;
-  --sombra: none;
   --sombra-elevada: 0 10px 30px rgb(0 0 0 / 0.6);
   --fondo-modal: rgb(0 0 0 / 0.7);
 }
@@ -330,7 +328,6 @@ a:hover {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-grande);
-  box-shadow: var(--sombra);
   padding: var(--esp-4);
 }
 .formulario {

@@ -133,3 +133,41 @@ test('RN-P7: si se pierde la respuesta, volver a pagar no registra el pago dos v
   );
   expect(deudas.map((d) => d.monto)).toEqual([8_000]);
 });
+
+test('La actividad de gastos se carga de a tandas al bajar, y en escritorio va centrada', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const viajeId = await viajeCon(ana);
+  const { categorias } = await api<{ categorias: { id: string }[] }>(
+    ana,
+    'GET',
+    '/categorias-gasto',
+  );
+  for (let i = 1; i <= 20; i++) {
+    await api(ana, 'POST', `/viajes/${viajeId}/gastos`, {
+      titulo: `Gasto ${i}`,
+      categoriaId: categorias[0]!.id,
+      monto: 100_000 + i,
+      deudores: [ana.id],
+      modoDivision: 'IGUALES',
+    });
+  }
+  const p = ana.page;
+  await p.setViewportSize({ width: 390, height: 844 });
+  await p.goto(`/viajes/${viajeId}/gastos`);
+  const movimientos = p.locator('.lista > *');
+  await expect(movimientos).toHaveCount(15);
+  await expect(p.getByText('Gasto 20', { exact: true })).toBeVisible();
+  await p.getByText('Gasto 6', { exact: true }).scrollIntoViewIfNeeded();
+  await p.mouse.wheel(0, 2000);
+  await expect(movimientos).toHaveCount(20);
+  await expect(p.getByText('No hay más movimientos.')).toBeVisible();
+
+  await p.setViewportSize({ width: 1280, height: 800 });
+  const billetera = (await p.locator('.billetera').boundingBox())!;
+  const lista = (await p.locator('.lista').first().boundingBox())!;
+  // Una sola columna: la billetera arriba de la actividad y del mismo ancho, centrada en la sección.
+  expect(Math.round(billetera.x)).toBe(Math.round(lista.x));
+  expect(billetera.y).toBeLessThan(lista.y);
+});

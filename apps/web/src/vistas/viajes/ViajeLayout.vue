@@ -247,7 +247,6 @@ onBeforeUnmount(() => {
   background:
     radial-gradient(circle at 1px 1px, var(--color-borde) 1.2px, transparent 0) 0 0 / 18px 18px,
     var(--color-superficie);
-  box-shadow: var(--sombra);
 }
 .volver {
   display: inline-flex;
@@ -358,7 +357,6 @@ a.portada__viajeros.activo {
 .subseccion.activo {
   background: var(--color-superficie);
   color: var(--color-texto);
-  box-shadow: var(--sombra);
 }
 
 /* Celular: los grupos pasan a una barra fija abajo, al alcance del pulgar. */

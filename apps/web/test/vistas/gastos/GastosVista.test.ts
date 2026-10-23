@@ -118,3 +118,75 @@ describe('GastosVista como billetera', () => {
     expect(soloPagos.text()).not.toContain('Todavía no hay gastos anotados.');
   });
 });
+
+/**
+ * Observador falso: avisa que el final de la lista está a la vista cuando la prueba lo pide, y
+ * también al empezar a observarlo si ya lo está, como hace el navegador.
+ */
+let finalVisible = false;
+const observadores: { avisar: () => void }[] = [];
+class ObservadorFalso {
+  private elementos = new Set<Element>();
+  constructor(private alCambiar: (e: { isIntersecting: boolean }[]) => void) {
+    observadores.push(this);
+  }
+  avisar() {
+    if (this.elementos.size) this.alCambiar([{ isIntersecting: finalVisible }]);
+  }
+  observe(e: Element) {
+    this.elementos.add(e);
+    this.avisar();
+  }
+  unobserve(e: Element) {
+    this.elementos.delete(e);
+  }
+  disconnect() {
+    this.elementos.clear();
+  }
+}
+
+describe('GastosVista con muchos movimientos', () => {
+  const muchos = (n: number) =>
+    Array.from({ length: n }, (_, i) => gasto(`g${i}`, new Date(2026, 9, 20, 12, 60 - i)));
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    observadores.length = 0;
+  });
+
+  it('muestra 15 y suma otros 15 al llegar al final, hasta que no quedan', async () => {
+    finalVisible = false;
+    vi.stubGlobal('IntersectionObserver', ObservadorFalso);
+    const vista = await montar(0, 0, muchos(40));
+    expect(vista.findAll('.lista > *')).toHaveLength(15);
+    // Del más reciente al más viejo, sin saltear ninguno.
+    expect(vista.text()).toContain('Gasto g0');
+    expect(vista.text()).not.toContain('Gasto g15');
+    expect(vista.text()).not.toContain('No hay más movimientos.');
+
+    finalVisible = true;
+    observadores.at(-1)!.avisar();
+    await flushPromises();
+    // Con el final todavía a la vista, se siguen sumando tandas hasta mostrar todos.
+    expect(vista.findAll('.lista > *')).toHaveLength(40);
+    expect(vista.find('.actividad__final').exists()).toBe(false);
+    expect(vista.text()).toContain('No hay más movimientos.');
+  });
+
+  it('si el final no llega a verse, no suma nada', async () => {
+    finalVisible = false;
+    vi.stubGlobal('IntersectionObserver', ObservadorFalso);
+    const vista = await montar(0, 0, muchos(20));
+    observadores.at(-1)!.avisar();
+    await flushPromises();
+    expect(vista.findAll('.lista > *')).toHaveLength(15);
+  });
+
+  it('con pocos movimientos no hay tandas ni aviso de final', async () => {
+    vi.stubGlobal('IntersectionObserver', ObservadorFalso);
+    const vista = await montar(0, 0, muchos(15));
+    expect(vista.findAll('.lista > *')).toHaveLength(15);
+    expect(vista.find('.actividad__final').exists()).toBe(false);
+    expect(vista.text()).not.toContain('No hay más movimientos.');
+  });
+});
