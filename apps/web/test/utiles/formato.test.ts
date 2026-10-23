@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  semanasCorridas,
   aUnidadMinima,
   formatearDia,
   etiquetaDelDia,
@@ -73,5 +74,12 @@ describe('simboloMoneda', () => {
   it('usa el mismo símbolo que los montos formateados', () => {
     expect(simboloMoneda({ codigo: 'ARS', nombre: 'Peso argentino', decimales: 2 })).toBe('$');
     expect(simboloMoneda({ codigo: 'USD', nombre: 'Dólar', decimales: 2 })).toBe('US$');
+  });
+});
+
+describe('semanasCorridas (RN-V2)', () => {
+  it('dice cuántas semanas y para qué lado', () => {
+    expect(semanasCorridas(1)).toBe('1 semana para adelante');
+    expect(semanasCorridas(-2)).toBe('2 semanas para atrás');
   });
 });

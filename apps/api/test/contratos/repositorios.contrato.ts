@@ -495,6 +495,79 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
     });
   });
 
+  describe(`AgendaDelViaje — ${impl.nombre}`, () => {
+    const AHORA = new Date('2026-09-24T12:00:00.000Z');
+    const resumen = async (viajeId: string) =>
+      (await r.agenda.propuestas(viajeId))
+        .map((p) => [p.titulo, p.propuesta.tipo, p.dias.desde, p.dias.hasta])
+        .sort();
+
+    it('CU27: carga las actividades y los alojamientos del viaje y guarda solo el día nuevo', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const otroViaje = await e.viaje(ana);
+      const datosKayak = {
+        viajeId: viaje,
+        autorId: ana,
+        titulo: 'Kayak',
+        descripcion: '',
+        ubicacion: 'Lago',
+        coordenadas: Coordenadas.crear(-41.1, -71.4),
+        fecha: '2026-12-11',
+        horaInicio: '10:00',
+        duracionMin: 90,
+        ahora: AHORA,
+      };
+      const kayak = Actividad.proponer({ ...datosKayak, id: crypto.randomUUID() });
+      await r.actividades.crear(kayak);
+      await r.actividades.crear(
+        Actividad.proponer({ ...datosKayak, id: crypto.randomUUID(), viajeId: otroViaje }),
+      );
+      const hostel = Propuesta.proponer({
+        id: crypto.randomUUID(),
+        viajeId: viaje,
+        autorId: ana,
+        tipo: 'ALOJAMIENTO',
+        descripcion: '',
+        ubicacion: 'Centro',
+        coordenadas: null,
+        ahora: AHORA,
+      });
+      await r.alojamientos.crear(hostel, {
+        nombre: 'Hostel',
+        estadia: RangoFechas.crear('2026-12-10', '2026-12-13'),
+      });
+      const votada = (await r.propuestas.obtenerParaModificar(viaje, kayak.id))!;
+      votada.votar(ana, 'A_FAVOR', AHORA);
+      await r.propuestas.guardar(votada);
+
+      expect(await resumen(viaje)).toEqual([
+        ['Hostel', 'ALOJAMIENTO', '2026-12-10', '2026-12-13'],
+        ['Kayak', 'ACTIVIDAD', '2026-12-11', '2026-12-11'],
+      ]);
+      const cargadas = await r.agenda.propuestas(viaje);
+      const plan = { '2026-12-10': '2026-12-17', '2026-12-11': '2026-12-18' };
+      for (const p of cargadas) p.reacomodar(plan);
+      await r.agenda.guardar(cargadas);
+
+      expect(await resumen(viaje)).toEqual([
+        ['Hostel', 'ALOJAMIENTO', '2026-12-17', '2026-12-20'],
+        ['Kayak', 'ACTIVIDAD', '2026-12-18', '2026-12-18'],
+      ]);
+      expect(await resumen(otroViaje)).toEqual([
+        ['Kayak', 'ACTIVIDAD', '2026-12-11', '2026-12-11'],
+      ]);
+      // Los votos, el estado y el resto de los datos quedan como estaban.
+      expect((await r.propuestas.obtenerParaModificar(viaje, kayak.id))!.aDatos()).toEqual(
+        votada.aDatos(),
+      );
+      expect((await r.actividades.obtenerParaModificar(viaje, kayak.id))!.detalle).toEqual({
+        ...kayak.detalle,
+        fecha: '2026-12-18',
+      });
+    });
+  });
+
   describe(`ConsultaItinerario — ${impl.nombre}`, () => {
     const AHORA = new Date('2026-09-24T12:00:00Z');
     const RESUELTA = new Date('2026-09-25T12:00:00Z');

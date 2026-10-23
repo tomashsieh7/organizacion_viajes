@@ -44,7 +44,11 @@ export interface ConsultaPropuestas {
   ): Promise<PropuestaVista | null>;
 }
 
-/** Fechas del viaje, para validar que lo propuesto caiga dentro de él (P11). */
+/**
+ * Fechas del viaje, para validar que lo propuesto caiga dentro de él (P11). Dentro de una
+ * transacción las lee con el viaje en bloqueo compartido hasta el final, así un cambio de fechas
+ * simultáneo espera y la propuesta no queda afuera (RN-V4).
+ */
 export interface ConsultaFechasDeViaje {
   rango(viajeId: string): Promise<RangoFechas | null>;
 }

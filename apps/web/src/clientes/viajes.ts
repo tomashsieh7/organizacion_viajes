@@ -1,10 +1,12 @@
 import type { InjectionKey } from 'vue';
 import type {
+  DatosViaje,
   DatosViajeNuevo,
   DetalleViaje,
   Moneda,
   Participante,
   RespuestaBaja,
+  RespuestaDatosViaje,
   ResumenViaje,
 } from '@viajes/compartido';
 import { pedir } from './http';
@@ -14,6 +16,8 @@ export interface ClienteViajes {
   listar(): Promise<ResumenViaje[]>;
   crear(datos: DatosViajeNuevo): Promise<DetalleViaje>;
   obtener(viajeId: string): Promise<DetalleViaje>;
+  /** CU27: solo el Admin; responde 409 `REACOMODO_NECESARIO` si algo queda afuera (RN-V3). */
+  modificarDatos(viajeId: string, datos: DatosViaje): Promise<RespuestaDatosViaje>;
   participantes(viajeId: string): Promise<Participante[]>;
   agregarViajero(viajeId: string, email: string): Promise<Participante>;
   eliminarParticipante(viajeId: string, usuarioId: string): Promise<RespuestaBaja>;
@@ -35,6 +39,9 @@ export class ClienteViajesHttp implements ClienteViajes {
   }
   async obtener(viajeId: string) {
     return (await pedir<{ viaje: DetalleViaje }>('GET', `/api/viajes/${viajeId}`)).viaje;
+  }
+  modificarDatos(viajeId: string, datos: DatosViaje) {
+    return pedir<RespuestaDatosViaje>('PATCH', `/api/viajes/${viajeId}`, datos);
   }
   async participantes(viajeId: string) {
     return (

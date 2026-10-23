@@ -213,3 +213,30 @@ describe('Viaje.diaInicialDelMapa (RN-M1, P19)', () => {
     expect(v.diaInicialDelMapa('2027-01-05', [])).toBe('2026-12-10');
   });
 });
+
+describe('CU27: modificar los datos del viaje', () => {
+  const datos = {
+    nombre: 'Sur',
+    destino: 'Bariloche y El Bolsón',
+    fechaInicio: '2026-12-17',
+    fechaFin: '2026-12-26',
+  };
+
+  it('RN-V1: el Admin cambia nombre, destino y fechas, y la moneda queda', () => {
+    const v = viajeConParticipantes(TOMAS);
+    v.modificarDatos(ANA, datos);
+    expect(v.aDatos()).toMatchObject({ ...datos, monedaCodigo: 'ARS' });
+    expect(v.rango).toEqual(expect.objectContaining({ desde: '2026-12-17', hasta: '2026-12-26' }));
+  });
+
+  it('RN-V1: un viajero no puede, y unas fechas invertidas no se aceptan', () => {
+    const v = viajeConParticipantes(TOMAS);
+    expect(() => v.modificarDatos(TOMAS, datos)).toThrow(
+      expect.objectContaining({ codigo: 'SOLO_ADMIN' }),
+    );
+    expect(() => v.modificarDatos(ANA, { ...datos, fechaFin: '2026-12-01' })).toThrow(
+      expect.objectContaining({ codigo: 'RANGO_FECHAS_INVALIDO' }),
+    );
+    expect(v.aDatos()).toMatchObject({ nombre: 'Bariloche', fechaInicio: '2026-12-10' });
+  });
+});

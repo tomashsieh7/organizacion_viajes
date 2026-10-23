@@ -1,10 +1,12 @@
 import { Router, type RequestHandler } from 'express';
 import {
   esquemaAgregarViajero,
+  esquemaDatosViaje,
   esquemaSalirDelViaje,
   esquemaTraspaso,
   esquemaViajeNuevo,
   type RespuestaBaja,
+  type RespuestaDatosViaje,
 } from '@viajes/compartido';
 import { parametroUuid, soloAdmin } from '../../middlewares/acceso.js';
 import { limiteDeEmailsSinCuenta } from '../../middlewares/seguridad.js';
@@ -13,6 +15,7 @@ import type { AgregarViajero } from './casos-de-uso/agregarViajero.js';
 import type { ConsultarViajes } from './casos-de-uso/consultarViajes.js';
 import type { CrearViaje } from './casos-de-uso/crearViaje.js';
 import type { EliminarParticipante } from './casos-de-uso/eliminarParticipante.js';
+import type { ModificarDatosDelViaje } from './casos-de-uso/modificarDatosDelViaje.js';
 import type { SalirDelViaje } from './casos-de-uso/salirDelViaje.js';
 import type { TransferirAdministracion } from './casos-de-uso/transferirAdministracion.js';
 
@@ -22,6 +25,7 @@ export interface DependenciasRutasViajes {
   eliminarParticipante: EliminarParticipante;
   salirDelViaje: SalirDelViaje;
   transferirAdministracion: TransferirAdministracion;
+  modificarDatos: ModificarDatosDelViaje;
   consultar: ConsultarViajes;
   autenticado: RequestHandler;
 }
@@ -70,6 +74,15 @@ export function rutasDelViaje(deps: Omit<DependenciasRutasViajes, 'autenticado'>
   const usuario = (req: { usuarioId?: string }) => req.usuarioId ?? '';
   const viajeId = (req: { params: Record<string, string | string[] | undefined> }) =>
     String(req.params['viajeId']);
+
+  viaje.patch('/', soloAdmin, validar(esquemaDatosViaje), async (req, res) => {
+    const reacomodo = await deps.modificarDatos.ejecutar(viajeId(req), usuario(req), req.body);
+    const cuerpo: RespuestaDatosViaje = {
+      viaje: await deps.consultar.detalle(viajeId(req), usuario(req)),
+      reacomodo,
+    };
+    res.json(cuerpo);
+  });
 
   viaje.get('/participantes', async (req, res) => {
     res.json({ participantes: await deps.consultar.participantes(viajeId(req)) });

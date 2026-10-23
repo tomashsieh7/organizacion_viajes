@@ -6,7 +6,10 @@ import { ProponerAlternativa } from '../../src/modulos/actividades/casos-de-uso/
 import type { DependenciasProponerActividad } from '../../src/modulos/actividades/casos-de-uso/dependencias.js';
 import { ReglaOpcionesAlConfirmar } from '../../src/modulos/actividades/casos-de-uso/reglaOpcionesAlConfirmar.js';
 import { ReglaSuperposicionAlConfirmar } from '../../src/modulos/actividades/casos-de-uso/reglaSuperposicionAlConfirmar.js';
-import type { ReposResolucionConActividades } from '../../src/modulos/actividades/dominio/puertos.js';
+import type {
+  ReposProponerActividad,
+  ReposResolucionConActividades,
+} from '../../src/modulos/actividades/dominio/puertos.js';
 import { ResolverPropuesta } from '../../src/modulos/propuestas/casos-de-uso/resolverPropuesta.js';
 import { Votar } from '../../src/modulos/propuestas/casos-de-uso/votar.js';
 import { UnidadDeTrabajoEnMemoria } from '../soporte/unidadDeTrabajoEnMemoria.js';
@@ -25,7 +28,10 @@ import {
 
 const reloj = { ahora: () => new Date('2026-09-24T12:00:00Z') };
 const VIAJE = 'v1';
-let unidad: UnidadDeTrabajoEnMemoria<BaseEnMemoria, ReposResolucionConActividades>;
+let unidad: UnidadDeTrabajoEnMemoria<
+  BaseEnMemoria,
+  ReposResolucionConActividades & ReposProponerActividad
+>;
 let deps: DependenciasProponerActividad;
 
 beforeEach(() => {
@@ -66,10 +72,10 @@ beforeEach(() => {
     propuestas: new RepositorioPropuestasEnMemoria(e),
     actividades: new RepositorioActividadesEnMemoria(e),
     viajes: new RepositorioViajesEnMemoria(e),
+    fechas: new ConsultaFechasDeViajeEnMemoria(e),
   }));
   deps = {
     unidad,
-    fechas: { rango: (id) => new ConsultaFechasDeViajeEnMemoria(unidad.confirmado).rango(id) },
     reloj,
     origenes: {
       origen: (id) => new ConsultaOrigenesDePropuestasEnMemoria(unidad.confirmado).origen(id),

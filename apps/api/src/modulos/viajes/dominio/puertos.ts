@@ -1,4 +1,5 @@
 import type { DetalleViaje, Moneda, Participante, ResumenViaje, Rol } from '@viajes/compartido';
+import type { PropuestaReacomodable } from './reacomodo.js';
 import type { Viaje } from './viaje.js';
 
 /** Escritura del agregado Viaje. */
@@ -30,6 +31,14 @@ export interface RetiroDeVotos {
   retirarVotosPendientes(viajeId: string, usuarioId: string): Promise<void>;
 }
 
+/** CU27: las propuestas que se reacomodan cuando cambian las fechas del viaje (RN-V2). */
+export interface AgendaDelViaje {
+  /** Actividades y alojamientos del viaje en cualquier estado; se llama con el viaje bloqueado. */
+  propuestas(viajeId: string): Promise<PropuestaReacomodable[]>;
+  /** Guarda el día nuevo de las que se movieron. */
+  guardar(movidas: PropuestaReacomodable[]): Promise<void>;
+}
+
 /** Busca usuarios registrados por una forma de ingreso (D7); la implementa el módulo de autenticación. */
 export interface BuscadorDeUsuarios {
   buscarPorIdentificador(tipo: 'EMAIL_CONTRASENA', valor: string): Promise<string | null>;
@@ -58,4 +67,5 @@ export interface ReposViajes {
   viajes: RepositorioViajes;
   deudas: ConsultaDeudas;
   votos: RetiroDeVotos;
+  agenda: AgendaDelViaje;
 }

@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import type { Participante } from '@viajes/compartido';
 import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
 import DialogoModal from '../../componentes/base/DialogoModal.vue';
+import DatosDelViaje from '../../componentes/viajes/DatosDelViaje.vue';
 import DialogoSalir from '../../componentes/viajes/DialogoSalir.vue';
 import DialogoTraspaso from '../../componentes/viajes/DialogoTraspaso.vue';
 import FormularioAgregarViajero from '../../componentes/viajes/FormularioAgregarViajero.vue';
@@ -50,7 +51,9 @@ async function confirmarEliminacion() {
 
 <template>
   <section>
-    <h2>Participantes</h2>
+    <h2>Gestión del grupo</h2>
+    <DatosDelViaje />
+    <h3>Participantes</h3>
     <AvisoMensaje v-if="carga.error.value" tipo="error" :reintentar="carga.reintentar.value">{{
       carga.error.value
     }}</AvisoMensaje>

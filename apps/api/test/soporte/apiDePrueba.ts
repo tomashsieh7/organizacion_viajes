@@ -38,6 +38,11 @@ export function cliente(app: Express) {
         .put(url)
         .set('Origin', ORIGEN)
         .send(cuerpo ?? {}),
+    patch: (url: string, cuerpo?: object) =>
+      agente
+        .patch(url)
+        .set('Origin', ORIGEN)
+        .send(cuerpo ?? {}),
     delete: (url: string) => agente.delete(url).set('Origin', ORIGEN),
   };
 }

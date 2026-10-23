@@ -51,6 +51,7 @@ import { BuscadorDeUsuariosPrisma } from '../../src/modulos/auth/infraestructura
 import { RepositorioCuentasPrisma } from '../../src/modulos/auth/infraestructura/repositorioCuentasPrisma.js';
 import { RepositorioSesionesPrisma } from '../../src/modulos/auth/infraestructura/repositorioSesionesPrisma.js';
 import type {
+  AgendaDelViaje,
   BuscadorDeUsuarios,
   ConsultaDeudas,
   ConsultaSaldosPendientes,
@@ -64,9 +65,11 @@ import { ConsultaDeudasPrisma } from '../../src/modulos/viajes/infraestructura/c
 import { ConsultaSaldosPendientesPrisma } from '../../src/modulos/viajes/infraestructura/consultaSaldosPendientesPrisma.js';
 import { ConsultaViajesPrisma } from '../../src/modulos/viajes/infraestructura/consultaViajesPrisma.js';
 import { RepositorioViajesPrisma } from '../../src/modulos/viajes/infraestructura/repositorioViajesPrisma.js';
+import { AgendaDelViajePrisma } from '../../src/modulos/viajes/infraestructura/agendaDelViajePrisma.js';
 import { RetiroDeVotosPrisma } from '../../src/modulos/viajes/infraestructura/retiroDeVotosPrisma.js';
 import { vaciarBase } from './baseDePrueba.js';
 import {
+  AgendaDelViajeEnMemoria,
   baseVacia,
   ConsultaCategoriasEnMemoria,
   ConsultaGastosEnMemoria,
@@ -133,6 +136,7 @@ export interface Repos {
   consultas: ConsultaViajes;
   deudas: ConsultaDeudas;
   votos: RetiroDeVotos;
+  agenda: AgendaDelViaje;
   buscador: BuscadorDeUsuarios;
 }
 
@@ -250,6 +254,7 @@ export const implementacionEnMemoria: Implementacion = {
         consultas: new ConsultaViajesEnMemoria(base),
         deudas: new ConsultaDeudasEnMemoria(base),
         votos: new RetiroDeVotosEnMemoria(base),
+        agenda: new AgendaDelViajeEnMemoria(base),
         buscador: new BuscadorDeUsuariosEnMemoria(base),
       },
     };
@@ -373,6 +378,7 @@ export function implementacionPrisma(prisma: PrismaClient): Implementacion {
           consultas: new ConsultaViajesPrisma(prisma),
           deudas: new ConsultaDeudasPrisma(prisma),
           votos: new RetiroDeVotosPrisma(prisma),
+          agenda: new AgendaDelViajePrisma(prisma),
           buscador: new BuscadorDeUsuariosPrisma(prisma),
         },
       };

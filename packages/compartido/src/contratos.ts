@@ -62,6 +62,28 @@ export interface RespuestaBaja {
   bajaConDeuda: boolean;
 }
 
+/** CU27: cómo se reacomodaron las propuestas al cambiar las fechas (RN-V2). */
+export interface Reacomodo {
+  /** Semanas que se corrió todo; 0 si nada se movió de día. */
+  semanas: number;
+  /** Cuántas propuestas cambiaron de día. */
+  movidas: number;
+}
+
+export interface RespuestaDatosViaje {
+  viaje: DetalleViaje;
+  reacomodo: Reacomodo;
+}
+
+/** RN-V3: propuesta pendiente o confirmada que quedaría fuera de las fechas nuevas. */
+export interface PropuestaFueraDeFechas {
+  id: string;
+  tipo: 'ACTIVIDAD' | 'ALOJAMIENTO';
+  titulo: string;
+  desde: string;
+  hasta: string;
+}
+
 export type EstadoPropuesta = 'PENDIENTE' | 'CONFIRMADA' | 'DENEGADA' | 'CANCELADA';
 export type ValorVoto = 'A_FAVOR' | 'EN_CONTRA';
 export type AccionSobrePropuesta = 'confirmar' | 'denegar' | 'cancelar';

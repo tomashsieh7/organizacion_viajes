@@ -18,6 +18,7 @@ export function errorDeSuperposicion(conflictos: ActividadAgendada[]): ErrorDeDo
   );
 }
 
+/** RN-V4: llamar dentro de la transacción en la que se guarda la actividad. */
 export async function exigirFechaDelViaje(
   fechas: ConsultaFechasDeViaje,
   viajeId: string,

@@ -9,7 +9,6 @@ export class ProponerActividad {
   constructor(private readonly deps: DependenciasProponerActividad) {}
 
   async ejecutar(viajeId: string, autorId: string, datos: DatosActividadNueva): Promise<string> {
-    await exigirFechaDelViaje(this.deps.fechas, viajeId, datos.fecha);
     const actividad = Actividad.proponer({
       ...datosDeActividad(autorId, datos, this.deps.reloj.ahora()),
       viajeId,
@@ -20,6 +19,7 @@ export class ProponerActividad {
       () =>
         this.deps.unidad.ejecutar(async (repos) => {
           await repos.actividades.compartirAgenda(viajeId);
+          await exigirFechaDelViaje(repos.fechas, viajeId, datos.fecha);
           await exigirSinSuperposicion(repos, actividad);
           await repos.actividades.crear(actividad);
         }),

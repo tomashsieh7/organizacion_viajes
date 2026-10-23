@@ -30,7 +30,7 @@ interface Grupo {
 /**
  * Las secciones se agrupan en cinco destinos, el máximo recomendado para una barra de navegación
  * fija; dentro de cada grupo, las secciones se eligen con pestañas. Participantes se abre desde
- * la portada ("4 viajeros") y cuenta como parte de Inicio.
+ * la portada ("4 viajeros" con el engranaje, CU27): ahí también se cambian los datos del viaje.
  */
 const GRUPOS: Grupo[] = [
   {
@@ -181,14 +181,18 @@ onBeforeUnmount(() => {
             <span v-if="soloSaldos" class="portada__viajeros"
               ><IconoLinea nombre="personas" :tamano="16" /> {{ viajeros }}</span
             >
+            <!-- Lleva a Gestión del grupo: los participantes y los datos del viaje. -->
             <RouterLink
               v-else
               :to="enlace('participantes')"
               class="portada__viajeros"
               :class="{ activo: seccionActiva === 'participantes' }"
               :aria-current="seccionActiva === 'participantes' ? 'page' : undefined"
-              ><IconoLinea nombre="personas" :tamano="16" /> {{ viajeros }}</RouterLink
-            >
+              :aria-label="`${viajeros}, gestión del grupo`"
+              ><IconoLinea nombre="personas" :tamano="16" /> {{ viajeros
+              }}<span class="portada__engranaje"
+                ><IconoLinea nombre="engranaje" :tamano="16" /></span
+            ></RouterLink>
           </p>
         </div>
         <nav v-if="grupos.length" class="grupos" aria-label="Secciones del viaje">
@@ -283,6 +287,13 @@ a.portada__viajeros {
   color: var(--color-texto);
   font-weight: 600;
   text-decoration: none;
+}
+/* El engranaje, separado por una línea, avisa que ahí también se gestiona el grupo. */
+.portada__engranaje {
+  display: inline-flex;
+  margin-left: var(--esp-1);
+  padding-left: var(--esp-2);
+  border-left: 1px solid var(--color-borde-fuerte);
 }
 a.portada__viajeros:hover,
 a.portada__viajeros.activo {
