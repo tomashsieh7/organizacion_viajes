@@ -183,9 +183,9 @@ onMounted(cargar);
   border-color: var(--color-acento);
 }
 .acceso--principal .acceso__icono {
-  background: var(--color-acento);
-  border-color: var(--color-acento);
-  color: var(--color-sobre-acento);
+  background: var(--color-accion);
+  border-color: var(--color-accion);
+  color: var(--color-sobre-accion);
 }
 .actividad__titulo {
   margin: 0 0 var(--esp-2);

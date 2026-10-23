@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { colorDelProgreso } from '../../utiles/progreso';
 
 /** `compacto`: versión chica para una tarjeta de resumen, solo con el porcentaje. */
 const props = defineProps<{ porcentaje: number; compacto?: boolean }>();
 const RADIO = 50;
 const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
 const desfase = computed(() => CIRCUNFERENCIA * (1 - props.porcentaje / 100));
+const color = computed(() => colorDelProgreso(props.porcentaje));
 </script>
 
 <template>
@@ -27,6 +29,7 @@ const desfase = computed(() => CIRCUNFERENCIA * (1 - props.porcentaje / 100));
         :r="RADIO"
         :stroke-dasharray="CIRCUNFERENCIA"
         :stroke-dashoffset="desfase"
+        :style="{ stroke: color }"
       />
     </svg>
     <span class="anillo__texto" aria-hidden="true"
@@ -53,9 +56,10 @@ circle {
   stroke: var(--color-borde);
 }
 .anillo__avance {
-  stroke: var(--color-destacado);
   stroke-linecap: round;
-  transition: stroke-dashoffset 600ms ease-out;
+  transition:
+    stroke-dashoffset 600ms ease-out,
+    stroke 600ms ease-out;
 }
 .anillo__texto {
   position: absolute;

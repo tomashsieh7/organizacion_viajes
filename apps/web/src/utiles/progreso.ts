@@ -161,6 +161,20 @@ export function calcularProgreso({
   };
 }
 
+/** Tono de cada tramo de 15 %: de rojo a amarillo hasta el 89 %, y verde desde el 90 %. */
+const TONOS_POR_TRAMO = [4, 14, 24, 34, 42, 48, 110] as const;
+
+/**
+ * Color del anillo de progreso, a pedido del usuario: cambia cada vez que se pasa un 15 % (0, 15,
+ * 30, 45, 60 y 75 van de rojo a amarillo), empieza a volverse verde desde el 90 % y es verde pleno
+ * al 100 %. Es un tono HSL; el porcentaje escrito en el centro sigue llevando la información.
+ */
+export function colorDelProgreso(porcentaje: number): string {
+  const p = Math.min(100, Math.max(0, porcentaje));
+  const tono = p === 100 ? 140 : TONOS_POR_TRAMO[Math.floor(p / 15)]!;
+  return `hsl(${tono} 80% ${p >= 90 ? 42 : 50}%)`;
+}
+
 export type CuentaRegresiva =
   | { etapa: 'antes'; dias: number; texto: string }
   | { etapa: 'durante'; dia: number; total: number; texto: string }

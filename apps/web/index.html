@@ -8,6 +8,30 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%B3%3C/text%3E%3C/svg%3E"
     />
     <title>Organizador de viajes</title>
+    <script>
+      // Aplica el modo claro u oscuro antes de dibujar, para que no se vea un destello del otro.
+      // La misma regla, y el cambio de modo después, están en src/composables/useTema.ts.
+      var tema = null;
+      try {
+        tema = localStorage.getItem('tema');
+      } catch (e) {}
+      var oscuro =
+        tema === 'oscuro' ||
+        (tema !== 'claro' &&
+          !!window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.tema = oscuro ? 'oscuro' : 'claro';
+    </script>
+    <style>
+      /* Fondo mientras carga la app; los colores completos están en src/App.vue. */
+      html {
+        background: #faf6ee;
+      }
+      html[data-tema='oscuro'] {
+        color-scheme: dark;
+        background: #1f1f1f;
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
