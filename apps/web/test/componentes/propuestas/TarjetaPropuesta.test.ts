@@ -120,4 +120,9 @@ describe('TarjetaPropuesta', () => {
     expect(v.find('.descripcion').text()).toBe('Uno\nDos');
     expect(v.find('.descripcion').classes()).toContain('descripcion');
   });
+
+  it('RN-X8: sin descripción no deja un renglón vacío', () => {
+    const v = montar({ ...propuesta('PENDIENTE'), descripcion: '' }, false);
+    expect(v.find('.descripcion').exists()).toBe(false);
+  });
 });

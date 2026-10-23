@@ -2346,3 +2346,15 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - 600 secuencias al azar de días y estados contra un modelo propio de qué renglones y cantidades se ven;
   - no hay endpoints nuevos ni cambios de permisos; los dobles envíos siguen bloqueados por `ocupado`.
 - **Verificación:** lint, 390 pruebas del servidor y 303 de la web, 33 de punta a punta (con axe), cobertura y knip con sus falsos positivos conocidos. Las pruebas exploratorias se borraron.
+
+## 2026-10-23 16:10 — Merge del PR #53 y descripción opcional
+
+- Con la autorización del usuario ("Commit, push, PR y merge si pasa"), el PR #53 (escritorio con barra lateral y la revisión de pantallas) se mergeó a `main` en `3b0b714`, fijando la cabeza verificada `6f34f84`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+- **Pedido del usuario:** "La descripción del alojamiento/actividad quiero que sea opcional". Aprobó el plan ("Sí, hacelo") y, para los diagramas, "Marcar los dos".
+- **Cambio:**
+  - `packages/compartido`: `descripcion` de `baseDePropuesta` usa `textoOpcionalDeVariasLineas`, que vale `''` si falta o queda vacía al recortarla y, si tiene texto, aplica las reglas de RN-X8 con el mensaje "Escribí algo visible o dejala vacía". Sin migración: la columna sigue siendo texto y guarda la cadena vacía. Se descartó guardarla nula porque obligaba a una migración sin beneficio para el usuario;
+  - API: `ProponerAlojamiento` y `datosDeActividad` toman `''` si la descripción no viene;
+  - web: la etiqueta dice "Descripción (opcional)" en los dos formularios, y `TarjetaPropuesta` y `PanelActividad` no muestran el renglón cuando está vacía.
+- **Diagramas** (`docs/diagramas.drawio`): en el conceptual, Propuesta marca `descripción: str [0..1]` y `precio: int [0..1]`; en "Proponiendo actividad" y "Proponiendo alternativa de actividad" los pasos dicen "descripción opcional". El archivo tiene once páginas armadas a mano sin el código PlantUML embebido, así que se cambiaron solo esos tres textos en el XML en lugar de regenerarlo; se comprobó que entran en sus cajas.
+- **Pruebas** (fallan sin el cambio): en la API, proponer un alojamiento sin descripción, vacía o con solo espacios guarda `''` y con solo un carácter invisible da 400 con el mensaje nuevo; una actividad y su alternativa sin descripción; en la web, los dos formularios, la tarjeta y el panel del mapa (`PanelActividad.test.ts`, nuevo); de punta a punta, proponer un alojamiento sin descripción desde el formulario.
+- **Testing intensivo:** descripción `null`, número, lista, objeto, 1001 caracteres, caracteres de control y de inversión de dirección (400); 1000 caracteres, emoji y solo espacios (201); alternativa sin descripción desde el formulario; tarjetas con y sin descripción a 390 y 1280 px sin desbordes.

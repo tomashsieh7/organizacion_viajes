@@ -76,6 +76,19 @@ const textoDeVariasLineas = (largoMaximo: number, siFalta: string) =>
     .refine(sinProhibidosEnVariasLineas, CARACTERES_PROHIBIDOS)
     .refine(seVe, siFalta);
 
+/**
+ * RN-X8: texto opcional de varias líneas. Si falta o queda vacío al recortarlo vale `''`; si tiene
+ * algo, siguen las mismas reglas que el obligatorio.
+ */
+const textoOpcionalDeVariasLineas = (largoMaximo: number) =>
+  z
+    .string()
+    .trim()
+    .max(largoMaximo, hasta(largoMaximo))
+    .refine(sinProhibidosEnVariasLineas, CARACTERES_PROHIBIDOS)
+    .refine((v) => v === '' || seVe(v), 'Escribí algo visible o dejala vacía')
+    .default('');
+
 /** RN-S7 y RN-X8: texto obligatorio de una línea, que se ve y no tiene caracteres prohibidos. */
 const textoDeUnaLinea = (largoMaximo: number, siFalta: string) =>
   z
@@ -226,9 +239,9 @@ const coordenadas = {
   longitud: z.number().min(-180).max(180).optional(),
 };
 
-/** Datos comunes a toda propuesta (P8): descripción, ubicación, coordenadas y precio opcional. */
+/** Datos comunes a toda propuesta (P8): ubicación y coordenadas, con descripción y precio opcionales. */
 const baseDePropuesta = {
-  descripcion: textoDeVariasLineas(LARGOS_MAXIMOS.descripcion, 'Ingresá una descripción'),
+  descripcion: textoOpcionalDeVariasLineas(LARGOS_MAXIMOS.descripcion),
   ubicacion: textoDeUnaLinea(LARGOS_MAXIMOS.ubicacion, 'Ingresá la ubicación'),
   ...coordenadas,
   precio: z
