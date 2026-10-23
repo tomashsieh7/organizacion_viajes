@@ -127,6 +127,11 @@ onMounted(async () => {
 
 <style scoped>
 .lista-mensajes {
+  /*
+   * Contiene los textos solo para lectores de pantalla (`position: absolute`), que si no se
+   * ubican fuera de la lista y estiran la página por debajo del campo para escribir.
+   */
+  position: relative;
   /* Deja a la vista el campo para escribir, también con la barra inferior del celular. */
   height: clamp(14rem, calc(100dvh - 24rem), 32rem);
   overflow-y: auto;
