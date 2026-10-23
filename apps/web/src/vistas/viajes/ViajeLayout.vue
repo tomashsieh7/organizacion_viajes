@@ -152,7 +152,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="pagina" :class="{ 'con-barra-inferior': grupos.length }">
+  <main
+    class="pagina"
+    :class="{ 'con-barra-inferior': grupos.length, 'pagina--viaje': store.actual && !error }"
+  >
     <template v-if="error">
       <AvisoMensaje tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
       <RouterLink to="/viajes" class="volver">← Volver a mis grupos</RouterLink>
@@ -201,22 +204,22 @@ onBeforeUnmount(() => {
             <span class="grupo__nombre">{{ g.nombre }}</span>
           </RouterLink>
         </nav>
-        <nav
-          v-if="grupoActivo && grupoActivo.secciones.length > 1 && grupos.length"
-          class="subsecciones"
-          :aria-label="`Secciones de ${grupoActivo.nombre}`"
-        >
-          <RouterLink
-            v-for="s in grupoActivo.secciones"
-            :key="s.ruta"
-            :to="enlaceSeccion(s.ruta)"
-            class="subseccion"
-            :class="{ activo: s.ruta === seccionActiva }"
-            :aria-current="s.ruta === seccionActiva ? 'page' : undefined"
-            >{{ s.nombre }}</RouterLink
-          >
-        </nav>
       </header>
+      <nav
+        v-if="grupoActivo && grupoActivo.secciones.length > 1 && grupos.length"
+        class="subsecciones"
+        :aria-label="`Secciones de ${grupoActivo.nombre}`"
+      >
+        <RouterLink
+          v-for="s in grupoActivo.secciones"
+          :key="s.ruta"
+          :to="enlaceSeccion(s.ruta)"
+          class="subseccion"
+          :class="{ activo: s.ruta === seccionActiva }"
+          :aria-current="s.ruta === seccionActiva ? 'page' : undefined"
+          >{{ s.nombre }}</RouterLink
+        >
+      </nav>
       <AvisoMensaje v-if="store.aviso" tipo="info">{{ store.aviso }}</AvisoMensaje>
       <!-- Destino de "Saltar al contenido" en las páginas del viaje: después de los menús. -->
       <div id="seccion" tabindex="-1" class="seccion">
@@ -337,7 +340,7 @@ a.portada__viajeros.activo {
   display: inline-flex;
   gap: var(--esp-1);
   padding: var(--esp-1);
-  margin-top: var(--esp-4);
+  margin-bottom: var(--esp-4);
   background: var(--color-superficie-alt);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-grande);
@@ -428,6 +431,79 @@ a.portada__viajeros.activo {
   .subseccion {
     flex: 1;
     justify-content: center;
+  }
+}
+
+/*
+ * Escritorio: el viaje y el menú pasan a una barra lateral fija a la izquierda y la sección usa
+ * el resto del ancho. La portada se vuelve plana dentro de la barra.
+ */
+@media (min-width: 64rem) {
+  .pagina--viaje {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+    grid-auto-rows: min-content;
+    column-gap: var(--esp-6);
+    max-width: 84rem;
+    margin: 0 auto;
+    padding: 0 var(--esp-6) 0 0;
+  }
+  .pagina--viaje > * {
+    grid-column: 2;
+  }
+  .pagina--viaje > .viaje {
+    grid-column: 1;
+    grid-row: 1 / span 20;
+    position: sticky;
+    top: var(--alto-encabezado);
+    align-self: start;
+    height: calc(100dvh - var(--alto-encabezado));
+    overflow-y: auto;
+    margin: 0;
+    padding: var(--esp-4) var(--esp-5);
+    background: var(--color-superficie);
+    border-right: 1px solid var(--color-borde);
+  }
+  .pagina--viaje > .subsecciones,
+  .pagina--viaje > .seccion {
+    margin-top: var(--esp-5);
+  }
+  .pagina--viaje > .subsecciones + .seccion {
+    margin-top: 0;
+  }
+  .pagina--viaje > .seccion {
+    padding-bottom: var(--esp-6);
+  }
+  .pagina--viaje .portada {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .pagina--viaje .viaje h1 {
+    font-size: 1.6rem;
+  }
+  .pagina--viaje .portada__datos {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pagina--viaje .grupos {
+    flex-direction: column;
+    gap: var(--esp-1);
+    margin-top: var(--esp-4);
+    padding-top: var(--esp-4);
+    border-top: 1px solid var(--color-borde);
+    border-bottom: none;
+  }
+  .pagina--viaje .grupo {
+    border-bottom: none;
+    margin: 0;
+    border-radius: var(--radio);
+  }
+  .pagina--viaje .grupo.activo {
+    background: var(--color-acento-suave);
   }
 }
 </style>

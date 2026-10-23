@@ -181,6 +181,12 @@ async function pagar() {
 </template>
 
 <style scoped>
+/* El pago es un formulario corto: en escritorio no se estira a todo el ancho. */
+@media (min-width: 64rem) {
+  section {
+    max-width: 34rem;
+  }
+}
 .pagar-todo {
   align-self: center;
 }

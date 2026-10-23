@@ -131,7 +131,12 @@ async function enviar() {
       </p>
       <p>Si se confirma una de las opciones, las demás pendientes quedan denegadas.</p>
     </div>
-    <form class="formulario" novalidate @submit.prevent="enviar" @focusout="alSalir">
+    <form
+      class="formulario formulario--con-mapa"
+      novalidate
+      @submit.prevent="enviar"
+      @focusout="alSalir"
+    >
       <CampoFormulario id="actividad-titulo" etiqueta="Título" :error="errores['titulo']">
         <input
           id="actividad-titulo"

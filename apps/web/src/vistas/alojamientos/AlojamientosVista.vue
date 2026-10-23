@@ -110,24 +110,26 @@ onMounted(cargar);
         </RouterLink>
       </EstadoVacio>
     </template>
-    <TarjetaPropuesta
-      v-for="a in propuestas.alojamientos"
-      :key="a.id"
-      :propuesta="a"
-      :titulo="a.alojamiento.nombre"
-      :soy-admin="viaje.soyAdmin"
-      :moneda="viaje.actual!.moneda"
-      :ocupada="ocupado"
-      @votar="votar(a.id, $event)"
-      @desvotar="desvotar(a.id)"
-      @resolver="resolver(a.id, $event)"
-    >
-      <p class="fechas">
-        <IconoLinea nombre="calendario" :tamano="16" />
-        {{ formatearRango(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }} ·
-        {{ noches(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }}
-      </p>
-    </TarjetaPropuesta>
+    <div class="grilla grilla--doble">
+      <TarjetaPropuesta
+        v-for="a in propuestas.alojamientos"
+        :key="a.id"
+        :propuesta="a"
+        :titulo="a.alojamiento.nombre"
+        :soy-admin="viaje.soyAdmin"
+        :moneda="viaje.actual!.moneda"
+        :ocupada="ocupado"
+        @votar="votar(a.id, $event)"
+        @desvotar="desvotar(a.id)"
+        @resolver="resolver(a.id, $event)"
+      >
+        <p class="fechas">
+          <IconoLinea nombre="calendario" :tamano="16" />
+          {{ formatearRango(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }} ·
+          {{ noches(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }}
+        </p>
+      </TarjetaPropuesta>
+    </div>
   </section>
 </template>
 

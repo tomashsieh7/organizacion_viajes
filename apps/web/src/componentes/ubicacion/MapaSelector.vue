@@ -51,5 +51,7 @@ onBeforeUnmount(() => mapa?.remove());
   height: 16rem;
   border-radius: var(--radio);
   border: 1px solid var(--color-borde);
+  /* Las capas de Leaflet quedan dentro del mapa y no tapan la barra de navegación del celular. */
+  isolation: isolate;
 }
 </style>

@@ -216,6 +216,14 @@ onMounted(cargar);
   gap: var(--esp-4);
   max-width: 44rem;
 }
+/* En escritorio, Lo próximo y el progreso van uno al lado del otro. */
+@media (min-width: 64rem) {
+  .columna {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    max-width: none;
+  }
+}
 /* Sin esto, el contenido de una celda puede ensanchar la grilla más que la pantalla. */
 .columna > * {
   min-width: 0;

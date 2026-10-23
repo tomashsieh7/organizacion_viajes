@@ -120,30 +120,33 @@ onMounted(cargar);
         </RouterLink>
       </EstadoVacio>
     </template>
-    <template v-for="g in grupos" :key="g.actividad.id">
-      <TarjetaActividad
-        :actividad="g.actividad"
-        :soy-admin="viaje.soyAdmin"
-        :moneda="viaje.actual!.moneda"
-        :viaje-id="viaje.actual!.id"
-        :ocupada="ocupado"
-        mostrar-original
-        @votar="votar"
-        @desvotar="desvotar"
-        @resolver="resolver"
-      />
-      <ListaAlternativas
-        v-if="g.alternativas.length"
-        :alternativas="g.alternativas"
-        :soy-admin="viaje.soyAdmin"
-        :moneda="viaje.actual!.moneda"
-        :viaje-id="viaje.actual!.id"
-        :ocupada="ocupado"
-        @votar="votar"
-        @desvotar="desvotar"
-        @resolver="resolver"
-      />
-    </template>
+    <div class="grilla grilla--doble">
+      <!-- Cada actividad va con sus alternativas en la misma celda. -->
+      <div v-for="g in grupos" :key="g.actividad.id">
+        <TarjetaActividad
+          :actividad="g.actividad"
+          :soy-admin="viaje.soyAdmin"
+          :moneda="viaje.actual!.moneda"
+          :viaje-id="viaje.actual!.id"
+          :ocupada="ocupado"
+          mostrar-original
+          @votar="votar"
+          @desvotar="desvotar"
+          @resolver="resolver"
+        />
+        <ListaAlternativas
+          v-if="g.alternativas.length"
+          :alternativas="g.alternativas"
+          :soy-admin="viaje.soyAdmin"
+          :moneda="viaje.actual!.moneda"
+          :viaje-id="viaje.actual!.id"
+          :ocupada="ocupado"
+          @votar="votar"
+          @desvotar="desvotar"
+          @resolver="resolver"
+        />
+      </div>
+    </div>
   </section>
 </template>
 

@@ -2301,3 +2301,21 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
 - **Contrastes calculados** (claro / oscuro): texto sobre fondo 14,75 / 15,18; secundario sobre gris 5,47 / 6,54; acento sobre fondo 5,83 / 7,62; borde de los campos 3,65 / 3,98; estados sobre su fondo suave entre 4,57 y 7,59.
 - **Pruebas:** `useTema` y `SelectorTema` con Vitest; en `e2e/diseno.spec.ts`, una prueba que sigue al sistema, elige Claro con el sistema oscuro, recarga sin la app para ver que el modo ya está aplicado, vuelve a Automático y cambia el sistema con la página abierta; `e2e/accesibilidad.spec.ts` pasa axe en claro a 1280 px y en oscuro a 360 y 1280 px.
 - **Capturas** de diez pantallas en claro y oscuro, a 360 y 1280 px, sin desbordes.
+
+## 2026-10-23 01:45 — Merge del PR #52
+
+- Con la autorización del usuario ("si, todo como propusiste"), el PR #52 (modo claro crema, modo oscuro con selector, mostaza, Poppins + Inter y anillo de color) se mergeó a `main` en `f097b31`, fijando la cabeza verificada `4e626bb`. El CI pasó los tres trabajos, sin conflictos ni comentarios.
+
+## 2026-10-23 01:45 — Escritorio con barra lateral
+
+- **Pedido del usuario:** "la versión de teléfono está perfecta, la de web no tanto (se ve muy alargada)". Se le mostraron dos formas de aprovechar el ancho (barra lateral o encabezado en una línea) y eligió "queda el lateral"; aprobó el plan con "si, todo como propusiste".
+- **Cambio** (solo desde 1024 px; celular y tablet quedan igual):
+  - `ViajeLayout`: el encabezado del viaje pasa a una barra lateral fija con el nombre, la cuenta regresiva, los datos y los cinco grupos en vertical; las pestañas de cada grupo (`nav.subsecciones`) salen del encabezado para quedar arriba de la sección. Variable nueva `--alto-encabezado` en `App.vue` para fijar la barra debajo del encabezado de la aplicación;
+  - clases comunes `.grilla`, `.grilla--doble` y `.grilla--lateral` en `App.vue`, y `.formulario--con-mapa`, que pone la ubicación con su mapa a la derecha de los campos;
+  - Inicio, Alojamientos, Actividades (cada una con sus alternativas en la misma celda), Cronograma, Mapa, Gastos, Saldos, Participantes y los formularios de propuestas y de gasto, en dos columnas; Pagar no pasa de 34rem. El orden del contenido en celular no cambia.
+- **Arreglo de la propuesta de mejora aprobada:** en celular, el «+» del zoom y los números de los marcadores del mapa quedaban encima de la barra de navegación de abajo porque las capas de Leaflet son más altas. Los dos mapas (`MapaActividades` y `MapaSelector`) aíslan sus capas con `isolation: isolate`.
+- **Pruebas nuevas en `e2e/diseno.spec.ts`**, que fallan sin estos cambios:
+  - la barra lateral a 1024 px queda a la izquierda de la sección, con el menú en vertical, y sigue a la vista al bajar; a 1000 px vuelve la portada arriba;
+  - en celular, con el «+» del mapa a la altura de la barra de navegación, lo que se ve en ese punto es la barra.
+- **Prueba ampliada:** la de datos largos recorre las pantallas a 360, 900, 1024 y 1280 px sin desbordes.
+

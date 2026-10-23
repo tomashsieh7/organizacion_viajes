@@ -130,6 +130,8 @@ onErrorCaptured((error) => {
   --radio-grande: 18px;
   --alto-control: 2.75rem;
   --alto-barra-inferior: 4rem;
+  /* Alto del encabezado de la aplicación: un control más su relleno. */
+  --alto-encabezado: calc(var(--alto-control) + 2 * var(--esp-2));
   --duracion: 150ms;
 
   font-family: var(--fuente-texto);
@@ -337,6 +339,28 @@ a:hover {
   border-radius: var(--radio-grande);
   padding: var(--esp-5) var(--esp-4);
 }
+/*
+ * Formularios con mapa: en escritorio, los campos a la izquierda y la ubicación con su mapa a la
+ * derecha. El mapa ocupa varias filas para que los campos no queden separados por su altura.
+ */
+@media (min-width: 64rem) {
+  .formulario--con-mapa {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--esp-6);
+    align-items: start;
+  }
+  .formulario--con-mapa > * {
+    grid-column: 1;
+  }
+  .formulario--con-mapa > .ubicacion {
+    grid-column: 2;
+    grid-row: 1 / span 8;
+  }
+  .formulario--con-mapa > .acciones {
+    grid-column: 1 / -1;
+  }
+}
 .fila {
   display: flex;
   gap: var(--esp-3);
@@ -352,6 +376,29 @@ a:hover {
   align-items: center;
   margin-top: var(--esp-4);
   flex-wrap: wrap;
+}
+
+/*
+ * Grillas de contenido: una columna en celular y tablet; en escritorio (desde 64rem), las listas de
+ * tarjetas pasan a dos columnas y las pantallas con dos bloques los ponen uno al lado del otro.
+ */
+.grilla {
+  display: grid;
+  /* Entre filas separa el margen propio de cada tarjeta. */
+  column-gap: var(--esp-4);
+  align-items: start;
+}
+.grilla > * {
+  min-width: 0;
+}
+@media (min-width: 64rem) {
+  .grilla--doble {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* Un bloque angosto fijo (calendario, billetera, totales) y el resto del ancho para el detalle. */
+  .grilla--lateral {
+    grid-template-columns: 22rem minmax(0, 1fr);
+  }
 }
 
 /* Controles de formulario: 44 px de alto para tocarlos con comodidad. */

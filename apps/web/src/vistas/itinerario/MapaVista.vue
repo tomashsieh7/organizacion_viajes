@@ -73,51 +73,78 @@ onMounted(abrir);
   <section>
     <h2>Mapa del día</h2>
     <AvisoMensaje v-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
-    <template v-if="mapa">
-      <CalendarioViaje
-        :inicio="actual.fechaInicio"
-        :fin="actual.fechaFin"
-        :seleccionado="mapa.dia"
-        :dias-con-actividad="mapa.diasConActividad"
-        :hoy="hoy"
-        @elegir="elegirDia"
-      />
-      <ul v-if="mapa.siguenDelDiaAnterior.length" class="siguen">
-        <!-- RN-M9: lo que empezó el día anterior y sigue después de la medianoche. -->
-        <li v-for="a in mapa.siguenDelDiaAnterior" :key="a.id">
-          Hasta {{ a.horaFin }} · <strong>{{ a.titulo }}</strong> · {{ a.ubicacion }} · sigue del
-          día anterior ·
-          <button type="button" class="enlace" @click="verQueSigue(a.id)">Ver en el mapa</button>
-        </li>
-      </ul>
-      <AvisoSinActividades v-if="mapa.aviso === 'SIN_ACTIVIDADES_CONFIRMADAS'" />
+    <!-- En escritorio, el calendario y la lista del día van a la izquierda y el mapa a la derecha. -->
+    <div v-if="mapa" class="mapa-dia">
+      <div class="mapa-dia__elegir">
+        <CalendarioViaje
+          :inicio="actual.fechaInicio"
+          :fin="actual.fechaFin"
+          :seleccionado="mapa.dia"
+          :dias-con-actividad="mapa.diasConActividad"
+          :hoy="hoy"
+          @elegir="elegirDia"
+        />
+        <ul v-if="mapa.siguenDelDiaAnterior.length" class="siguen">
+          <!-- RN-M9: lo que empezó el día anterior y sigue después de la medianoche. -->
+          <li v-for="a in mapa.siguenDelDiaAnterior" :key="a.id">
+            Hasta {{ a.horaFin }} · <strong>{{ a.titulo }}</strong> · {{ a.ubicacion }} · sigue del
+            día anterior ·
+            <button type="button" class="enlace" @click="verQueSigue(a.id)">Ver en el mapa</button>
+          </li>
+        </ul>
+        <AvisoSinActividades v-if="mapa.aviso === 'SIN_ACTIVIDADES_CONFIRMADAS'" />
+      </div>
       <MapaActividades
+        class="mapa-dia__mapa"
         :actividades="mapa.actividades"
         :recorrido="mapa.recorrido"
         :elegida-id="elegida?.actividad.id ?? null"
         :fuera-del-recorrido="fueraDelRecorrido"
         @elegir="elegir"
       />
-      <ol v-if="mapa.actividades.length" class="orden">
-        <li v-for="a in mapa.actividades" :key="a.id">
-          <button type="button" class="enlace" @click="elegir(a.id)">
-            {{ a.horaInicio }} · {{ a.titulo }}
-          </button>
-        </li>
-      </ol>
-      <PanelActividad
-        v-if="elegida"
-        :actividad="elegida.actividad"
-        :numero="numeroElegida"
-        :confirmada="elegida.confirmada"
-        @cerrar="cerrarDetalle"
-      />
-    </template>
+      <div class="mapa-dia__detalle">
+        <ol v-if="mapa.actividades.length" class="orden">
+          <li v-for="a in mapa.actividades" :key="a.id">
+            <button type="button" class="enlace" @click="elegir(a.id)">
+              {{ a.horaInicio }} · {{ a.titulo }}
+            </button>
+          </li>
+        </ol>
+        <PanelActividad
+          v-if="elegida"
+          :actividad="elegida.actividad"
+          :numero="numeroElegida"
+          :confirmada="elegida.confirmada"
+          @cerrar="cerrarDetalle"
+        />
+      </div>
+    </div>
     <SiluetaCarga v-else-if="!error" :cantidad="2" />
   </section>
 </template>
 
 <style scoped>
+@media (min-width: 64rem) {
+  .mapa-dia {
+    display: grid;
+    grid-template-columns: 22rem minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'elegir mapa'
+      'detalle mapa';
+    column-gap: var(--esp-4);
+    align-items: start;
+  }
+  .mapa-dia__elegir {
+    grid-area: elegir;
+  }
+  .mapa-dia__mapa {
+    grid-area: mapa;
+  }
+  .mapa-dia__detalle {
+    grid-area: detalle;
+  }
+}
 .orden {
   margin: 0.75rem 0 0;
   padding-left: 1.5rem;
