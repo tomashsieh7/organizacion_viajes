@@ -1,4 +1,10 @@
-import { pasaLaMedianoche, sumarMinutos, type Moneda } from '@viajes/compartido';
+import {
+  pasaLaMedianoche,
+  sumarMinutos,
+  type EstadoPropuesta,
+  type Moneda,
+} from '@viajes/compartido';
+import type { NombreIcono } from '../componentes/base/IconoLinea.vue';
 
 /** Formatea un monto en la unidad mínima de la moneda (D16), por ejemplo 150000 ARS → "$ 1.500,00". */
 export function formatearMonto(monto: number, moneda: Moneda): string {
@@ -109,6 +115,14 @@ export const NOMBRES_ESTADO: Record<string, string> = {
   CONFIRMADA: 'Confirmada',
   DENEGADA: 'Denegada',
   CANCELADA: 'Cancelada',
+};
+
+/** Ícono de cada estado: el de la etiqueta de las tarjetas, los renglones y el filtro. */
+export const ICONOS_ESTADO: Record<EstadoPropuesta, NombreIcono> = {
+  PENDIENTE: 'reloj',
+  CONFIRMADA: 'check',
+  DENEGADA: 'cruz',
+  CANCELADA: 'prohibido',
 };
 
 /** 150 → "2 h 30 min". */

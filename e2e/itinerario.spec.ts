@@ -19,6 +19,7 @@ test('CU13 y CU16 a CU18: confirmar una actividad y verla en el cronograma y en 
 
   const p = ana.page;
   await p.goto(`/viajes/${viajeId}/actividades`);
+  await p.locator('.renglon__fila', { hasText: 'Cerro Catedral' }).click();
   const tarjeta = p.locator('article', { hasText: 'Cerro Catedral' });
   await tarjeta.getByRole('button', { name: 'Confirmar' }).click();
   await expect(tarjeta).toContainText('Confirmada');
@@ -94,7 +95,8 @@ test('RN-C2: una actividad que pasa la medianoche se aclara y aparece también a
   // RN-M9: el mapa del día siguiente también la muestra, sin el aviso de día vacío, y la abre.
   await p.goto(`/viajes/${viajeId}/mapa?dia=2026-12-12`);
   const sigueEnMapa = p.locator('.siguen li');
-  await expect(sigueEnMapa).toContainText('Hasta 01:00 · Noche de bar');
+  await expect(sigueEnMapa.locator('.agenda__hora')).toHaveText('Hasta 01:00');
+  await expect(sigueEnMapa.locator('.agenda__texto')).toContainText('Noche de bar');
   await expect(p.getByText('no tiene actividades confirmadas')).toHaveCount(0);
   await sigueEnMapa.getByRole('button', { name: 'Ver en el mapa' }).click();
   await expect(p).toHaveURL(new RegExp(`actividad=${actividad.id}&dia=2026-12-11$`));

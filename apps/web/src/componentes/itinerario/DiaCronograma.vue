@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { pasaLaMedianoche, type DiaDelCronograma } from '@viajes/compartido';
+import IconoLinea from '../base/IconoLinea.vue';
 import { nombreDelDia } from '../../utiles/fechas';
 
 defineProps<{ dia: DiaDelCronograma; viajeId: string; esHoy: boolean }>();
@@ -15,21 +16,43 @@ const horario = (a: DiaDelCronograma['actividades'][number]) =>
     <p v-if="!dia.actividades.length && !dia.siguenDelDiaAnterior.length" class="vacio">
       Sin actividades confirmadas
     </p>
-    <ol v-else>
+    <!-- Agenda del día: el número es el mismo que el del marcador en el mapa. -->
+    <ol v-else class="agenda">
       <!-- RN-C2: lo que empezó el día anterior y sigue después de la medianoche. -->
-      <li v-for="a in dia.siguenDelDiaAnterior" :key="`sigue-${a.id}`" class="sigue">
-        <span class="horario">Hasta {{ a.horaFin }}</span> · <strong>{{ a.titulo }}</strong> ·
-        {{ a.ubicacion }} · sigue del día anterior ·
-        <RouterLink :to="`/viajes/${viajeId}/mapa?actividad=${a.id}`">Ver en el mapa</RouterLink>
+      <li v-for="a in dia.siguenDelDiaAnterior" :key="`sigue-${a.id}`" class="agenda__fila sigue">
+        <span class="agenda__numero agenda__numero--sigue" aria-hidden="true">
+          <IconoLinea nombre="reloj" :tamano="14" />
+        </span>
+        <span class="agenda__hora">Hasta {{ a.horaFin }}</span>
+        <span class="agenda__texto">
+          <strong>{{ a.titulo }}</strong>
+          <span class="agenda__detalle">
+            <IconoLinea nombre="pin" :tamano="14" /> {{ a.ubicacion }} · sigue del día anterior ·
+            <RouterLink :to="`/viajes/${viajeId}/mapa?actividad=${a.id}`"
+              >Ver en el mapa</RouterLink
+            >
+          </span>
+        </span>
       </li>
-      <li v-for="a in dia.actividades" :key="a.id">
-        <span class="horario">{{ horario(a) }}</span>
-        · <strong>{{ a.titulo }}</strong> · {{ a.ubicacion }} ·
-        <RouterLink :to="`/viajes/${viajeId}/mapa?actividad=${a.id}`">Ver en el mapa</RouterLink>
+      <li v-for="(a, i) in dia.actividades" :key="a.id" class="agenda__fila">
+        <span class="agenda__numero" aria-hidden="true">{{ i + 1 }}</span>
+        <span class="agenda__hora">{{ horario(a) }}</span>
+        <span class="agenda__texto">
+          <strong>{{ a.titulo }}</strong>
+          <span class="agenda__detalle">
+            <IconoLinea nombre="pin" :tamano="14" /> {{ a.ubicacion }} ·
+            <RouterLink :to="`/viajes/${viajeId}/mapa?actividad=${a.id}`"
+              >Ver en el mapa</RouterLink
+            >
+          </span>
+        </span>
       </li>
     </ol>
     <p v-for="al in dia.alojamientos" :key="al.id" class="noche">
-      Noche en <strong>{{ al.nombre }}</strong> ({{ al.ubicacion }})
+      <IconoLinea nombre="cama" :tamano="18" />
+      <span
+        >Noche en <strong>{{ al.nombre }}</strong> ({{ al.ubicacion }})</span
+      >
     </p>
   </section>
 </template>
@@ -56,19 +79,8 @@ h3 {
 h3::first-letter {
   text-transform: uppercase;
 }
-ol {
-  margin: 0;
-  padding-left: 1.2rem;
-}
-li {
-  margin-bottom: 0.3rem;
-}
 .sigue {
   color: var(--color-texto-secundario);
-}
-.horario {
-  display: inline-block;
-  min-width: 7rem;
 }
 .vacio {
   color: var(--color-texto-secundario);
@@ -78,6 +90,15 @@ li {
   color: var(--color-acento);
 }
 .noche {
-  margin: 0.4rem 0 0;
+  display: flex;
+  gap: var(--esp-2);
+  align-items: center;
+  margin: var(--esp-2) 0 0;
+  padding-top: var(--esp-2);
+  border-top: 1px solid var(--color-borde);
+  color: var(--color-texto-secundario);
+}
+.noche strong {
+  color: var(--color-texto);
 }
 </style>

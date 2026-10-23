@@ -6,7 +6,6 @@ import type {
   AlojamientoVista,
   DatosActividadNueva,
   DatosAlojamientoNuevo,
-  EstadoPropuesta,
   PropuestaVista,
   ValorVoto,
 } from '@viajes/compartido';
@@ -26,11 +25,9 @@ export const usePropuestasStore = defineStore('propuestas', () => {
   };
   const alojamientos = ref<AlojamientoVista[]>([]);
   const actividades = ref<ActividadVista[]>([]);
-  const filtro = ref<EstadoPropuesta | ''>('');
-  const filtroActividades = ref<EstadoPropuesta | ''>('');
 
   async function cargarAlojamientos() {
-    alojamientos.value = await cliente!.listarAlojamientos(viajeId(), filtro.value || undefined);
+    alojamientos.value = await cliente!.listarAlojamientos(viajeId());
   }
 
   async function proponerAlojamiento(datos: DatosAlojamientoNuevo) {
@@ -40,16 +37,11 @@ export const usePropuestasStore = defineStore('propuestas', () => {
   }
 
   async function cargarActividades() {
-    actividades.value = await cliente!.listarActividades(
-      viajeId(),
-      filtroActividades.value || undefined,
-    );
+    actividades.value = await cliente!.listarActividades(viajeId());
   }
 
-  /** Para el Resumen: todos los alojamientos y actividades, sin el filtro de estado de cada lista. */
+  /** Para el Resumen: todos los alojamientos y actividades. */
   async function cargarTodo() {
-    filtro.value = '';
-    filtroActividades.value = '';
     await Promise.all([cargarAlojamientos(), cargarActividades()]);
   }
 
@@ -103,8 +95,6 @@ export const usePropuestasStore = defineStore('propuestas', () => {
   return {
     alojamientos,
     actividades,
-    filtro,
-    filtroActividades,
     cargarAlojamientos,
     proponerAlojamiento,
     cargarActividades,

@@ -9,6 +9,7 @@ import {
 } from '@viajes/compartido';
 import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
 import CampoFormulario from '../../componentes/base/CampoFormulario.vue';
+import MontoGrande from '../../componentes/gastos/MontoGrande.vue';
 import SelectorDeudores from '../../componentes/gastos/SelectorDeudores.vue';
 import SelectorModoDivision from '../../componentes/gastos/SelectorModoDivision.vue';
 import SelectorPagador from '../../componentes/gastos/SelectorPagador.vue';
@@ -143,19 +144,14 @@ async function enviar() {
             :etiqueta="`Monto en ${actual.moneda.codigo}`"
             :error="errores['monto']"
           >
-            <div class="monto-grande">
-              <span class="monto-grande__simbolo" aria-hidden="true">{{
-                simboloMoneda(actual.moneda)
-              }}</span>
-              <input
-                id="gasto-monto"
-                v-model="datos.monto"
-                name="monto"
-                inputmode="decimal"
-                placeholder="0"
-                v-bind="aria('monto', 'gasto-monto')"
-              />
-            </div>
+            <MontoGrande
+              id="gasto-monto"
+              v-model="datos.monto"
+              :simbolo="simboloMoneda(actual.moneda)"
+              name="monto"
+              placeholder="0"
+              v-bind="aria('monto', 'gasto-monto')"
+            />
           </CampoFormulario>
           <CampoFormulario
             id="gasto-categoria"

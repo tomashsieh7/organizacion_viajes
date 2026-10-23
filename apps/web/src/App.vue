@@ -395,9 +395,107 @@ a:hover {
   .grilla--doble {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  /*
+   * Tarjetas parejas por fila: las dos de cada fila miden lo mismo, con los votos y botones
+   * alineados abajo; la descripción larga se corta en dos renglones y al tocarla se ve entera.
+   */
+  .grilla--pareja {
+    align-items: stretch;
+  }
+  .grilla--pareja .descripcion:not(.descripcion--abierta) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    cursor: pointer;
+  }
   /* Un bloque angosto fijo (calendario, billetera, totales) y el resto del ancho para el detalle. */
   .grilla--lateral {
     grid-template-columns: 22rem minmax(0, 1fr);
+  }
+  /*
+   * El calendario es una ayuda para elegir el día, no lo principal: en escritorio va a la derecha
+   * y queda a la vista al bajar. En el DOM va primero, así en celular queda arriba. Un bloque
+   * `.grilla__arriba` opcional (el filtro de Actividades) ocupa todo el ancho por encima.
+   */
+  .grilla--calendario {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    grid-template-areas: 'contenido calendario';
+  }
+  .grilla--calendario:has(> .grilla__arriba) {
+    grid-template-areas:
+      'arriba arriba'
+      'contenido calendario';
+  }
+  .grilla--calendario > :first-child {
+    grid-area: calendario;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--alto-encabezado) + var(--esp-4));
+  }
+  .grilla--calendario > .grilla__arriba {
+    grid-area: arriba;
+  }
+  .grilla--calendario > :last-child:not(:first-child) {
+    grid-area: contenido;
+  }
+}
+
+/*
+ * Agenda de un día (Cronograma y Mapa): cada actividad es un renglón con su número, el mismo del
+ * marcador en el mapa, el horario en una columna fija y el título con la ubicación debajo.
+ */
+.agenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.agenda__fila {
+  display: grid;
+  grid-template-columns: 1.75rem 7.5rem minmax(0, 1fr);
+  gap: var(--esp-1) var(--esp-3);
+  align-items: baseline;
+  padding: var(--esp-2) 0;
+}
+.agenda__fila + .agenda__fila {
+  border-top: 1px solid var(--color-borde);
+}
+.agenda__numero {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--color-acento);
+  color: var(--color-sobre-acento);
+  font-size: 0.85rem;
+  font-weight: 700;
+  align-self: center;
+}
+.agenda__numero--sigue {
+  background: var(--color-superficie-alt);
+  color: var(--color-texto-secundario);
+}
+.agenda__hora {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.agenda__texto {
+  display: flex;
+  flex-direction: column;
+}
+.agenda__detalle {
+  font-size: 0.875rem;
+  color: var(--color-texto-secundario);
+}
+/* En celular el horario pasa arriba del título para dejarle el ancho. */
+@media (max-width: 29.99rem) {
+  .agenda__fila {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+  }
+  .agenda__texto {
+    grid-column: 2;
   }
 }
 
@@ -570,46 +668,6 @@ label {
     clip-path: inset(50%);
     white-space: nowrap;
   }
-}
-/* Monto protagonista, como en una app de pagos: grande, centrado y con el símbolo adelante. */
-.monto-grande {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: var(--esp-2);
-  padding: var(--esp-3) var(--esp-4);
-  border: 1px solid var(--color-borde-fuerte);
-  border-radius: var(--radio-grande);
-  background: var(--color-superficie);
-}
-.monto-grande:focus-within {
-  outline: 2px solid var(--color-acento);
-  outline-offset: 2px;
-}
-.monto-grande__simbolo {
-  font-family: var(--fuente-titulos);
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--color-texto-secundario);
-}
-.monto-grande input {
-  width: 100%;
-  min-width: 0;
-  max-width: 14rem;
-  border: none;
-  background: transparent;
-  padding: 0;
-  font-family: var(--fuente-titulos);
-  font-size: 2.25rem;
-  font-weight: 800;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-.monto-grande input:focus {
-  outline: none;
-}
-.monto-grande:has(input[aria-invalid='true']) {
-  border-color: var(--color-error);
 }
 .saltar {
   position: absolute;

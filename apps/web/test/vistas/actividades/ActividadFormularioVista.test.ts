@@ -58,7 +58,7 @@ beforeEach(() => {
 });
 
 describe('ActividadFormularioVista', () => {
-  it('CU10: propone con los datos del formulario y vuelve a la lista', async () => {
+  it('CU10: propone con los datos del formulario y vuelve a la lista, en el día propuesto', async () => {
     const proponerActividad = vi.fn(async () => actividad('n', 'Kayak'));
     const vista = await montar({ proponerActividad });
     await completar(vista);
@@ -75,7 +75,10 @@ describe('ActividadFormularioVista', () => {
       horaInicio: '11:00',
       duracionMin: 90,
     });
-    expect(push).toHaveBeenCalledWith('/viajes/v1/actividades');
+    expect(push).toHaveBeenCalledWith({
+      path: '/viajes/v1/actividades',
+      query: { dia: '2026-12-11' },
+    });
   });
 
   it('valida antes de enviar', async () => {

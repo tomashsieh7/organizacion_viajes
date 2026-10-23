@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import type { AccionSobrePropuesta, ValorVoto } from '@viajes/compartido';
+import { computed, onMounted, ref } from 'vue';
+import type { AccionSobrePropuesta, EstadoPropuesta, ValorVoto } from '@viajes/compartido';
 import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../../componentes/base/EstadoVacio.vue';
 import IconoLinea from '../../componentes/base/IconoLinea.vue';
 import SiluetaCarga from '../../componentes/base/SiluetaCarga.vue';
+import FiltroEstados from '../../componentes/propuestas/FiltroEstados.vue';
 import TarjetaPropuesta from '../../componentes/propuestas/TarjetaPropuesta.vue';
 import { ErrorDeApi, mensajeDeError } from '../../clientes/http';
 import { useCarga } from '../../composables/useCarga';
@@ -12,10 +13,18 @@ import { useCelebracion } from '../../composables/useCelebracion';
 import { usePropuestasStore } from '../../stores/propuestas';
 import { useViajeStore } from '../../stores/viajes';
 import { diasEntre } from '../../utiles/fechas';
-import { formatearRango, NOMBRES_ESTADO } from '../../utiles/formato';
+import { formatearRango } from '../../utiles/formato';
 
 const viaje = useViajeStore();
 const propuestas = usePropuestasStore();
+/** Se cargan todos y se filtra acá, así cada botón del filtro muestra cuántos hay. */
+/** Estados prendidos en el filtro; sin ninguno se ven todos. */
+const estados = ref<EstadoPropuesta[]>([]);
+const visibles = computed(() =>
+  estados.value.length
+    ? propuestas.alojamientos.filter((a) => estados.value.includes(a.estado))
+    : propuestas.alojamientos,
+);
 /** Errores de votar y resolver; los de la carga los maneja `useCarga`. */
 const error = ref('');
 /** Hasta la primera carga no se muestra la lista vacía. */
@@ -78,25 +87,21 @@ onMounted(cargar);
         >
       </RouterLink>
     </div>
-    <div class="filtro">
-      <label for="filtro-estado">Mostrar</label>
-      <select id="filtro-estado" v-model="propuestas.filtro" @change="cargar">
-        <option value="">Todos</option>
-        <option v-for="(nombre, estado) in NOMBRES_ESTADO" :key="estado" :value="estado">
-          {{ nombre }}
-        </option>
-      </select>
-    </div>
+    <FiltroEstados
+      v-if="propuestas.alojamientos.length"
+      v-model="estados"
+      :propuestas="propuestas.alojamientos"
+    />
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <SiluetaCarga v-if="!cargado" />
     <AvisoMensaje v-else-if="errorDeCarga" tipo="error" :reintentar="reintentar">{{
       errorDeCarga
     }}</AvisoMensaje>
-    <template v-else-if="!error && !propuestas.alojamientos.length">
+    <template v-else-if="!error && !visibles.length">
       <EstadoVacio
-        v-if="propuestas.filtro"
+        v-if="estados.length"
         icono="🔎"
-        titulo="No hay alojamientos con ese estado."
+        titulo="No hay alojamientos con esos estados."
         descripcion="Probá mostrando todos."
       />
       <EstadoVacio
@@ -110,9 +115,9 @@ onMounted(cargar);
         </RouterLink>
       </EstadoVacio>
     </template>
-    <div class="grilla grilla--doble">
+    <div class="grilla grilla--doble grilla--pareja">
       <TarjetaPropuesta
-        v-for="a in propuestas.alojamientos"
+        v-for="a in visibles"
         :key="a.id"
         :propuesta="a"
         :titulo="a.alojamiento.nombre"
@@ -136,11 +141,5 @@ onMounted(cargar);
 <style scoped>
 .fechas {
   margin: 0 0 var(--esp-2);
-}
-.filtro {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-2);
-  margin-bottom: var(--esp-4);
 }
 </style>

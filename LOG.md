@@ -2319,3 +2319,30 @@ Cada entrada indica fecha y hora (America/Argentina/Buenos_Aires), la acción re
   - en celular, con el «+» del mapa a la altura de la barra de navegación, lo que se ve en ese punto es la barra.
 - **Prueba ampliada:** la de datos largos recorre las pantallas a 360, 900, 1024 y 1280 px sin desbordes.
 
+
+## 2026-10-23 15:25 — Revisión del escritorio, de a un cambio con alternativas
+
+- **Pedido del usuario:** una lista de ajustes ("el $ y los números no están alineados", "todos los cuadros [de alojamientos] del mismo tamaño", "ver cómo se ve cuando hay muchas actividades", "'pagar total' está muy al aire", "tests para ver cómo se ven las cosas cuando hay muchas", "el listado de actividades en itinerario debería tener algún formato") y la forma de trabajarla: "Vayamos uno por uno con los cambios, quiero alternativas para elegir en cada uno". Cada punto se resolvió con capturas de la app real y la elección del usuario.
+- **Monto (MP1):** el usuario descartó las primeras alternativas ("busca como lo tiene mercadopago") y eligió "MP1. Centavos chicos arriba". Componente nuevo `MontoGrande`, usado al anotar un gasto y al pagar. En Pagar, "¿Cuánto le pagás a X?" con "Le debés $…" y "Pagar el total" debajo. Reemplaza a la clase `.monto-grande` de `App.vue`.
+- **Alojamientos (C, compactas):** dos tarjetas por fila del mismo alto (`.grilla--pareja`), con la descripción cortada en dos renglones que se abre al tocarla.
+- **Votos (R1, encuesta como WhatsApp):** después de varias rondas ("me sigue sin convencer en la pantalla del teléfono", "busca cómo hacen otras apps"), el usuario eligió R1 "en las dos" pantallas: renglones Sí y No que se llenan según la parte de los votos, tilde en el propio y tocarlo otra vez lo retira; desaparece "Retirar voto".
+- **Botones del Admin:** "B2. A la derecha" en la compu y, después de ver capturas, "B3. A todo el ancho" en el teléfono. Denegar va antes que Confirmar en el DOM, así la principal queda en el extremo derecho también para el teclado.
+- **Itinerario con formato:** Cronograma y Mapa muestran el día como agenda (`.agenda*` en `App.vue`), con el número del marcador, el horario en una columna y el título con la ubicación.
+- **Saldos en escritorio:** cada fila de `FilaSaldo` va en un renglón (nombre y fecha, importe y acciones).
+- **Prueba de volumen** (12 viajeros, 14 alojamientos, 28 actividades con 14 alternativas, 45 gastos y 40 mensajes): Actividades medía unos 17.400 px de alto en el teléfono, con todas las alternativas abiertas y huecos en la grilla de escritorio.
+- **Actividades con muchas:** se le mostraron cuatro formas (por día, un día por vez, días plegables y renglones). Dijo "Estoy entre una alternativa de la B y la D", pidió mezclarlas y, entre tres mezclas, eligió "E1. Un día por vez": el calendario y, debajo o al lado, un `RenglonActividad` por propuesta del día, que se abre en la tarjeta completa. Se borró `ListaAlternativas`. El día va en `?dia=`, con la regla de RN-C4 para el día inicial.
+- **Calendario a la derecha:** "cuando hay un calendario, siempre lo quiero a la derecha del contenido, así no queda como la prioridad sino como una ayuda", también en Cronograma y Mapa ("Sí, en todas"). Clase nueva `.grilla--calendario`; el calendario queda fijo al bajar. En el teléfono, entre arriba, plegado, abajo o una tira de días, eligió "T1. El mes arriba".
+- **Filtro por estado:** primero reemplazó el desplegable "Mostrar" por cinco botones ("quiero que simplemente hayan 5 botones directos de filtro") y en el teléfono por íconos ("F4"). Con un día por vez, eligió que cuente "las del día elegido", y entre formas de funcionar con íconos eligió "A2. Varios a la vez". Al probarlo con 100 en cada estado se salía del margen; entre degradé, flecha, globito y dos renglones eligió "Dos renglones si no entra". `FiltroEstados` pasa a un `v-model` con la lista de estados prendidos.
+- **Filtro de Actividades en la compu:** con el calendario a la derecha, la columna se angostó y el filtro con nombres pasaba a dos renglones. Entre dos renglones, íconos, nombres compactos o arriba a todo el ancho, el usuario eligió "D. Filtro arriba, a todo el ancho". `.grilla--calendario` pasa a áreas con nombre y una fila `arriba` opcional (`.grilla__arriba`). Prueba nueva en `e2e/diseno.spec.ts`: el calendario a la derecha en Actividades, Cronograma y Mapa, el filtro por encima en un renglón y, en celular, el calendario arriba y el filtro justo encima de la lista.
+- **Íconos de estado** en un solo lugar: `ICONOS_ESTADO` en `utiles/formato.ts`, usado por la tarjeta, el renglón y el filtro.
+- **Errores encontrados y corregidos, cada uno con su prueba:**
+  - el filtro se cortaba en un celular de 360 px con cantidades de dos cifras (prueba nueva en `e2e/diseno.spec.ts`, que falla con el filtro anterior: el último botón llegaba a 382 px);
+  - al proponer una actividad para otro día se volvía al primer día y no se veía la propuesta: el formulario vuelve con `?dia=` de la propuesta (`ActividadFormularioVista.test.ts`);
+  - el título del día decía "1 pendientes" (`ActividadesVista.test.ts`);
+  - la prueba de punta a punta de RN-C2 esperaba el formato anterior de la lista del mapa.
+- **Testing intensivo:**
+  - recorrida en celular (360 px) y escritorio (1280 px): renglones, filtro con varios estados, alternativa sola que aclara de cuál es, cambio de día y recarga, día vacío, teclado (Enter abre y Espacio cierra), doble toque, proponer y proponer alternativa desde un renglón, calendario a la derecha en las tres pantallas y fijo al bajar, sin desbordes;
+  - direcciones con `?dia=` inválido, fuera del viaje o con `<script>`: se ignoran y se abre el día por la regla;
+  - 600 secuencias al azar de días y estados contra un modelo propio de qué renglones y cantidades se ven;
+  - no hay endpoints nuevos ni cambios de permisos; los dobles envíos siguen bloqueados por `ocupado`.
+- **Verificación:** lint, 390 pruebas del servidor y 303 de la web, 33 de punta a punta (con axe), cobertura y knip con sus falsos positivos conocidos. Las pruebas exploratorias se borraron.

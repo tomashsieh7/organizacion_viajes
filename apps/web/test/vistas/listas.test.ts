@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Component } from 'vue';
 import { CLIENTE_GASTOS } from '../../src/clientes/gastos';
 import { CLIENTE_PROPUESTAS } from '../../src/clientes/propuestas';
@@ -15,6 +15,12 @@ import {
   errorDeApi,
   montaje,
 } from '../soporte/clientesFalsos';
+
+// Actividades guarda el día elegido en la dirección; la de Mis grupos navega al abrir uno.
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ query: {} }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
 
 /** Una carga que la prueba resuelve o rechaza cuando quiere. */
 function cargaPendiente() {

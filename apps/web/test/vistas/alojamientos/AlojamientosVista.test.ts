@@ -54,6 +54,10 @@ async function montar(cliente: Partial<ClientePropuestas>) {
 const cabana = alojamiento('a1', 'Cabaña', '2026-12-10', '2026-12-13');
 const hostel = alojamiento('a2', 'Hostel', '2026-12-15', '2026-12-16');
 
+/** «Pendientes 2»: el nombre y la cantidad de un botón del filtro. */
+const etiqueta = (b: { find: (s: string) => { text: () => string } }) =>
+  `${b.find('.filtro__nombre').text()} ${b.find('.filtro__cantidad').text()}`;
+
 describe('AlojamientosVista', () => {
   it('RN-C3: muestra el rango de fechas y las noches de cada estadía', async () => {
     const vista = await montar({ listarAlojamientos: async () => [cabana, hostel] });
@@ -67,11 +71,11 @@ describe('AlojamientosVista', () => {
     const vista = await montar({ listarAlojamientos: async () => [cabana], votar });
     await vista
       .findAll('button')
-      .find((b) => b.text().includes('A favor'))!
+      .find((b) => b.attributes('aria-label') === 'A favor')!
       .trigger('click');
     await flushPromises();
     expect(votar).toHaveBeenCalledWith('v1', 'a1', 'A_FAVOR');
-    expect(vista.find('[aria-pressed="true"]').text()).toContain('A favor');
+    expect(vista.find('.voto[aria-pressed="true"]').attributes('aria-label')).toBe('A favor');
   });
 
   it('muestra el error de la API al resolver', async () => {
@@ -100,25 +104,44 @@ describe('AlojamientosVista', () => {
       throw errorDeApi('PROPUESTA_NO_PENDIENTE', 'La propuesta ya fue resuelta', 409);
     });
     const vista = await montar({ listarAlojamientos, votar });
-    expect(vista.text()).toContain('A favor');
+    expect(vista.find('button[aria-label="A favor"]').exists()).toBe(true);
     await vista
       .findAll('button')
-      .find((b) => b.text() === 'A favor')!
+      .find((b) => b.attributes('aria-label') === 'A favor')!
       .trigger('click');
     await flushPromises();
     expect(vista.find('[role="alert"]').text()).toContain('La propuesta ya fue resuelta');
-    expect(vista.findAll('button').some((b) => b.text() === 'A favor')).toBe(false);
+    expect(vista.findAll('button').some((b) => b.attributes('aria-label') === 'A favor')).toBe(
+      false,
+    );
     expect(vista.text()).toContain('Confirmada');
   });
 
-  it('filtra por estado y, sin resultados, sugiere mostrar todos', async () => {
-    const listarAlojamientos = vi.fn(async (_viajeId: string, estado?: string) =>
-      estado ? [] : [cabana],
-    );
+  it('filtra con varios estados a la vez, cada uno con su cantidad, y sin resultados lo dice', async () => {
+    const confirmada = { ...cabana, id: 'a2', estado: 'CONFIRMADA' as const };
+    const listarAlojamientos = vi.fn(async () => [cabana, confirmada]);
     const vista = await montar({ listarAlojamientos });
-    await vista.find('#filtro-estado').setValue('CONFIRMADA');
-    await flushPromises();
-    expect(listarAlojamientos).toHaveBeenLastCalledWith('v1', 'CONFIRMADA');
-    expect(vista.text()).toContain('No hay alojamientos con ese estado.');
+    const botones = () => vista.findAll('.filtro button');
+    const estados = () => vista.findAll('.propuesta').map((p) => p.attributes('data-estado'));
+    expect(botones().map(etiqueta)).toEqual([
+      'Todos 2',
+      'Pendientes 1',
+      'Confirmados 1',
+      'Denegados 0',
+      'Cancelados 0',
+    ]);
+    expect(botones()[0]!.attributes('aria-pressed')).toBe('true');
+    await botones()[2]!.trigger('click');
+    expect(estados()).toEqual(['CONFIRMADA']);
+    await botones()[1]!.trigger('click');
+    expect(estados()).toEqual(['PENDIENTE', 'CONFIRMADA']);
+    expect(botones()[0]!.attributes('aria-pressed')).toBe('false');
+    await botones()[1]!.trigger('click');
+    await botones()[2]!.trigger('click');
+    await botones()[3]!.trigger('click');
+    expect(vista.text()).toContain('No hay alojamientos con esos estados.');
+    // Se filtra en la pantalla: no se vuelve a pedir la lista.
+    expect(listarAlojamientos).toHaveBeenCalledTimes(1);
+    expect(listarAlojamientos).toHaveBeenCalledWith('v1');
   });
 });

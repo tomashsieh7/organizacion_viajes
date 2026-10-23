@@ -110,6 +110,93 @@ test('Con nombres, títulos y montos largos no se desborda nada, en celular ni e
   expect((await etiqueta.boundingBox())!.height).toBeLessThan(30);
 });
 
+test('Con cantidades de dos cifras, el filtro de estados se ve entero en un celular angosto', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const v = await viajeCon(ana);
+  for (let i = 0; i < 12; i++) {
+    await api(ana, 'POST', `/viajes/${v}/alojamientos`, {
+      nombre: `Cabaña ${i + 1}`,
+      descripcion: 'Con desayuno',
+      ubicacion: 'Centro',
+      fechaDesde: '2026-12-10',
+      fechaHasta: '2026-12-12',
+      precio: 5_000_000,
+    });
+  }
+  const p = ana.page;
+  await p.setViewportSize({ width: 360, height: 740 });
+  await p.goto(`/viajes/${v}/alojamientos`);
+  const botones = p.locator('.filtro button');
+  await expect(botones.first()).toContainText('12');
+  // Si no entran en un renglón pasan a dos: ningún botón queda cortado ni hay que deslizar.
+  for (const caja of await botones.evaluateAll((bs) =>
+    bs.map((b) => {
+      const r = b.getBoundingClientRect();
+      return { izquierda: r.left, derecha: r.right };
+    }),
+  )) {
+    expect(caja.izquierda).toBeGreaterThanOrEqual(0);
+    expect(caja.derecha).toBeLessThanOrEqual(360);
+  }
+  const fila = p.locator('.filtro');
+  expect(await fila.evaluate((f) => f.scrollWidth - f.clientWidth)).toBe(0);
+});
+
+test('En escritorio el calendario va a la derecha, y en Actividades el filtro va arriba a todo el ancho', async ({
+  browser,
+}) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const v = await viajeCon(ana);
+  const { actividad } = await api<{ actividad: { id: string } }>(
+    ana,
+    'POST',
+    `/viajes/${v}/actividades`,
+    {
+      titulo: 'Kayak',
+      descripcion: 'Remar',
+      ubicacion: 'Lago',
+      latitud: -41.1,
+      longitud: -71.3,
+      fecha: '2026-12-11',
+      horaInicio: '10:00',
+      duracionMin: 60,
+    },
+  );
+  await api(ana, 'POST', `/viajes/${v}/propuestas/${actividad.id}/confirmar`);
+  const p = ana.page;
+  const caja = async (selector: string) => (await p.locator(selector).first().boundingBox())!;
+  await p.setViewportSize({ width: 1280, height: 800 });
+  for (const [ruta, contenido] of [
+    ['actividades', '.renglones'],
+    ['cronograma', '.calendario + *'],
+    ['mapa', '.mapa-dia__mapa'],
+  ] as const) {
+    await p.goto(`/viajes/${v}/${ruta}?dia=2026-12-11`);
+    await expect(p.locator(contenido).first()).toBeVisible();
+    const calendario = await caja('.calendario');
+    expect(calendario.x, `calendario a la derecha en ${ruta}`).toBeGreaterThan(
+      (await caja(contenido)).x + (await caja(contenido)).width - 1,
+    );
+  }
+  await p.goto(`/viajes/${v}/actividades?dia=2026-12-11`);
+  const filtro = await caja('.filtro');
+  const calendario = await caja('.calendario');
+  // El filtro va por encima del calendario y entra en un renglón con los nombres completos.
+  expect(filtro.y + filtro.height).toBeLessThanOrEqual(calendario.y);
+  expect(filtro.height).toBeLessThan(60);
+  // En celular, el calendario arriba y el filtro justo encima de la lista.
+  await p.setViewportSize({ width: 360, height: 740 });
+  const cel = {
+    calendario: await caja('.calendario'),
+    filtro: await caja('.filtro'),
+    lista: await caja('.renglones'),
+  };
+  expect(cel.calendario.y).toBeLessThan(cel.filtro.y);
+  expect(cel.filtro.y).toBeLessThan(cel.lista.y);
+});
+
 test('El modo de color sigue al sistema hasta que se elige otro, y se recuerda al volver', async ({
   page,
 }) => {

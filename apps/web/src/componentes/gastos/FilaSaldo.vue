@@ -88,4 +88,27 @@ defineProps<{
 .acciones:empty {
   display: none;
 }
+/* En escritorio, cada deuda en un renglón: quién y cuándo a la izquierda, monto y acción a la derecha. */
+@media (min-width: 64rem) {
+  .fila-saldo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: var(--esp-4);
+  }
+  .nombre,
+  .actualizado {
+    grid-column: 1;
+  }
+  .importe {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .acciones {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .pagos {
+    grid-column: 1 / -1;
+  }
+}
 </style>
