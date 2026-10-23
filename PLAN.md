@@ -493,14 +493,14 @@ Las respuestas de propuesta incluyen el conteo de votos a favor y en contra y el
 
 | CU | Método y ruta | Quién | Validaciones | Errores específicos |
 |---|---|---|---|---|
-| CU05 | `POST /api/viajes/:viajeId/alojamientos` | Participante | `nombre`, `descripcion` y `ubicacion` obligatorios (RN-X8); coordenadas opcionales; `fecha_desde <= fecha_hasta`, ambas dentro del viaje (P11); `precio >= 0` opcional (P8). El formulario manda un `id` propio del intento: si ya existe una propuesta con ese `id` de la misma persona en el viaje, se devuelve esa en lugar de crear otra | 400 `RANGO_FECHAS_INVALIDO`, 409 `PROPUESTA_EXISTENTE`, 422 `FUERA_DEL_VIAJE` |
+| CU05 | `POST /api/viajes/:viajeId/alojamientos` | Participante | `nombre` y `ubicacion` obligatorios y `descripcion` opcional (RN-X8); coordenadas opcionales; `fecha_desde <= fecha_hasta`, ambas dentro del viaje (P11); `precio >= 0` opcional (P8). El formulario manda un `id` propio del intento: si ya existe una propuesta con ese `id` de la misma persona en el viaje, se devuelve esa en lugar de crear otra | 400 `RANGO_FECHAS_INVALIDO`, 409 `PROPUESTA_EXISTENTE`, 422 `FUERA_DEL_VIAJE` |
 | — | `GET /api/viajes/:viajeId/alojamientos?estado=` | Participante | Filtro opcional por estado | — |
 
 ### 5.6 Planificar actividades
 
 | CU | Método y ruta | Quién | Validaciones | Errores específicos |
 |---|---|---|---|---|
-| CU10 | `POST /api/viajes/:viajeId/actividades` | Participante | `titulo`, `fecha`, `hora_inicio`, `duracion_min > 0`, `ubicacion` con coordenadas y `descripcion` obligatorios; `precio >= 0` opcional (RN-A1, P8); fecha dentro del viaje (P11); sin superposición con actividades confirmadas (RN-A2). Igual que en CU05, un reintento del mismo formulario (mismo `id`) devuelve la propuesta ya creada | 409 `SUPERPOSICION_HORARIA` con `detalles.conflictos`, 409 `PROPUESTA_EXISTENTE`, 422 `FUERA_DEL_VIAJE` |
+| CU10 | `POST /api/viajes/:viajeId/actividades` | Participante | `titulo`, `fecha`, `hora_inicio`, `duracion_min > 0`, `ubicacion` con coordenadas obligatorios; `descripcion` y `precio >= 0` opcionales (RN-A1, P8); fecha dentro del viaje (P11); sin superposición con actividades confirmadas (RN-A2). Igual que en CU05, un reintento del mismo formulario (mismo `id`) devuelve la propuesta ya creada | 409 `SUPERPOSICION_HORARIA` con `detalles.conflictos`, 409 `PROPUESTA_EXISTENTE`, 422 `FUERA_DEL_VIAJE` |
 | CU11 | `POST /api/viajes/:viajeId/actividades/:actividadId/alternativas` | Participante | Mismos campos y controles que CU10; la actividad elegida existe en el viaje y está `PENDIENTE`; si es a su vez una alternativa, la nueva se vincula a la original (P9); un reintento con el mismo `id` devuelve la ya creada | 409 `ORIGINAL_NO_PENDIENTE`, 409 `SUPERPOSICION_HORARIA`, 409 `PROPUESTA_EXISTENTE`, 422 `FUERA_DEL_VIAJE` |
 | — | `GET /api/viajes/:viajeId/actividades?estado=` | Participante | Lista plana ordenada por fecha y hora; cada alternativa trae `alternativaDe` con el id y el título de la original, y el frontend las agrupa (ajustado en F4) | — |
 | CU18 | `GET /api/viajes/:viajeId/actividades/:actividadId` | Participante | — | — |
@@ -549,7 +549,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
-| RN-A1 | El viajero completa título, fecha, horario, duración, ubicación (con coordenadas) y descripción; el precio es opcional (P8). | `POST …/actividades` → esquema `actividadNueva` y `ProponerActividad` | 400 `VALIDACION` |
+| RN-A1 | El viajero completa título, fecha, horario, duración y ubicación (con coordenadas); la descripción y el precio son opcionales (P8). | `POST …/actividades` → esquema `actividadNueva` y `ProponerActividad` | 400 `VALIDACION` |
 | RN-A2 | Si el intervalo `[fecha + hora_inicio, fecha + hora_inicio + duración)` se superpone con el de una actividad `CONFIRMADA` del viaje, no se guarda; el viajero ajusta el horario y vuelve a enviar hasta que no haya superposición. Proponer toma un bloqueo compartido de la agenda (`compartirAgenda`), así espera a una confirmación en curso y controla contra la agenda actualizada, sin frenar a otras propuestas. | `Intervalo.seSuperponeCon()` es el experto; `conflictosDeHorario` decide con qué confirmadas choca; coordinan `ProponerActividad` y `ProponerAlternativa` | 409 `SUPERPOSICION_HORARIA` con los conflictos; la pantalla conserva el formulario y resalta fecha, hora y duración |
 | RN-A3 | Sin superposición, la propuesta se guarda con estado `PENDIENTE`. | `Actividad.proponer()` crea la actividad pendiente; coordina `ProponerActividad` | 201 |
 
@@ -558,7 +558,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | ID | Regla | Dónde | Respuesta |
 |---|---|---|---|
 | RN-B1 | El viajero elige de una lista la actividad a la que da una alternativa; solo se ofrecen actividades `PENDIENTE` (P9). | Pantalla de actividades; `Actividad.crearAlternativa()` rechaza originales no pendientes; coordina `ProponerAlternativa` | 404 `NO_ENCONTRADO`, 409 `ORIGINAL_NO_PENDIENTE` |
-| RN-B2 | Completa descripción, ubicación, duración, título, fecha y horario, con los mismos controles de RN-A1 y RN-A2 (P9) y la fecha dentro del viaje (P11). | Esquema `actividadNueva`, `conflictosDeHorario` | 400, 409, 422 |
+| RN-B2 | Completa ubicación, duración, título, fecha y horario, y opcionalmente la descripción, con los mismos controles de RN-A1 y RN-A2 (P9) y la fecha dentro del viaje (P11). | Esquema `actividadNueva`, `conflictosDeHorario` | 400, 409, 422 |
 | RN-B3 | Se guarda como una nueva actividad vinculada a la original con estado `PENDIENTE`. Si la elegida es a su vez una alternativa, la nueva se vincula a la original de esa, de modo que no hay cadenas (P9). | `Actividad.crearAlternativa()` como Creador, que siempre vincula a la original; coordina `ProponerAlternativa` | 201 |
 
 ### 6.3 Resolución de propuestas
@@ -650,7 +650,7 @@ Cada regla tiene un identificador que se usa en la API, en las pruebas y en `LOG
 | RN-X5 | Solo participantes activos envían mensajes al chat del viaje. | Caso de uso `EnviarMensaje` | confirmación con `NO_PARTICIPANTE` |
 | RN-X6 | Todos los montos de un viaje se expresan en su moneda, elegida al crearlo; no hay conversión (P16). | Objeto de valor `Dinero`, que lleva la moneda del viaje; `CrearViaje` y formateo en la interfaz | — |
 | RN-X7 | Un viaje dura hasta un año: la fecha de fin puede ser, como mucho, el mismo día del año siguiente (desde un 29 de febrero, el 28). Sus fechas van del año 2000 al 2100. Evita que un error al tipear el año cree un viaje de décadas o de hace siglos. Los selectores de fecha no ofrecen días por fuera. | Esquema `viajeNuevo` y `DialogoNuevoViaje` | 400 `VALIDACION` |
-| RN-X8 | El nombre y el destino de un viaje, el nombre o título, la descripción y la ubicación de una propuesta, el título de un gasto y los mensajes del chat siguen la regla de RN-S7: sin caracteres de control ni los que invierten la dirección del texto, y con al menos una letra, número, signo o símbolo visible. La descripción y los mensajes admiten además saltos de línea y tabulaciones, y se muestran con sus saltos. | Esquemas `viajeNuevo`, `alojamientoNuevo`, `actividadNueva`, `gastoNuevo` y `mensajeNuevo`, `DialogoNuevoViaje`, `TarjetaPropuesta` y `CampoMensaje`, que explica el motivo debajo del campo | 400 `VALIDACION` |
+| RN-X8 | El nombre y el destino de un viaje, el nombre o título, la descripción y la ubicación de una propuesta, el título de un gasto y los mensajes del chat siguen la regla de RN-S7: sin caracteres de control ni los que invierten la dirección del texto, y con al menos una letra, número, signo o símbolo visible. La descripción y los mensajes admiten además saltos de línea y tabulaciones, y se muestran con sus saltos. La descripción de una propuesta es opcional: si falta o queda vacía al recortarla se guarda vacía y no se muestra; si tiene texto, valen las mismas reglas ("Escribí algo visible o dejala vacía"). | Esquemas `viajeNuevo`, `alojamientoNuevo`, `actividadNueva`, `gastoNuevo` y `mensajeNuevo`, `DialogoNuevoViaje`, `TarjetaPropuesta` y `CampoMensaje`, que explica el motivo debajo del campo | 400 `VALIDACION` |
 | RN-X9 | Cada mensaje del chat lleva un id que genera el navegador. Un mensaje que no se pudo enviar se puede reintentar desde su burbuja con el mismo id, y el servidor no lo guarda dos veces. Los mensajes confirmados se muestran en el orden del servidor (hora de envío y, a igual hora, id), y los propios que esperan o fallaron quedan al final. Si un mensaje que figuraba como fallado llega (por la sala o por el historial al reconectarse), pasa a enviado; al reconectarse, o cuando no queda ninguno fallado, el aviso de error se borra. Al entrar al chat, el historial se pide después de unirse a la sala, así un mensaje enviado en el medio llega en vivo o en el historial. | `EnviarMensaje`, `useChatStore` y `ListaMensajes` | confirmación con `MENSAJE_EXISTENTE` |
 
 ### 6.11 Seguridad de la autenticación
@@ -943,6 +943,7 @@ Estas diferencias surgieron de las decisiones del usuario y ya están incorporad
 | Diagrama conceptual | Viaje suma moneda; `CategoriaGasto` y `Moneda` pasan a ser clases. | P16 |
 | Diagrama conceptual | Gasto se divide en partes (`GastoParte`); la relación Gasto — Deuda pasa a ser indirecta y la deuda es acumulada por par. | P12, P14 |
 | Diagrama conceptual | Pago suma quién lo registró. | P17 |
+| Diagrama conceptual y "Proponiendo actividad", "Proponiendo alternativa de actividad" | La descripción de una propuesta pasa a ser opcional: Propuesta marca `descripción: str [0..1]` y también `precio: int [0..1]`, que ya lo era; los pasos dicen "descripción opcional". | Pedido del usuario del 2026-10-23 |
 | Diagrama conceptual | Gasto suma quién lo registró, que puede no ser el pagador; Propuesta suma quién la resolvió y cuándo. | P12, P7 |
 | Diagrama conceptual | `EstadoPropuesta` toma los valores pendiente, confirmada, denegada y cancelada. | P7 |
 | "Proponiendo alternativa de actividad" | Se agrega el control de superposición y la verificación de que la original esté pendiente. | P9 |

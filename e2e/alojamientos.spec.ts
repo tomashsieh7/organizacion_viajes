@@ -77,3 +77,19 @@ test('RN-R1: denegar pide confirmación, y votar algo ya resuelto muestra cómo 
   );
   expect(alojamiento.id).toBeTruthy();
 });
+
+test('CU05 y RN-X8: proponer un alojamiento sin descripción', async ({ browser }) => {
+  const ana = await nuevoViajero(browser, 'Ana');
+  const viajeId = await viajeCon(ana);
+  const p = ana.page;
+  await p.goto(`/viajes/${viajeId}/alojamientos/nuevo`);
+  await expect(p.getByLabel('Descripción (opcional)')).toBeVisible();
+  await p.fill('#alojamiento-nombre', 'Sin descripción');
+  await p.fill('#ubicacion', 'Bahía');
+  await p.getByRole('option').first().click();
+  await p.getByRole('button', { name: /Proponer/ }).click();
+  await expect(p).toHaveURL(/\/alojamientos$/);
+  const tarjeta = p.locator('article', { hasText: 'Sin descripción' });
+  await expect(tarjeta).toContainText('Pendiente');
+  await expect(tarjeta.locator('.descripcion')).toHaveCount(0);
+});

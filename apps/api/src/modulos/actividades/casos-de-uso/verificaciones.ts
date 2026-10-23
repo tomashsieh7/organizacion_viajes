@@ -45,7 +45,7 @@ export function datosDeActividad(
     id: datos.id ?? randomUUID(),
     autorId,
     titulo: datos.titulo,
-    descripcion: datos.descripcion,
+    descripcion: datos.descripcion ?? '',
     ubicacion: datos.ubicacion,
     coordenadas: Coordenadas.crear(datos.latitud, datos.longitud),
     precio: datos.precio,

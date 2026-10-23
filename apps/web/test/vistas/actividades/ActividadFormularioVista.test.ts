@@ -58,6 +58,20 @@ beforeEach(() => {
 });
 
 describe('ActividadFormularioVista', () => {
+  it('RN-A1 y RN-X8: la descripción es opcional', async () => {
+    const proponerActividad = vi.fn(async () => actividad('n', 'Kayak'));
+    const vista = await montar({ proponerActividad });
+    expect(vista.find('label[for="actividad-descripcion"]').text()).toBe('Descripción (opcional)');
+    await completar(vista);
+    await vista.find('#actividad-descripcion').setValue('');
+    await vista.find('form').trigger('submit');
+    await flushPromises();
+    expect(proponerActividad).toHaveBeenCalledWith(
+      'v1',
+      expect.objectContaining({ descripcion: '' }),
+    );
+  });
+
   it('CU10: propone con los datos del formulario y vuelve a la lista, en el día propuesto', async () => {
     const proponerActividad = vi.fn(async () => actividad('n', 'Kayak'));
     const vista = await montar({ proponerActividad });

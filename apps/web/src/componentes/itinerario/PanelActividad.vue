@@ -18,7 +18,7 @@ const emit = defineEmits<{ cerrar: [] }>();
     </header>
     <p>{{ formatearHorario(actividad) }} ({{ formatearDuracion(actividad.duracionMin) }})</p>
     <p>{{ actividad.ubicacion }}</p>
-    <p>{{ actividad.descripcion }}</p>
+    <p v-if="actividad.descripcion" class="descripcion">{{ actividad.descripcion }}</p>
     <p v-if="!confirmada" class="nota">
       Esta actividad no está confirmada: el marcador gris muestra dónde es, pero no forma parte del
       recorrido del día.

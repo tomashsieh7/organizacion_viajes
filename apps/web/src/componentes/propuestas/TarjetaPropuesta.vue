@@ -85,7 +85,9 @@ function confirmarAccion() {
       </span>
     </header>
     <slot />
+    <!-- La descripción es opcional (RN-X8): sin ella no queda un renglón vacío. -->
     <p
+      v-if="propuesta.descripcion"
       class="descripcion"
       :class="{ 'descripcion--abierta': descripcionAbierta }"
       :title="propuesta.descripcion"

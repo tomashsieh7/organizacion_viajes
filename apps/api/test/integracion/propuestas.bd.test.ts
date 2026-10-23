@@ -112,6 +112,28 @@ describe('CU05: proponer alojamiento', () => {
     expect(r.body.alojamiento.descripcion).toBe('Con desayuno\n\tY cochera');
   });
 
+  it('CU05 y RN-X8: la descripción es opcional; sin ella, o solo con espacios, queda vacía', async () => {
+    const { descripcion: _, ...sinDescripcion } = hostel;
+    for (const cuerpo of [
+      sinDescripcion,
+      { ...hostel, descripcion: '' },
+      { ...hostel, descripcion: '  \n\t ' },
+    ]) {
+      const r = await tomas.c.post(url('/alojamientos'), { ...cuerpo, id: crypto.randomUUID() });
+      expect(r.status, JSON.stringify(cuerpo)).toBe(201);
+      expect(r.body.alojamiento.descripcion).toBe('');
+    }
+    // Con texto, tiene que verse algo: solo caracteres invisibles no vale.
+    const r = await tomas.c.post(url('/alojamientos'), { ...hostel, descripcion: '\u200b' });
+    expect(r.status).toBe(400);
+    expect(r.body.error.detalles).toEqual([
+      expect.objectContaining({
+        campo: 'descripcion',
+        mensaje: 'Escribí algo visible o dejala vacía',
+      }),
+    ]);
+  });
+
   it('CU05: reintentar con el mismo id devuelve la propuesta ya creada y no la duplica', async () => {
     const id = '5e1d2c3b-4a59-4687-9a0b-1c2d3e4f5a6b';
     const intentos = await Promise.all(

@@ -39,9 +39,13 @@ async function montar(proponerAlojamiento: ClientePropuestas['proponerAlojamient
   return vista;
 }
 
-async function completar(vista: Awaited<ReturnType<typeof montar>>, precio = '48.000,50') {
+async function completar(
+  vista: Awaited<ReturnType<typeof montar>>,
+  precio = '48.000,50',
+  descripcion = 'Con desayuno',
+) {
   await vista.find('#alojamiento-nombre').setValue('Hostel Patagonia');
-  await vista.find('#alojamiento-descripcion').setValue('Con desayuno');
+  await vista.find('#alojamiento-descripcion').setValue(descripcion);
   await vista.find('#alojamiento-precio').setValue(precio);
   await vista.find('form').trigger('submit');
   await flushPromises();
@@ -66,6 +70,25 @@ describe('AlojamientoFormularioVista (CU05)', () => {
       precio: 4_800_050,
     });
     expect(push).toHaveBeenCalledWith('/viajes/v1/alojamientos');
+  });
+
+  it('RN-X8: la descripción es opcional, y vacía se manda vacía', async () => {
+    const proponer = vi.fn(async () => ({}) as never);
+    const vista = await montar(proponer);
+    expect(vista.find('label[for="alojamiento-descripcion"]').text()).toBe(
+      'Descripción (opcional)',
+    );
+    await completar(vista, '48.000,50', '');
+    expect(proponer).toHaveBeenCalledWith('v1', expect.objectContaining({ descripcion: '' }));
+    expect(vista.find('#alojamiento-descripcion').attributes('aria-invalid')).not.toBe('true');
+  });
+
+  it('RN-X8: una descripción con solo caracteres invisibles se marca en el campo', async () => {
+    const proponer = vi.fn(async () => ({}) as never);
+    const vista = await montar(proponer);
+    await completar(vista, '48.000,50', '\u200b');
+    expect(proponer).not.toHaveBeenCalled();
+    expect(vista.text()).toContain('Escribí algo visible o dejala vacía');
   });
 
   it('rechaza un precio con formato inválido sin llamar a la API', async () => {

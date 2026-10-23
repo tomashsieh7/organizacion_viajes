@@ -98,7 +98,7 @@ async function enviar() {
       </CampoFormulario>
       <CampoFormulario
         id="alojamiento-descripcion"
-        etiqueta="Descripción"
+        etiqueta="Descripción (opcional)"
         :error="errores['descripcion']"
       >
         <textarea

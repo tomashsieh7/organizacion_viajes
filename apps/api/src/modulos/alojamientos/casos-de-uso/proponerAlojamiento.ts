@@ -40,7 +40,7 @@ export class ProponerAlojamiento {
       viajeId,
       autorId,
       tipo: 'ALOJAMIENTO',
-      descripcion: datos.descripcion,
+      descripcion: datos.descripcion ?? '',
       precio: datos.precio,
       ubicacion: datos.ubicacion,
       coordenadas: Coordenadas.opcionales(datos.latitud, datos.longitud),

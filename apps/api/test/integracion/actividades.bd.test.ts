@@ -55,6 +55,19 @@ const estadoDe = async (id: string) =>
   (await ana.c.get(url(`/actividades/${id}`))).body.actividad.estado;
 
 describe('CU10 y CU18: proponer y ver actividades', () => {
+  it('RN-A1: la descripción es opcional, también en una alternativa', async () => {
+    const { descripcion: _, ...sinDescripcion } = kayak;
+    const r = await tomas.c.post(url('/actividades'), sinDescripcion);
+    expect(r.status).toBe(201);
+    expect(r.body.actividad.descripcion).toBe('');
+    const otra = await tomas.c.post(url(`/actividades/${r.body.actividad.id}/alternativas`), {
+      ...sinDescripcion,
+      horaInicio: '15:00',
+    });
+    expect(otra.status).toBe(201);
+    expect(otra.body.actividad.descripcion).toBe('');
+  });
+
   it('la guarda pendiente y la devuelve con su horario', async () => {
     const r = await tomas.c.post(url('/actividades'), {
       ...kayak,
