@@ -165,7 +165,6 @@ onMounted(cargar);
 .pestana[aria-selected='true'] {
   border-color: var(--color-acento);
   border-top-color: var(--color-acento);
-  box-shadow: var(--sombra);
 }
 .saldos {
   list-style: none;

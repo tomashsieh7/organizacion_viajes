@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { GastoVista, PagoDeActividad } from '@viajes/compartido';
 import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
 import EstadoVacio from '../../componentes/base/EstadoVacio.vue';
@@ -30,17 +30,26 @@ type Movimiento =
   | { tipo: 'gasto'; id: string; en: string; gasto: GastoVista }
   | { tipo: 'pago'; id: string; en: string; pago: PagoDeActividad };
 
-/**
- * Gastos del grupo y pagos propios como actividad de una billetera: agrupados por día, del más
- * reciente al más viejo.
- */
-const porDia = computed(() => {
-  const movimientos: Movimiento[] = [
+/** Gastos del grupo y pagos propios como actividad de una billetera, del más reciente al más viejo. */
+const movimientos = computed<Movimiento[]>(() =>
+  [
     ...gastos.gastos.map((g) => ({ tipo: 'gasto' as const, id: g.id, en: g.creadoEn, gasto: g })),
     ...gastos.pagos.map((p) => ({ tipo: 'pago' as const, id: p.id, en: p.fecha, pago: p })),
-  ].sort((a, b) => b.en.localeCompare(a.en));
+  ].sort((a, b) => b.en.localeCompare(a.en)),
+);
+
+/**
+ * La actividad se muestra de a tandas: al llegar al final de la lista se suman otros tantos
+ * movimientos solos, sin botón. Ya están todos cargados; solo se dibujan de a poco.
+ */
+const POR_TANDA = 15;
+const mostrados = ref(POR_TANDA);
+const quedan = computed(() => movimientos.value.length > mostrados.value);
+
+/** Los movimientos que se muestran, agrupados por día. */
+const porDia = computed(() => {
   const grupos: { dia: string; movimientos: Movimiento[] }[] = [];
-  for (const m of movimientos) {
+  for (const m of movimientos.value.slice(0, mostrados.value)) {
     const dia = etiquetaDelDia(m.en);
     const ultimo = grupos.at(-1);
     if (ultimo?.dia === dia) ultimo.movimientos.push(m);
@@ -48,6 +57,29 @@ const porDia = computed(() => {
   }
   return grupos;
 });
+
+/** Marca el final de la lista: cuando se acerca a la pantalla se suma otra tanda. */
+const final = ref<HTMLElement | null>(null);
+let observador: IntersectionObserver | undefined;
+watch(final, (elemento) => {
+  observador?.disconnect();
+  if (!elemento) return;
+  observador = new IntersectionObserver(
+    (entradas) => {
+      if (entradas.some((e) => e.isIntersecting)) mostrados.value += POR_TANDA;
+    },
+    { rootMargin: '200px' },
+  );
+  observador.observe(elemento);
+});
+// Si con la tanda nueva el final sigue a la vista, se vuelve a observar para sumar otra.
+watch(mostrados, async () => {
+  await nextTick();
+  if (!observador || !final.value) return;
+  observador.unobserve(final.value);
+  observador.observe(final.value);
+});
+onBeforeUnmount(() => observador?.disconnect());
 
 onMounted(cargar);
 </script>
@@ -57,8 +89,8 @@ onMounted(cargar);
     <h2 class="solo-lectores">Gastos</h2>
     <SiluetaCarga v-if="!cargado" />
     <AvisoMensaje v-else-if="error" tipo="error" :reintentar="reintentar">{{ error }}</AvisoMensaje>
-    <!-- En escritorio, la billetera y los accesos a la izquierda y la actividad a la derecha. -->
-    <div v-else class="grilla grilla--lateral">
+    <!-- Una sola columna, también en escritorio, centrada: la billetera arriba y la actividad. -->
+    <div v-else class="gastos">
       <div>
         <div class="billetera panel">
           <p class="billetera__rotulo">
@@ -116,12 +148,22 @@ onMounted(cargar);
             </template>
           </div>
         </section>
+        <div v-if="quedan" ref="final" class="actividad__final" aria-hidden="true"></div>
+        <p v-else-if="movimientos.length > POR_TANDA" class="actividad__fin">
+          No hay más movimientos.
+        </p>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
+@media (min-width: 64rem) {
+  .gastos {
+    max-width: 40rem;
+    margin-inline: auto;
+  }
+}
 /* La tarjeta de billetera: el balance neto bien grande, como en una app de pagos. */
 .billetera {
   text-align: center;
@@ -203,6 +245,13 @@ onMounted(cargar);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--color-texto-secundario);
+}
+.actividad__final {
+  height: 1px;
+}
+.actividad__fin {
+  text-align: center;
   color: var(--color-texto-secundario);
 }
 .lista {
