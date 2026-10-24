@@ -24,6 +24,7 @@ function aVista(f: FilaConActividad, usuarioId: string): ActividadVista | null {
   return {
     ...aVistaPropuesta(f, usuarioId),
     tipo: 'ACTIVIDAD',
+    fechaCambiadaEn: d.fechaCambiadaEn?.toISOString() ?? null,
     actividad: {
       titulo: d.titulo,
       fecha: d.fecha,

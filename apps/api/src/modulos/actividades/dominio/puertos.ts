@@ -1,5 +1,6 @@
 import type { ActividadVista, EstadoPropuesta } from '@viajes/compartido';
 import type { ConsultaFechasDeViaje, ReposPropuestas } from '../../propuestas/dominio/puertos.js';
+import type { AgendaDelViaje } from '../../viajes/dominio/puertos.js';
 import type { Actividad } from './actividad.js';
 import type { ActividadAgendada } from './politicas.js';
 
@@ -35,7 +36,8 @@ export interface ReposProponerActividad extends ReposActividades {
 }
 
 /** Repositorios de la transacción de resolución cuando se suman las reglas de actividades. */
-export type ReposResolucionConActividades = ReposPropuestas & ReposActividades;
+export type ReposResolucionConActividades = ReposPropuestas &
+  ReposActividades & { agenda: AgendaDelViaje };
 
 export interface ConsultaActividades {
   /** Actividades del viaje ordenadas por fecha y hora, originales y alternativas. */

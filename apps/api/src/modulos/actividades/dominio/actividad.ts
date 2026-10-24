@@ -8,11 +8,12 @@ import { Propuesta } from '../../propuestas/dominio/propuesta.js';
 
 export interface DetalleActividad {
   titulo: string;
-  fecha: Fecha;
+  fecha: Fecha | null;
   horaInicio: string;
   duracionMin: number;
   /** Actividad original de la que esta es alternativa, o null si es una original (P9). */
   alternativaDeId: string | null;
+  fechaCambiadaEn?: Date | null;
 }
 
 export interface DatosNuevaActividad {
@@ -39,7 +40,8 @@ export class Actividad {
     readonly propuesta: Propuesta,
     readonly detalle: DetalleActividad,
   ) {
-    Intervalo.deActividad(detalle.fecha, detalle.horaInicio, detalle.duracionMin); // valida horario y duración
+    detalle.fechaCambiadaEn ??= null;
+    Intervalo.deActividad(detalle.fecha ?? '2000-01-01', detalle.horaInicio, detalle.duracionMin); // valida horario y duración
   }
 
   /** RN-A1 y RN-A3: se guarda pendiente de votación. */
@@ -56,6 +58,8 @@ export class Actividad {
   }
 
   get intervalo(): Intervalo {
+    if (this.detalle.fecha === null)
+      throw new ErrorDeDominio('CONFLICTO', 'SIN_DIA', 'Ubicá la propuesta antes de confirmarla');
     return Intervalo.deActividad(
       this.detalle.fecha,
       this.detalle.horaInicio,
@@ -64,7 +68,8 @@ export class Actividad {
   }
 
   /** RN-V2: el rango de un solo día que la actividad ocupa en el viaje. */
-  get dias(): RangoFechas {
+  get dias(): RangoFechas | null {
+    if (this.detalle.fecha === null) return null;
     return RangoFechas.crear(this.detalle.fecha, this.detalle.fecha);
   }
 
@@ -73,8 +78,21 @@ export class Actividad {
   }
 
   /** RN-V2: pasa al día que el plan le asigna, con el mismo horario, votos y estado. */
-  reacomodar(plan: PlanDeReacomodo): void {
-    this.detalle.fecha = moverDia(plan, this.detalle.fecha);
+  reacomodar(plan: PlanDeReacomodo, ahora = new Date()): void {
+    if (this.detalle.fecha !== null) this.ubicar(moverDia(plan, this.detalle.fecha), ahora);
+  }
+
+  ubicar(fecha: string | null, ahora: Date): void {
+    if (fecha !== null)
+      Intervalo.deActividad(fecha, this.detalle.horaInicio, this.detalle.duracionMin);
+    if (fecha !== this.detalle.fecha) {
+      this.detalle.fecha = fecha;
+      this.detalle.fechaCambiadaEn = ahora;
+    }
+  }
+
+  get intervaloAgendado(): Intervalo | null {
+    return this.detalle.fecha === null ? null : this.intervalo;
   }
 
   /** Id que identifica al grupo de opciones: el de la original. */

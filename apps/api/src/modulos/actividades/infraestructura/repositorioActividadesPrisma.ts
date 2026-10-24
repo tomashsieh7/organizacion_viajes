@@ -28,7 +28,7 @@ export class RepositorioActividadesPrisma implements RepositorioActividades {
           actividad: {
             create: {
               titulo: d.titulo,
-              fecha: deFecha(d.fecha),
+              fecha: d.fecha ? deFecha(d.fecha) : null,
               horaInicio: deHora(d.horaInicio),
               duracionMin: d.duracionMin,
               alternativaDeId: d.alternativaDeId,
@@ -51,7 +51,7 @@ export class RepositorioActividadesPrisma implements RepositorioActividades {
 
   async confirmadas(viajeId: string): Promise<ActividadAgendada[]> {
     const filas = await this.db.actividad.findMany({
-      where: { propuesta: { viajeId, estado: 'CONFIRMADA' } },
+      where: { fecha: { not: null }, propuesta: { viajeId, estado: 'CONFIRMADA' } },
       orderBy: [{ fecha: 'asc' }, { horaInicio: 'asc' }],
     });
     return filas.map((f) => {
@@ -59,10 +59,10 @@ export class RepositorioActividadesPrisma implements RepositorioActividades {
       return {
         id: f.propuestaId,
         titulo: d.titulo,
-        fecha: d.fecha,
+        fecha: d.fecha!,
         horaInicio: d.horaInicio,
         duracionMin: d.duracionMin,
-        intervalo: Intervalo.deActividad(d.fecha, d.horaInicio, d.duracionMin),
+        intervalo: Intervalo.deActividad(d.fecha!, d.horaInicio, d.duracionMin),
       };
     });
   }

@@ -139,8 +139,12 @@ export function formatearDuracion(minutos: number): string {
 }
 
 /** "11 dic 2026 · 23:30 a 01:00 del día siguiente". */
-export function formatearHorario(a: { fecha: string; horaInicio: string; duracionMin: number }) {
+export function formatearHorario(a: {
+  fecha: string | null;
+  horaInicio: string;
+  duracionMin: number;
+}) {
   const fin = sumarMinutos(a.horaInicio, a.duracionMin);
   const siguiente = pasaLaMedianoche(a.horaInicio, a.duracionMin) ? ' del día siguiente' : '';
-  return `${formatearFecha(a.fecha)} · ${a.horaInicio} a ${fin}${siguiente}`;
+  return `${a.fecha ? formatearFecha(a.fecha) : 'Sin día'} · ${a.horaInicio} a ${fin}${siguiente}`;
 }

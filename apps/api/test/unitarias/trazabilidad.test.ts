@@ -48,8 +48,8 @@ describe('Trazabilidad (criterio de terminado de F9)', () => {
     (m) => m[1]!,
   );
 
-  it('lee los 27 casos de uso de la sección 1 y las reglas de la sección 6', () => {
-    expect(new Set(casos).size).toBe(27);
+  it('lee los 28 casos de uso de la sección 1 y las reglas de la sección 6', () => {
+    expect(new Set(casos).size).toBe(28);
     expect(reglas.length).toBeGreaterThan(50);
   });
 

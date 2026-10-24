@@ -38,7 +38,7 @@ const conflictos = ref<ConflictoHorario[]>([]);
  * recargar.
  */
 const diasConPropuestas = computed(() => [
-  ...new Set(propuestas.actividades.map((a) => a.actividad.fecha)),
+  ...new Set(propuestas.actividades.flatMap((a) => (a.actividad.fecha ? [a.actividad.fecha] : []))),
 ]);
 const elegido = computed(() => {
   const dias = diasEntre(actual.fechaInicio, actual.fechaFin);

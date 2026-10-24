@@ -5,12 +5,14 @@ import AvisoMensaje from '../../componentes/base/AvisoMensaje.vue';
 import IconoLinea, { type NombreIcono } from '../../componentes/base/IconoLinea.vue';
 import { useCarga } from '../../composables/useCarga';
 import { useChatStore } from '../../stores/chat';
+import { usePropuestasStore } from '../../stores/propuestas';
 import { useViajeStore } from '../../stores/viajes';
 import { hoyDelDispositivo } from '../../utiles/fechas';
 import { formatearRango } from '../../utiles/formato';
 import { cuentaRegresiva } from '../../utiles/progreso';
 
 const store = useViajeStore();
+const propuestas = usePropuestasStore();
 const chat = useChatStore();
 const route = useRoute();
 const router = useRouter();
@@ -45,6 +47,7 @@ const GRUPOS: Grupo[] = [
     secciones: [
       { nombre: 'Alojamientos', ruta: 'alojamientos' },
       { nombre: 'Actividades', ruta: 'actividades' },
+      { nombre: 'Sin día', ruta: 'sin-dia' },
     ],
   },
   {
@@ -111,11 +114,15 @@ const {
 } = useCarga(async () => {
   const id = route.params['viajeId'];
   if (typeof id !== 'string') return;
+  propuestas.limpiar();
   await store.abrir(id);
   await exigirSeccionPermitida();
   // La conexión en tiempo real acompaña al viaje abierto, en cualquier sección; quien solo ve los
   // saldos ya no está en el chat.
-  if (!soloSaldos.value) await chat.entrar(id);
+  if (!soloSaldos.value) {
+    await chat.entrar(id);
+    await propuestas.cargarTodo().catch(() => undefined);
+  }
 });
 watch(() => route.params['viajeId'], abrirViaje, { immediate: true });
 watch(() => route.path, exigirSeccionPermitida);
@@ -135,6 +142,7 @@ watch(
         : `Saliste de «${nombre}».`;
     chat.desconectar();
     if (aviso.conservaAccesoSaldos) {
+      propuestas.limpiar();
       await store.abrir(id);
       store.aviso = `${motivo} Podés seguir viendo tus saldos hasta que queden en cero.`;
       await router.push(`/viajes/${id}/saldos`);
@@ -221,7 +229,10 @@ onBeforeUnmount(() => {
           class="subseccion"
           :class="{ activo: s.ruta === seccionActiva }"
           :aria-current="s.ruta === seccionActiva ? 'page' : undefined"
-          >{{ s.nombre }}</RouterLink
+          >{{ s.nombre
+          }}{{
+            s.ruta === 'sin-dia' && propuestas.sinDia.length ? ` · ${propuestas.sinDia.length}` : ''
+          }}</RouterLink
         >
       </nav>
       <AvisoMensaje v-if="store.aviso" tipo="info">{{ store.aviso }}</AvisoMensaje>
@@ -364,6 +375,7 @@ a.portada__viajeros.activo {
   color: var(--color-texto-secundario);
   text-decoration: none;
   font-weight: 500;
+  white-space: nowrap;
 }
 .subseccion.activo {
   background: var(--color-superficie);
@@ -436,9 +448,12 @@ a.portada__viajeros.activo {
   }
   .subsecciones {
     display: flex;
+    overflow-x: auto;
+    max-width: 100%;
   }
   .subseccion {
-    flex: 1;
+    flex: 1 0 auto;
+    padding-inline: var(--esp-2);
     justify-content: center;
   }
 }

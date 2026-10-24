@@ -1,4 +1,4 @@
-import { moverRango, type PlanDeReacomodo } from '@viajes/compartido';
+import { moverRango, diasEntre, sumarDias, type PlanDeReacomodo } from '@viajes/compartido';
 import { RangoFechas } from '../../../comun/valores/rangoFechas.js';
 import type { Propuesta } from '../../propuestas/dominio/propuesta.js';
 import type { DetalleAlojamiento } from './puertos.js';
@@ -23,13 +23,38 @@ export class Alojamiento {
   }
 
   /** RN-V2: los días de la estadía, de la entrada a la salida. */
-  get dias(): RangoFechas {
+  get dias(): RangoFechas | null {
     return this.detalle.estadia;
   }
 
   /** RN-V2: se mueve por su día de entrada y conserva las noches. */
-  reacomodar(plan: PlanDeReacomodo): void {
-    const { desde, hasta } = moverRango(plan, this.detalle.estadia);
-    this.detalle = { ...this.detalle, estadia: RangoFechas.crear(desde, hasta) };
+  reacomodar(plan: PlanDeReacomodo, ahora = new Date()): void {
+    if (!this.detalle.estadia) return;
+    this.ubicar(moverRango(plan, this.detalle.estadia)?.desde ?? null, ahora);
+  }
+
+  get noches(): number {
+    return this.detalle.estadia
+      ? diasEntre(this.detalle.estadia.desde, this.detalle.estadia.hasta)
+      : (this.detalle.noches ?? 0);
+  }
+
+  get fechaCambiadaEn(): Date | null {
+    return this.detalle.fechaCambiadaEn ?? null;
+  }
+
+  get intervaloAgendado(): null {
+    return null;
+  }
+
+  ubicar(fecha: string | null, ahora: Date): void {
+    const noches = this.noches;
+    if (fecha === (this.detalle.estadia?.desde ?? null)) return;
+    this.detalle = {
+      ...this.detalle,
+      noches,
+      estadia: fecha === null ? null : RangoFechas.crear(fecha, sumarDias(fecha, noches)),
+      fechaCambiadaEn: ahora,
+    };
   }
 }

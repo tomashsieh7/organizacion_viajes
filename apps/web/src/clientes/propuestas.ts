@@ -13,6 +13,12 @@ import type {
 import { pedir } from './http';
 
 export interface ClientePropuestas {
+  ubicar(
+    viajeId: string,
+    propuestaId: string,
+    tipo: 'ACTIVIDAD' | 'ALOJAMIENTO',
+    fecha: string,
+  ): Promise<void>;
   listarAlojamientos(viajeId: string, estado?: EstadoPropuesta): Promise<AlojamientoVista[]>;
   proponerAlojamiento(viajeId: string, datos: DatosAlojamientoNuevo): Promise<AlojamientoVista>;
   listarActividades(viajeId: string, estado?: EstadoPropuesta): Promise<ActividadVista[]>;
@@ -35,6 +41,18 @@ export interface ClientePropuestas {
 export const CLIENTE_PROPUESTAS: InjectionKey<ClientePropuestas> = Symbol('ClientePropuestas');
 
 export class ClientePropuestasHttp implements ClientePropuestas {
+  async ubicar(
+    viajeId: string,
+    propuestaId: string,
+    tipo: 'ACTIVIDAD' | 'ALOJAMIENTO',
+    fecha: string,
+  ): Promise<void> {
+    const ruta =
+      tipo === 'ACTIVIDAD'
+        ? `actividades/${propuestaId}/fecha`
+        : `alojamientos/${propuestaId}/fechas`;
+    await pedir<void>('PATCH', `/api/viajes/${viajeId}/${ruta}`, { fecha });
+  }
   async listarAlojamientos(viajeId: string, estado?: EstadoPropuesta) {
     const filtro = estado ? `?estado=${estado}` : '';
     return (

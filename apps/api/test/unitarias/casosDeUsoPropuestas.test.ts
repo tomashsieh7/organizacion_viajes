@@ -110,6 +110,7 @@ describe('CU05: proponer alojamiento', () => {
           nombre: 'Hostel Patagonia',
           fechaDesde: '2026-12-10',
           fechaHasta: '2026-12-13',
+          noches: 3,
         },
       }),
     ]);

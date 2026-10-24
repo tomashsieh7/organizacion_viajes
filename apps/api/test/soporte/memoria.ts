@@ -5,6 +5,7 @@
  */
 import {
   sumarMinutos,
+  diasEntre,
   type CategoriaGasto,
   type DeudaVista,
   type GastoVista,
@@ -132,7 +133,13 @@ export interface BaseEnMemoria {
   /** Propuestas con sus votos y, según el tipo, los datos propios del alojamiento o la actividad. */
   propuestas: {
     datos: DatosPropuesta;
-    alojamiento?: { nombre: string; fechaDesde: string; fechaHasta: string };
+    alojamiento?: {
+      nombre: string;
+      fechaDesde: string | null;
+      fechaHasta: string | null;
+      noches?: number;
+      fechaCambiadaEn?: Date | null;
+    };
     actividad?: DetalleActividad;
   }[];
 }
@@ -392,7 +399,9 @@ export class AgendaDelViajeEnMemoria implements AgendaDelViaje {
         return [
           Alojamiento.reconstruir(propuesta, {
             nombre,
-            estadia: RangoFechas.crear(fechaDesde, fechaHasta),
+            estadia: fechaDesde && fechaHasta ? RangoFechas.crear(fechaDesde, fechaHasta) : null,
+            noches: fila.alojamiento.noches ?? 0,
+            fechaCambiadaEn: fila.alojamiento.fechaCambiadaEn ?? null,
           }),
         ];
       });
@@ -401,10 +410,15 @@ export class AgendaDelViajeEnMemoria implements AgendaDelViaje {
   async guardar(movidas: PropuestaReacomodable[]): Promise<void> {
     for (const p of movidas) {
       const fila = this.base.propuestas.find((f) => f.datos.id === p.id)!;
-      if (fila.actividad) fila.actividad.fecha = p.dias.desde;
-      if (fila.alojamiento) {
-        fila.alojamiento.fechaDesde = p.dias.desde;
-        fila.alojamiento.fechaHasta = p.dias.hasta;
+      if (fila.actividad && p instanceof Actividad) {
+        fila.actividad.fecha = p.dias?.desde ?? null;
+        fila.actividad.fechaCambiadaEn = p.detalle.fechaCambiadaEn ?? null;
+      }
+      if (fila.alojamiento && p instanceof Alojamiento) {
+        fila.alojamiento.fechaDesde = p.dias?.desde ?? null;
+        fila.alojamiento.fechaHasta = p.dias?.hasta ?? null;
+        fila.alojamiento.noches = p.noches;
+        fila.alojamiento.fechaCambiadaEn = p.fechaCambiadaEn;
       }
     }
   }
@@ -502,8 +516,11 @@ export class RepositorioAlojamientosEnMemoria implements RepositorioAlojamientos
       datos: propuesta.aDatos(),
       alojamiento: {
         nombre: detalle.nombre,
-        fechaDesde: detalle.estadia.desde,
-        fechaHasta: detalle.estadia.hasta,
+        fechaDesde: detalle.estadia?.desde ?? null,
+        fechaHasta: detalle.estadia?.hasta ?? null,
+        noches: detalle.estadia
+          ? diasEntre(detalle.estadia.desde, detalle.estadia.hasta)
+          : (detalle.noches ?? 0),
       },
     });
   }
@@ -524,8 +541,9 @@ export class ConsultaAlojamientosEnMemoria implements ConsultaAlojamientos {
       )
       .sort(
         (a, b) =>
-          a.alojamiento!.fechaDesde.localeCompare(b.alojamiento!.fechaDesde) ||
-          a.datos.creadaEn.getTime() - b.datos.creadaEn.getTime(),
+          (a.alojamiento!.fechaDesde ?? '9999').localeCompare(
+            b.alojamiento!.fechaDesde ?? '9999',
+          ) || a.datos.creadaEn.getTime() - b.datos.creadaEn.getTime(),
       )
       .map((p) => this.vista(p, usuarioId));
   }
@@ -545,7 +563,13 @@ export class ConsultaAlojamientosEnMemoria implements ConsultaAlojamientos {
     return {
       ...aVistaEnMemoria(this.base, p.datos, usuarioId),
       tipo: 'ALOJAMIENTO',
-      alojamiento: { ...p.alojamiento! },
+      alojamiento: {
+        nombre: p.alojamiento!.nombre,
+        fechaDesde: p.alojamiento!.fechaDesde,
+        fechaHasta: p.alojamiento!.fechaHasta,
+        noches: p.alojamiento!.noches ?? 0,
+      },
+      fechaCambiadaEn: p.alojamiento!.fechaCambiadaEn?.toISOString() ?? null,
     };
   }
 }
@@ -556,7 +580,7 @@ const tieneActividad = (p: BaseEnMemoria['propuestas'][number]): p is FilaConAct
   p.actividad !== undefined;
 
 const porHorario = (a: FilaConActividad, b: FilaConActividad) =>
-  a.actividad.fecha.localeCompare(b.actividad.fecha) ||
+  (a.actividad.fecha ?? '9999').localeCompare(b.actividad.fecha ?? '9999') ||
   a.actividad.horaInicio.localeCompare(b.actividad.horaInicio) ||
   a.datos.creadaEn.getTime() - b.datos.creadaEn.getTime();
 
@@ -580,15 +604,20 @@ export class RepositorioActividadesEnMemoria implements RepositorioActividades {
   async confirmadas(viajeId: string): Promise<ActividadAgendada[]> {
     return this.base.propuestas
       .filter(tieneActividad)
-      .filter((p) => p.datos.viajeId === viajeId && p.datos.estado === 'CONFIRMADA')
+      .filter(
+        (p) =>
+          p.datos.viajeId === viajeId &&
+          p.datos.estado === 'CONFIRMADA' &&
+          p.actividad?.fecha !== null,
+      )
       .sort(porHorario)
       .map(({ datos, actividad: a }) => ({
         id: datos.id,
         titulo: a.titulo,
-        fecha: a.fecha,
+        fecha: a.fecha!,
         horaInicio: a.horaInicio,
         duracionMin: a.duracionMin,
-        intervalo: Intervalo.deActividad(a.fecha, a.horaInicio, a.duracionMin),
+        intervalo: Intervalo.deActividad(a.fecha!, a.horaInicio, a.duracionMin),
       }));
   }
 
@@ -649,9 +678,10 @@ export class ConsultaActividadesEnMemoria implements ConsultaActividades {
     return {
       ...aVistaEnMemoria(this.base, p.datos, usuarioId),
       tipo: 'ACTIVIDAD',
+      fechaCambiadaEn: a.fechaCambiadaEn?.toISOString() ?? null,
       actividad: {
         titulo: a.titulo,
-        fecha: a.fecha,
+        fecha: a.fecha!,
         horaInicio: a.horaInicio,
         horaFin: sumarMinutos(a.horaInicio, a.duracionMin),
         duracionMin: a.duracionMin,
@@ -669,10 +699,15 @@ export class ConsultaItinerarioEnMemoria implements ConsultaItinerario {
   async actividadesConfirmadas(viajeId: string): Promise<ActividadDelItinerario[]> {
     return this.base.propuestas
       .filter(tieneActividad)
-      .filter((p) => p.datos.viajeId === viajeId && p.datos.estado === 'CONFIRMADA')
+      .filter(
+        (p) =>
+          p.datos.viajeId === viajeId &&
+          p.datos.estado === 'CONFIRMADA' &&
+          p.actividad?.fecha !== null,
+      )
       .sort(
         (a, b) =>
-          a.actividad.fecha.localeCompare(b.actividad.fecha) ||
+          (a.actividad.fecha ?? '9999').localeCompare(b.actividad.fecha ?? '9999') ||
           a.actividad.horaInicio.localeCompare(b.actividad.horaInicio) ||
           a.actividad.titulo.localeCompare(b.actividad.titulo),
       )
@@ -680,7 +715,7 @@ export class ConsultaItinerarioEnMemoria implements ConsultaItinerario {
         id: datos.id,
         titulo: a.titulo,
         descripcion: datos.descripcion,
-        fecha: a.fecha,
+        fecha: a.fecha!,
         horaInicio: a.horaInicio,
         horaFin: sumarMinutos(a.horaInicio, a.duracionMin),
         duracionMin: a.duracionMin,
@@ -694,7 +729,7 @@ export class ConsultaItinerarioEnMemoria implements ConsultaItinerario {
     return this.base.propuestas
       .filter((p) => p.datos.viajeId === viajeId && p.datos.estado === 'CONFIRMADA')
       .flatMap((p) =>
-        p.alojamiento
+        p.alojamiento && p.alojamiento.fechaDesde && p.alojamiento.fechaHasta
           ? [
               {
                 id: p.datos.id,

@@ -6,6 +6,7 @@ import {
   moverDia,
   moverRango,
   planCorriendoSemanas,
+  planDiasQueQuedan,
   planSinCambios,
   quedanAfuera,
   sumarDias,
@@ -20,6 +21,21 @@ const nada: OcupacionDelViaje = [];
 const delDia = (dia: string) => ({ desde: dia, hasta: dia });
 const conActividades = (...dias: string[]): OcupacionDelViaje => dias.map(delDia);
 const diaDeLaSemana = (dia: string) => new Date(`${dia}T00:00:00Z`).getUTCDay();
+
+describe('RN-V5: elección manual de días', () => {
+  it('valida los destinos efectivos y conserva la elección explícita Sin día', () => {
+    expect(planDiasQueQuedan(viaje, viaje, { '2026-12-11': '2026-12-12' })).toBeNull();
+    expect(
+      planDiasQueQuedan(viaje, viaje, { '2026-12-11': '2026-12-12', '2026-12-12': null }),
+    ).toEqual({ '2026-12-11': '2026-12-12', '2026-12-12': null });
+    expect(moverDia({ '2026-12-11': null }, '2026-12-11')).toBeNull();
+    expect(
+      moverRango({ '2026-12-11': null }, { desde: '2026-12-11', hasta: '2026-12-13' }),
+    ).toBeNull();
+    expect(planDiasQueQuedan(viaje, viaje, { '2026-12-09': null })).toBeNull();
+    expect(planDiasQueQuedan(viaje, viaje, { '2026-12-11': '2026-12-20' })).toBeNull();
+  });
+});
 
 describe('Días', () => {
   it('suma y cuenta días cruzando de mes, de año y el 29 de febrero', () => {
@@ -219,11 +235,13 @@ describe('RN-V2 y RN-V3: elección del plan automático', () => {
       for (const dia of actividades) {
         const movido = moverDia(elegido!.plan, dia);
         expect(movido).toBe(sumarDias(dia, esperado));
-        expect(diaDeLaSemana(movido)).toBe(diaDeLaSemana(dia));
+        expect(diaDeLaSemana(movido!)).toBe(diaDeLaSemana(dia));
       }
       for (const estadia of alojamientos) {
         const movida = moverRango(elegido!.plan, estadia);
-        expect(diasEntre(movida.desde, movida.hasta)).toBe(diasEntre(estadia.desde, estadia.hasta));
+        expect(diasEntre(movida!.desde, movida!.hasta)).toBe(
+          diasEntre(estadia.desde, estadia.hasta),
+        );
       }
     }
   });

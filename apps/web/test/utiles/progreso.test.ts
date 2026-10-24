@@ -48,6 +48,33 @@ describe('colorDelProgreso', () => {
 });
 
 describe('calcularProgreso', () => {
+  it('RN-V6: lo confirmado sin día no cubre noches ni permite llegar a Todo listo', () => {
+    const sinDia = alojamiento('2026-12-10', '2026-12-13');
+    sinDia.alojamiento = {
+      nombre: 'Hostel sin día',
+      fechaDesde: null,
+      fechaHasta: null,
+      noches: 3,
+    };
+    const confirmadas = ['2026-12-10', '2026-12-11', '2026-12-12', '2026-12-13'].map((fecha, i) =>
+      actividad(String(i), 'Kayak', { fecha, estado: 'CONFIRMADA' }),
+    );
+    const p = calcularProgreso({
+      hoy: ANTES,
+      viaje,
+      alojamientos: [alojamiento('2026-12-10', '2026-12-13'), sinDia],
+      actividades: confirmadas,
+    });
+    expect(p.porcentaje).toBeLessThan(100);
+    expect(p.hitos.find((h) => h.clave === 'resueltas')!.hecho).toBe(false);
+    const soloSinDia = calcularProgreso({
+      hoy: ANTES,
+      viaje,
+      alojamientos: [sinDia],
+      actividades: [],
+    });
+    expect(soloSinDia.nochesLibres).toHaveLength(3);
+  });
   it('un viaje recién creado arranca bajo: sin propuestas no hay votos ni decisiones cumplidas', () => {
     const p = calcularProgreso({
       hoy: ANTES,

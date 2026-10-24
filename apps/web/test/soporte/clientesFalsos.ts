@@ -10,6 +10,7 @@ import {
   type Participante,
   type Usuario,
 } from '@viajes/compartido';
+import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../../src/clientes/propuestas';
 import { CLIENTE_AUTH, type ClienteAuth } from '../../src/clientes/auth';
 import { CLIENTE_VIAJES, type ClienteViajes } from '../../src/clientes/viajes';
 import { ErrorDeApi } from '../../src/clientes/http';
@@ -85,6 +86,7 @@ export function montaje(
   const pinia = createPinia();
   setActivePinia(pinia);
   const provide: Record<symbol, unknown> = {
+    [CLIENTE_PROPUESTAS as symbol]: clientePropuestasFalso(),
     [CLIENTE_AUTH as symbol]: auth,
     [CLIENTE_VIAJES as symbol]: viajes,
     ...otros,
@@ -198,6 +200,24 @@ export function clienteGastosFalso(parcial: Partial<ClienteGastos> = {}): Client
     deudas: async () => [],
     pagar: noImplementado,
     pagos: async () => [],
+    ...parcial,
+  };
+}
+
+export function clientePropuestasFalso(
+  parcial: Partial<ClientePropuestas> = {},
+): ClientePropuestas {
+  return {
+    listarAlojamientos: async () => [],
+    listarActividades: async () => [],
+    obtenerActividad: noImplementado,
+    proponerActividad: noImplementado,
+    proponerAlternativa: noImplementado,
+    proponerAlojamiento: noImplementado,
+    ubicar: noImplementado,
+    votar: noImplementado,
+    desvotar: noImplementado,
+    resolver: noImplementado,
     ...parcial,
   };
 }

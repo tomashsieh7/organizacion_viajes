@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { inject, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import type {
   AccionSobrePropuesta,
   ActividadVista,
@@ -26,8 +26,22 @@ export const usePropuestasStore = defineStore('propuestas', () => {
   const alojamientos = ref<AlojamientoVista[]>([]);
   const actividades = ref<ActividadVista[]>([]);
 
+  const sinDia = computed(() =>
+    [...alojamientos.value, ...actividades.value].filter(
+      (p) =>
+        (p.estado === 'PENDIENTE' || p.estado === 'CONFIRMADA') &&
+        (p.tipo === 'ACTIVIDAD' ? p.actividad.fecha === null : p.alojamiento.fechaDesde === null),
+    ),
+  );
+  async function ubicar(p: ActividadVista | AlojamientoVista, fecha: string) {
+    await cliente!.ubicar(viajeId(), p.id, p.tipo, fecha);
+    await cargarTodo();
+  }
+
   async function cargarAlojamientos() {
-    alojamientos.value = await cliente!.listarAlojamientos(viajeId());
+    const id = viajeId();
+    const lista = await cliente!.listarAlojamientos(id);
+    if (viaje.actual?.id === id) alojamientos.value = lista;
   }
 
   async function proponerAlojamiento(datos: DatosAlojamientoNuevo) {
@@ -37,7 +51,9 @@ export const usePropuestasStore = defineStore('propuestas', () => {
   }
 
   async function cargarActividades() {
-    actividades.value = await cliente!.listarActividades(viajeId());
+    const id = viajeId();
+    const lista = await cliente!.listarActividades(id);
+    if (viaje.actual?.id === id) actividades.value = lista;
   }
 
   /** Para el Resumen: todos los alojamientos y actividades. */
@@ -92,7 +108,15 @@ export const usePropuestasStore = defineStore('propuestas', () => {
     if (afectadas.length > 0 && propuesta.tipo === 'ACTIVIDAD') await cargarActividades();
   }
 
+  function limpiar() {
+    alojamientos.value = [];
+    actividades.value = [];
+  }
+
   return {
+    limpiar,
+    sinDia,
+    ubicar,
     alojamientos,
     actividades,
     cargarAlojamientos,

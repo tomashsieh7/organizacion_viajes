@@ -23,6 +23,8 @@ import { ConsultarViajes } from './modulos/viajes/casos-de-uso/consultarViajes.j
 import { CrearViaje } from './modulos/viajes/casos-de-uso/crearViaje.js';
 import { EliminarParticipante } from './modulos/viajes/casos-de-uso/eliminarParticipante.js';
 import { SalirDelViaje } from './modulos/viajes/casos-de-uso/salirDelViaje.js';
+import { UbicarPropuesta } from './modulos/viajes/casos-de-uso/ubicarPropuesta.js';
+import { ReglaFechaAlConfirmar } from './modulos/viajes/casos-de-uso/reglaFechaAlConfirmar.js';
 import { ModificarDatosDelViaje } from './modulos/viajes/casos-de-uso/modificarDatosDelViaje.js';
 import { TransferirAdministracion } from './modulos/viajes/casos-de-uso/transferirAdministracion.js';
 import type { DependenciasViajes } from './modulos/viajes/casos-de-uso/dependencias.js';
@@ -117,6 +119,7 @@ export interface Contenedor {
     salirDelViaje: SalirDelViaje;
     transferirAdministracion: TransferirAdministracion;
     modificarDatos: ModificarDatosDelViaje;
+    ubicar: UbicarPropuesta;
     consultar: ConsultarViajes;
     consultas: ConsultaViajes;
     consultarAcceso: ConsultarAcceso;
@@ -216,13 +219,18 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       return {
         propuestas: new PropuestasConAgendaBloqueadaPrimero(propuestas, actividades),
         actividades,
+        agenda: new AgendaDelViajePrisma(tx),
         // Resolver modifica la agenda: el viaje se toma con FOR UPDATE desde el principio, como
         // en las bajas y los traspasos, para no subir después un bloqueo compartido.
         viajes: { obtener: (viajeId) => viajes.obtenerParaModificar(viajeId) },
       };
     },
   );
-  const reglasDeResolucion = [new ReglaSuperposicionAlConfirmar(), new ReglaOpcionesAlConfirmar()];
+  const reglasDeResolucion = [
+    new ReglaFechaAlConfirmar(),
+    new ReglaSuperposicionAlConfirmar(),
+    new ReglaOpcionesAlConfirmar(),
+  ];
 
   // Itinerario
   const consultaItinerario = new ConsultaItinerarioPrisma(prisma);
@@ -260,13 +268,14 @@ export function crearContenedor(config: Config, opciones: OpcionesContenedor = {
       salirDelViaje: new SalirDelViaje(depsViajes),
       transferirAdministracion: new TransferirAdministracion(depsViajes),
       modificarDatos: new ModificarDatosDelViaje(depsViajes),
+      ubicar: new UbicarPropuesta(depsViajes),
       consultar: new ConsultarViajes(consultasViajes, new ConsultaDeudasPrisma(prisma)),
       consultas: consultasViajes,
       consultarAcceso: new ConsultarAcceso(viajesSinBloqueo, saldosPendientes),
     },
     propuestas: {
       votar: new Votar(unidadPropuestas, consultasPropuestas, reloj),
-      resolver: new ResolverPropuesta(
+      resolver: new ResolverPropuesta<ReposResolucionConActividades>(
         unidadResolucion,
         consultasPropuestas,
         reloj,

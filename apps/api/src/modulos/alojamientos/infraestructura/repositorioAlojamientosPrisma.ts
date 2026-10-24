@@ -1,3 +1,4 @@
+import { diasEntre } from '@viajes/compartido';
 import { deFecha } from '../../../comun/infraestructura/conversiones.js';
 import {
   esViolacionDeUnicidad,
@@ -19,8 +20,11 @@ export class RepositorioAlojamientosPrisma implements RepositorioAlojamientos {
           alojamiento: {
             create: {
               nombre: detalle.nombre,
-              fechaDesde: deFecha(detalle.estadia.desde),
-              fechaHasta: deFecha(detalle.estadia.hasta),
+              fechaDesde: detalle.estadia ? deFecha(detalle.estadia.desde) : null,
+              fechaHasta: detalle.estadia ? deFecha(detalle.estadia.hasta) : null,
+              noches: detalle.estadia
+                ? diasEntre(detalle.estadia.desde, detalle.estadia.hasta)
+                : (detalle.noches ?? 0),
             },
           },
         },

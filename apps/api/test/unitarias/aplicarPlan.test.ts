@@ -48,6 +48,44 @@ const alojamiento = (nombre: string, desde: string, hasta: string) =>
   );
 
 describe('RN-V2 y RN-V3: aplicar el plan de reacomodo', () => {
+  it('RN-V6 y RN-V8: mantiene noches, votos y estado al quitar y devolver fechas', () => {
+    const hostel = alojamiento('Hostel', '2026-12-10', '2026-12-13');
+    hostel.propuesta.votar('tomas', 'A_FAVOR', AHORA);
+    hostel.propuesta.resolver('confirmar', 'ana', AHORA);
+    const datos = hostel.propuesta.aDatos();
+    aplicarPlan(
+      { '2026-12-10': null },
+      [hostel],
+      RangoFechas.crear('2026-12-10', '2026-12-12'),
+      true,
+      AHORA,
+    );
+    expect(hostel.dias).toBeNull();
+    expect(hostel.noches).toBe(3);
+    hostel.ubicar('2026-12-20', AHORA);
+    expect(hostel.dias).toEqual(RangoFechas.crear('2026-12-20', '2026-12-23'));
+    expect(hostel.propuesta.aDatos()).toEqual(datos);
+    expect(hostel.fechaCambiadaEn).toEqual(AHORA);
+  });
+
+  it('RN-V5: compara 1000 planes con un modelo independiente, sin recortar estadías', () => {
+    let semilla = 47;
+    const azar = (n: number) => (semilla = (semilla * 48271) % 2147483647) % n;
+    const dia = (n: number) => `2026-12-${String(n).padStart(2, '0')}`;
+    for (let i = 0; i < 1000; i++) {
+      const entrada = 10 + azar(6),
+        noches = azar(5),
+        largo = 1 + azar(9);
+      const destino = azar(3) === 0 ? null : 10 + azar(largo);
+      const hostel = alojamiento('Hostel', dia(entrada), dia(entrada + noches));
+      const plan = { [dia(entrada)]: destino === null ? null : dia(destino) };
+      const debeEntrar = destino !== null && destino + noches <= 10 + largo;
+      aplicarPlan(plan, [hostel], RangoFechas.crear(dia(10), dia(10 + largo)), true, AHORA);
+      expect(hostel.dias?.desde ?? null).toBe(debeEntrar ? dia(destino!) : null);
+      expect(hostel.dias?.hasta ?? null).toBe(debeEntrar ? dia(destino! + noches) : null);
+      expect(hostel.noches).toBe(noches);
+    }
+  });
   it('RN-V2: cada propuesta se mueve a su manera y conserva votos y estado', () => {
     const kayak = actividad('Kayak', '2026-12-11');
     kayak.propuesta.votar('tomas', 'A_FAVOR', AHORA);

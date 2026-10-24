@@ -12,6 +12,7 @@ const props = defineProps<{
   titulo: string;
   /** Mientras se espera la respuesta de un voto o una resolución, los botones no responden. */
   ocupada?: boolean;
+  sinDia?: boolean;
 }>();
 const emit = defineEmits<{
   votar: [valor: ValorVoto];
@@ -47,7 +48,7 @@ const accionesAdmin = computed<{ accion: AccionSobrePropuesta; texto: string }[]
   if (props.propuesta.estado === 'PENDIENTE') {
     return [
       { accion: 'denegar', texto: 'Denegar' },
-      { accion: 'confirmar', texto: 'Confirmar' },
+      ...(!props.sinDia ? [{ accion: 'confirmar' as const, texto: 'Confirmar' }] : []),
     ];
   }
   return props.propuesta.estado === 'CONFIRMADA' ? [{ accion: 'cancelar', texto: 'Cancelar' }] : [];
@@ -84,6 +85,13 @@ function confirmarAccion() {
         {{ NOMBRES_ESTADO[propuesta.estado] }}
       </span>
     </header>
+    <p
+      v-if="propuesta.fechaCambiadaEn"
+      class="texto-secundario"
+      :title="new Date(propuesta.fechaCambiadaEn).toLocaleString('es-AR')"
+    >
+      Fecha cambiada
+    </p>
     <slot />
     <!-- La descripción es opcional (RN-X8): sin ella no queda un renglón vacío. -->
     <p
@@ -134,7 +142,7 @@ function confirmarAccion() {
           contra</span
         >
       </div>
-      <div v-if="accionesAdmin.length" class="admin">
+      <div v-if="accionesAdmin.length || $slots.acciones" class="admin">
         <button
           v-for="a in accionesAdmin"
           :key="a.accion"
@@ -146,6 +154,7 @@ function confirmarAccion() {
         >
           {{ a.texto }}
         </button>
+        <slot name="acciones" />
       </div>
     </footer>
     <DialogoModal

@@ -2,6 +2,7 @@ import { Router, type RequestHandler } from 'express';
 import {
   esquemaAgregarViajero,
   esquemaDatosViaje,
+  esquemaUbicarPropuesta,
   esquemaSalirDelViaje,
   esquemaTraspaso,
   esquemaViajeNuevo,
@@ -15,6 +16,7 @@ import type { AgregarViajero } from './casos-de-uso/agregarViajero.js';
 import type { ConsultarViajes } from './casos-de-uso/consultarViajes.js';
 import type { CrearViaje } from './casos-de-uso/crearViaje.js';
 import type { EliminarParticipante } from './casos-de-uso/eliminarParticipante.js';
+import type { UbicarPropuesta } from './casos-de-uso/ubicarPropuesta.js';
 import type { ModificarDatosDelViaje } from './casos-de-uso/modificarDatosDelViaje.js';
 import type { SalirDelViaje } from './casos-de-uso/salirDelViaje.js';
 import type { TransferirAdministracion } from './casos-de-uso/transferirAdministracion.js';
@@ -26,6 +28,7 @@ export interface DependenciasRutasViajes {
   salirDelViaje: SalirDelViaje;
   transferirAdministracion: TransferirAdministracion;
   modificarDatos: ModificarDatosDelViaje;
+  ubicar: UbicarPropuesta;
   consultar: ConsultarViajes;
   autenticado: RequestHandler;
 }
@@ -83,6 +86,28 @@ export function rutasDelViaje(deps: Omit<DependenciasRutasViajes, 'autenticado'>
     };
     res.json(cuerpo);
   });
+
+  for (const [ruta, tipo] of [
+    ['actividades/:propuestaId/fecha', 'ACTIVIDAD'],
+    ['alojamientos/:propuestaId/fechas', 'ALOJAMIENTO'],
+  ] as const) {
+    viaje.patch(
+      `/${ruta}`,
+      soloAdmin,
+      parametroUuid('propuestaId'),
+      validar(esquemaUbicarPropuesta),
+      async (req, res) => {
+        await deps.ubicar.ejecutar(
+          viajeId(req),
+          usuario(req),
+          String(req.params['propuestaId']),
+          tipo,
+          req.body.fecha,
+        );
+        res.status(204).end();
+      },
+    );
+  }
 
   viaje.get('/participantes', async (req, res) => {
     res.json({ participantes: await deps.consultar.participantes(viajeId(req)) });

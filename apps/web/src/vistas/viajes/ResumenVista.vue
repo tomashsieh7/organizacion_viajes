@@ -75,8 +75,15 @@ const pasos = computed<Paso[]>(() => {
     ruta: ruta('saldos'),
     accion: 'Ver saldos',
   };
-  if (terminado.value) return deudas ? [deudas] : [];
+  if (terminado.value && !propuestas.sinDia.length) return deudas ? [deudas] : [];
   const todos: (Paso | false)[] = [
+    propuestas.sinDia.length > 0 && {
+      icono: 'bandeja',
+      titulo: `${propuestas.sinDia.length} ${propuestas.sinDia.length === 1 ? 'propuesta' : 'propuestas'} sin día`,
+      detalle: viaje.soyAdmin ? 'Ubicalas en las fechas del viaje' : 'El Admin puede ubicarlas',
+      ruta: ruta('sin-dia'),
+      accion: viaje.soyAdmin ? 'Ubicar' : 'Ver',
+    },
     v.cantidadParticipantes < 2 &&
       viaje.soyAdmin && {
         icono: 'personas',

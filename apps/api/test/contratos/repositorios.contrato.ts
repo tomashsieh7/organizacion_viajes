@@ -499,8 +499,41 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
     const AHORA = new Date('2026-09-24T12:00:00.000Z');
     const resumen = async (viajeId: string) =>
       (await r.agenda.propuestas(viajeId))
-        .map((p) => [p.titulo, p.propuesta.tipo, p.dias.desde, p.dias.hasta])
+        .map((p) => [p.titulo, p.propuesta.tipo, p.dias!.desde, p.dias!.hasta])
         .sort();
+
+    it('CU28 y RN-V6: conserva las noches al guardar, reconstruir y ubicar Sin día', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const propuesta = Propuesta.proponer({
+        id: crypto.randomUUID(),
+        viajeId: viaje,
+        autorId: ana,
+        tipo: 'ALOJAMIENTO',
+        descripcion: '',
+        ubicacion: 'Centro',
+        coordenadas: null,
+        ahora: AHORA,
+      });
+      await r.alojamientos.crear(propuesta, {
+        nombre: 'Hostel',
+        estadia: RangoFechas.crear('2026-12-10', '2026-12-13'),
+      });
+      const p = (await r.agenda.propuestas(viaje))[0]!;
+      p.ubicar(null, AHORA);
+      await r.agenda.guardar([p]);
+      const sinDia = (await r.agenda.propuestas(viaje))[0]!;
+      expect(sinDia.dias).toBeNull();
+      expect((await r.consultaAlojamientos.listar(viaje, ana))[0]).toMatchObject({
+        alojamiento: { fechaDesde: null, fechaHasta: null, noches: 3 },
+        fechaCambiadaEn: AHORA.toISOString(),
+      });
+      sinDia.ubicar('2026-12-11', AHORA);
+      await r.agenda.guardar([sinDia]);
+      expect((await r.agenda.propuestas(viaje))[0]!.dias).toEqual(
+        RangoFechas.crear('2026-12-11', '2026-12-14'),
+      );
+    });
 
     it('CU27: carga las actividades y los alojamientos del viaje y guarda solo el día nuevo', async () => {
       const ana = await e.usuario('Ana');
@@ -564,6 +597,7 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       expect((await r.actividades.obtenerParaModificar(viaje, kayak.id))!.detalle).toEqual({
         ...kayak.detalle,
         fecha: '2026-12-18',
+        fechaCambiadaEn: expect.any(Date),
       });
     });
   });

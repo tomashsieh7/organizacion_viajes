@@ -1,4 +1,5 @@
-import { elegirPlan, type DatosViaje, type Reacomodo } from '@viajes/compartido';
+import { planDiasQueQuedan, elegirPlan, type DatosViaje, type Reacomodo } from '@viajes/compartido';
+import { ErrorDeDominio } from '../../../comun/errores.js';
 import { aplicarPlan } from '../dominio/reacomodo.js';
 import type { DependenciasViajes } from './dependencias.js';
 import { modificarViaje } from './modificarViaje.js';
@@ -14,6 +15,15 @@ export class ModificarDatosDelViaje {
   async ejecutar(viajeId: string, solicitanteId: string, datos: DatosViaje): Promise<Reacomodo> {
     return modificarViaje(this.deps, viajeId, async (viaje, repos) => {
       const antes = viaje.rango;
+      if (
+        datos.eleccion &&
+        (datos.eleccion.antes.desde !== antes.desde || datos.eleccion.antes.hasta !== antes.hasta)
+      )
+        throw new ErrorDeDominio(
+          'CONFLICTO',
+          'VIAJE_MODIFICADO',
+          'Las fechas cambiaron. Volvé a abrir los datos del viaje',
+        );
       viaje.modificarDatos(solicitanteId, datos);
       const despues = viaje.rango;
       if (antes.desde === despues.desde && antes.hasta === despues.hasta) {
@@ -24,12 +34,31 @@ export class ModificarDatosDelViaje {
       const elegido = elegirPlan(
         antes,
         despues,
-        enJuego.map((p) => p.dias),
+        enJuego.flatMap((p) => (p.dias ? [p.dias] : [])),
       );
       // RN-V3: sin plan automático, no mover nada deja algo afuera y aplicarPlan lo informa.
-      const movidas = aplicarPlan(elegido?.plan ?? {}, propuestas, despues);
+      const manual = datos.eleccion
+        ? planDiasQueQuedan(antes, despues, datos.eleccion.dias)
+        : undefined;
+      if (datos.eleccion && !manual)
+        throw new ErrorDeDominio(
+          'VALIDACION',
+          'PLAN_INVALIDO',
+          'Revisá los días elegidos: no pueden repetirse ni quedar fuera del viaje',
+        );
+      const movidas = aplicarPlan(
+        manual ?? elegido?.plan ?? {},
+        propuestas,
+        despues,
+        !!manual,
+        this.deps.reloj.ahora(),
+      );
       await repos.agenda.guardar(movidas);
-      return { semanas: elegido?.semanas ?? 0, movidas: movidas.length };
+      return {
+        semanas: manual ? 0 : (elegido?.semanas ?? 0),
+        movidas: movidas.length,
+        ...(manual ? { sinDia: enJuego.filter((p) => p.dias === null).length } : {}),
+      };
     });
   }
 }

@@ -39,10 +39,15 @@ export class AgendaDelViajePrisma implements AgendaDelViaje {
         return [
           Alojamiento.reconstruir(propuesta, {
             nombre: p.alojamiento.nombre,
-            estadia: RangoFechas.crear(
-              aFecha(p.alojamiento.fechaDesde),
-              aFecha(p.alojamiento.fechaHasta),
-            ),
+            noches: p.alojamiento.noches,
+            fechaCambiadaEn: p.alojamiento.fechaCambiadaEn,
+            estadia:
+              p.alojamiento.fechaDesde && p.alojamiento.fechaHasta
+                ? RangoFechas.crear(
+                    aFecha(p.alojamiento.fechaDesde),
+                    aFecha(p.alojamiento.fechaHasta),
+                  )
+                : null,
           }),
         ];
       }
@@ -55,12 +60,20 @@ export class AgendaDelViajePrisma implements AgendaDelViaje {
       if (p instanceof Actividad) {
         await this.db.actividad.update({
           where: { propuestaId: p.id },
-          data: { fecha: deFecha(p.dias.desde) },
+          data: {
+            fecha: p.dias ? deFecha(p.dias.desde) : null,
+            fechaCambiadaEn: p.detalle.fechaCambiadaEn ?? null,
+          },
         });
-      } else {
+      } else if (p instanceof Alojamiento) {
         await this.db.alojamiento.update({
           where: { propuestaId: p.id },
-          data: { fechaDesde: deFecha(p.dias.desde), fechaHasta: deFecha(p.dias.hasta) },
+          data: {
+            fechaDesde: p.dias ? deFecha(p.dias.desde) : null,
+            fechaHasta: p.dias ? deFecha(p.dias.hasta) : null,
+            noches: p.noches,
+            fechaCambiadaEn: p.fechaCambiadaEn,
+          },
         });
       }
     }

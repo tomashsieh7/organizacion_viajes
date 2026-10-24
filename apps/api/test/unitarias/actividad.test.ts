@@ -50,6 +50,7 @@ describe('Actividad', () => {
       horaInicio: '10:00',
       duracionMin: 120,
       alternativaDeId: null,
+      fechaCambiadaEn: null,
     });
     expect(kayak.grupo).toBe(kayak.id);
     expect(kayak.intervalo).toEqual(Intervalo.deActividad('2026-12-11', '10:00', 120));

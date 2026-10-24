@@ -21,6 +21,7 @@ import {
   ConsultaPropuestasEnMemoria,
   propuestaDePrueba,
   RepositorioActividadesEnMemoria,
+  AgendaDelViajeEnMemoria,
   RepositorioPropuestasEnMemoria,
   type BaseEnMemoria,
   RepositorioViajesEnMemoria,
@@ -71,6 +72,7 @@ beforeEach(() => {
   unidad = new UnidadDeTrabajoEnMemoria(base, (e) => ({
     propuestas: new RepositorioPropuestasEnMemoria(e),
     actividades: new RepositorioActividadesEnMemoria(e),
+    agenda: new AgendaDelViajeEnMemoria(e),
     viajes: new RepositorioViajesEnMemoria(e),
     fechas: new ConsultaFechasDeViajeEnMemoria(e),
   }));

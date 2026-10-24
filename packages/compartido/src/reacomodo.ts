@@ -12,10 +12,14 @@ export interface RangoDeDias {
 }
 
 /** Día viejo → día nuevo. Un día que no figura queda como estaba. */
-export type PlanDeReacomodo = Readonly<Record<string, string>>;
+export type PlanDeReacomodo = Readonly<Record<string, string | null>>;
 
 /** Arma un plan para pasar de unas fechas del viaje a otras, o `null` si no corresponde. */
-export type ArmadorDePlan = (antes: RangoDeDias, despues: RangoDeDias) => PlanDeReacomodo | null;
+export type ArmadorDePlan = (
+  antes: RangoDeDias,
+  despues: RangoDeDias,
+  eleccion?: PlanDeReacomodo,
+) => PlanDeReacomodo | null;
 
 /**
  * Lo que el plan tiene que dejar dentro del viaje: cada actividad es un rango de un solo día y
@@ -60,14 +64,16 @@ export const planCorriendoSemanas: ArmadorDePlan = (antes, despues) => {
   return plan;
 };
 
-export function moverDia(plan: PlanDeReacomodo, dia: string): string {
-  return plan[dia] ?? dia;
+export function moverDia(plan: PlanDeReacomodo, dia: string): string | null {
+  return Object.hasOwn(plan, dia) ? plan[dia]! : dia;
 }
 
 /** Un rango se mueve por su primer día y conserva el largo: un alojamiento, sus noches. */
-export function moverRango(plan: PlanDeReacomodo, rango: RangoDeDias): RangoDeDias {
+export function moverRango(plan: PlanDeReacomodo, rango: RangoDeDias): RangoDeDias | null {
   const desde = moverDia(plan, rango.desde);
-  return { desde, hasta: sumarDias(desde, diasEntre(rango.desde, rango.hasta)) };
+  return desde === null
+    ? null
+    : { desde, hasta: sumarDias(desde, diasEntre(rango.desde, rango.hasta)) };
 }
 
 /** Lo que queda afuera de las fechas nuevas si se aplica el plan. */
@@ -78,7 +84,7 @@ export function quedanAfuera<T extends RangoDeDias>(
 ): T[] {
   return ocupacion.filter((rango) => {
     const movido = moverRango(plan, rango);
-    return !contiene(despues, movido.desde) || !contiene(despues, movido.hasta);
+    return movido === null || !contiene(despues, movido.desde) || !contiene(despues, movido.hasta);
   });
 }
 
@@ -105,3 +111,22 @@ export function elegirPlan(
   }
   return null;
 }
+
+/** RN-V5: valida los destinos efectivos, incluidos los días omitidos que conservan su fecha. */
+export const planDiasQueQuedan: ArmadorDePlan = (antes, despues, eleccion) => {
+  if (!eleccion || Object.keys(eleccion).length > 367) return null;
+  if (Object.keys(eleccion).some((d) => !contiene(antes, d))) return null;
+  const destinos = new Set<string>();
+  for (let dia = antes.desde; dia <= antes.hasta; dia = sumarDias(dia, 1)) {
+    const destino = moverDia(eleccion, dia);
+    if (destino === null) continue;
+    if (!contiene(despues, destino)) {
+      // Un día omitido que queda fuera se aparta; un destino explícito inválido se rechaza.
+      if (Object.hasOwn(eleccion, dia)) return null;
+      continue;
+    }
+    if (destinos.has(destino)) return null;
+    destinos.add(destino);
+  }
+  return { ...eleccion };
+};
