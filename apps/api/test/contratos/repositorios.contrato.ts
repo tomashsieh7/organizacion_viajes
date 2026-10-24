@@ -201,6 +201,32 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       ]);
     });
 
+    it('contador: resumen coherente entre lista y detalle, sin filtrar planificación a SOLO_SALDOS', async () => {
+      const ana = await e.usuario('Ana');
+      const tomas = await e.usuario('Tomás');
+      const ajeno = await e.usuario('Ajeno');
+      const viaje = await e.viaje(ana);
+      const otro = await e.viaje(ana);
+      await e.miembro(viaje, tomas, 'ELIMINADA');
+      await e.deuda(viaje, tomas, ana, 100);
+      await e.voto(viaje, ana, true);
+      await e.voto(otro, ana, true);
+      await e.voto(otro, ana, true);
+      const resumen = { nochesSinAlojamiento: 6, propuestasPendientes: 1, propuestasSinDia: 0 };
+      expect((await r.consultas.obtenerDetalle(viaje, ana))?.planificacion).toEqual(resumen);
+      expect(
+        (await r.consultas.listarDeUsuario(ana)).find((v) => v.id === viaje)?.planificacion,
+      ).toEqual(resumen);
+      expect(
+        (await r.consultas.listarDeUsuario(ana)).find((v) => v.id === otro)?.planificacion
+          ?.propuestasPendientes,
+      ).toBe(2);
+      expect((await r.consultas.obtenerDetalle(viaje, tomas))?.planificacion).toBeNull();
+      expect((await r.consultas.listarDeUsuario(tomas))[0]?.planificacion).toBeNull();
+      expect(await r.consultas.obtenerDetalle(viaje, ajeno)).toBeNull();
+      expect(await r.consultas.listarDeUsuario(ajeno)).toEqual([]);
+    });
+
     it('lista participantes activos con nombre, Admin primero', async () => {
       const ana = await e.usuario('Zoe');
       const tomas = await e.usuario('Beto');
@@ -293,6 +319,32 @@ export function probarContratosDeRepositorios(impl: Implementacion) {
       expect(final.estado).toBe('CONFIRMADA');
       expect(final.resueltaPorId).toBe(ana);
       expect(final.votos).toEqual([{ usuarioId: ana, valor: 'EN_CONTRA', emitidoEn: AHORA }]);
+    });
+
+    it('contador: cobertura confirmada y Sin día se reflejan tras cambiar la agenda', async () => {
+      const ana = await e.usuario('Ana');
+      const viaje = await e.viaje(ana);
+      const h = alojamiento(viaje, ana, 'Completo', '2026-12-10', '2026-12-16');
+      await h.crear();
+      expect((await r.consultas.obtenerDetalle(viaje, ana))?.planificacion).toMatchObject({
+        nochesSinAlojamiento: 6,
+        propuestasPendientes: 1,
+      });
+      h.p.resolver('confirmar', ana, AHORA);
+      await r.propuestas.guardar(h.p);
+      expect((await r.consultas.obtenerDetalle(viaje, ana))?.planificacion).toEqual({
+        nochesSinAlojamiento: 0,
+        propuestasPendientes: 0,
+        propuestasSinDia: 0,
+      });
+      const agenda = await r.agenda.propuestas(viaje);
+      agenda[0]!.ubicar(null, AHORA);
+      await r.agenda.guardar(agenda);
+      expect((await r.consultas.obtenerDetalle(viaje, ana))?.planificacion).toEqual({
+        nochesSinAlojamiento: 6,
+        propuestasPendientes: 0,
+        propuestasSinDia: 1,
+      });
     });
 
     it('lista alojamientos por fecha de entrada, con conteo, voto propio y filtro por estado', async () => {

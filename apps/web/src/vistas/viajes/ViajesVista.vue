@@ -10,7 +10,7 @@ import { useCarga } from '../../composables/useCarga';
 import { useViajeStore } from '../../stores/viajes';
 import { hoyDelDispositivo } from '../../utiles/fechas';
 import { formatearRango } from '../../utiles/formato';
-import { cuentaRegresiva } from '../../utiles/progreso';
+import ContadorViaje from '../../componentes/viajes/ContadorViaje.vue';
 
 const store = useViajeStore();
 const router = useRouter();
@@ -75,10 +75,12 @@ function alCrear(viajeId: string) {
             ><IconoLinea nombre="calendario" :tamano="16" />
             {{ formatearRango(v.fechaInicio, v.fechaFin) }}</span
           >
-          <span class="tarjeta__cuenta"
-            ><IconoLinea nombre="reloj" :tamano="16" />
-            {{ cuentaRegresiva(v.fechaInicio, v.fechaFin, hoy).texto }}</span
-          >
+          <ContadorViaje
+            :inicio="v.fechaInicio"
+            :fin="v.fechaFin"
+            :hoy="hoy"
+            :planificacion="v.miAcceso === 'SOLO_SALDOS' ? null : v.planificacion"
+          />
         </RouterLink>
       </li>
     </ul>
@@ -111,11 +113,6 @@ function alCrear(viajeId: string) {
 }
 .tarjeta a {
   border-top: 4px solid var(--color-destacado);
-}
-.tarjeta__cuenta {
-  margin-top: var(--esp-1);
-  font-weight: 700;
-  color: var(--color-acento);
 }
 .tarjeta__titulo {
   display: flex;

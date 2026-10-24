@@ -32,6 +32,12 @@ export interface Moneda {
   decimales: number;
 }
 
+export interface ResumenPlanificacion {
+  nochesSinAlojamiento: number;
+  propuestasPendientes: number;
+  propuestasSinDia: number;
+}
+
 export interface ResumenViaje {
   id: string;
   nombre: string;
@@ -42,6 +48,8 @@ export interface ResumenViaje {
   miRol: Rol;
   /** RN-E6: con `SOLO_SALDOS` solo se puede entrar a la sección de saldos. */
   miAcceso: TipoAcceso;
+  /** Resumen de organización; null para acceso solo a saldos. */
+  planificacion: ResumenPlanificacion | null;
 }
 
 export interface DetalleViaje extends Omit<ResumenViaje, 'monedaCodigo'> {

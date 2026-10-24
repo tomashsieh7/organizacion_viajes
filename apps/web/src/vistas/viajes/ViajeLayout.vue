@@ -7,9 +7,8 @@ import { useCarga } from '../../composables/useCarga';
 import { useChatStore } from '../../stores/chat';
 import { usePropuestasStore } from '../../stores/propuestas';
 import { useViajeStore } from '../../stores/viajes';
-import { hoyDelDispositivo } from '../../utiles/fechas';
 import { formatearRango } from '../../utiles/formato';
-import { cuentaRegresiva } from '../../utiles/progreso';
+import ContadorViaje from '../../componentes/viajes/ContadorViaje.vue';
 
 const store = useViajeStore();
 const propuestas = usePropuestasStore();
@@ -80,12 +79,6 @@ const enlaceSeccion = (ruta: string) => {
     ? `${enlace(ruta)}?dia=${dia}`
     : enlace(ruta);
 };
-/** Cuenta regresiva de la portada, con la fecha del dispositivo. */
-const cuenta = computed(() =>
-  store.actual
-    ? cuentaRegresiva(store.actual.fechaInicio, store.actual.fechaFin, hoyDelDispositivo())
-    : null,
-);
 const viajeros = computed(() => {
   const n = store.actual?.cantidadParticipantes ?? 0;
   return `${n} ${n === 1 ? 'viajero' : 'viajeros'}`;
@@ -176,9 +169,11 @@ onBeforeUnmount(() => {
           <RouterLink to="/viajes" class="volver">← Mis grupos</RouterLink>
           <div class="portada__titulo">
             <h1>{{ store.actual.nombre }}</h1>
-            <p v-if="cuenta" class="chip" :class="`chip--${cuenta.etapa}`">
-              <IconoLinea nombre="reloj" :tamano="18" /> {{ cuenta.texto }}
-            </p>
+            <ContadorViaje
+              :inicio="store.actual.fechaInicio"
+              :fin="store.actual.fechaFin"
+              :planificacion="soloSaldos ? null : propuestas.planificacion"
+            />
           </div>
           <p class="portada__datos texto-secundario">
             <span><IconoLinea nombre="pin" :tamano="16" /> {{ store.actual.destino }}</span>
@@ -311,24 +306,6 @@ a.portada__viajeros.activo {
   background: var(--color-acento-suave);
   border-color: var(--color-acento);
 }
-/* La cuenta regresiva es lo primero que se lee debajo del nombre. */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--esp-2);
-  margin: 0 0 var(--esp-3);
-  padding: var(--esp-2) var(--esp-4);
-  border-radius: 999px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  background: var(--color-destacado);
-  color: var(--color-sobre-destacado);
-}
-.chip--despues {
-  background: var(--color-neutro-suave);
-  color: var(--color-neutro);
-}
-
 /* Escritorio: los cinco grupos como pestañas bajo el título. */
 .grupos {
   display: flex;
@@ -438,9 +415,8 @@ a.portada__viajeros.activo {
     margin: 0;
     font-size: 1.25rem;
   }
-  .portada--compacta .chip {
+  .portada--compacta :deep(.contador) {
     margin: 0;
-    padding: var(--esp-1) var(--esp-3);
     font-size: 0.875rem;
   }
   .portada--compacta .portada__datos {

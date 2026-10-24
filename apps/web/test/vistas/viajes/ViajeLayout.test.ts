@@ -129,17 +129,17 @@ describe('ViajeLayout', () => {
     vi.setSystemTime(new Date('2026-10-14T12:00:00'));
     const antes = montar().vista;
     await flushPromises();
-    expect(antes.find('h1 + .chip').text()).toBe('Faltan 57 días');
+    expect(antes.find('h1 + .contador .contador__cuenta').text()).toBe('Faltan 57 días');
 
     vi.setSystemTime(new Date('2026-12-12T12:00:00'));
     const durante = montar().vista;
     await flushPromises();
-    expect(durante.find('.chip').text()).toBe('Día 3 de 7');
+    expect(durante.find('.contador__cuenta').text()).toBe('Día 3 de 7');
 
     vi.setSystemTime(new Date('2026-12-20T12:00:00'));
     const despues = montar().vista;
     await flushPromises();
-    expect(despues.find('.chip--despues').text()).toBe('Viaje terminado');
+    expect(despues.find('.contador__cuenta').text()).toBe('Viaje terminado');
   });
 
   it('las pestañas del itinerario conservan el día elegido', async () => {
