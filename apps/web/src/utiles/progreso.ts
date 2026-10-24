@@ -76,7 +76,14 @@ export function calcularProgreso({
     .filter((n) => n >= hoy);
   const confirmados = alojamientos.filter((a) => a.estado === 'CONFIRMADA');
   const nochesLibres = noches.filter(
-    (n) => !confirmados.some((a) => a.alojamiento.fechaDesde <= n && n < a.alojamiento.fechaHasta),
+    (n) =>
+      !confirmados.some(
+        (a) =>
+          a.alojamiento.fechaDesde !== null &&
+          a.alojamiento.fechaHasta !== null &&
+          a.alojamiento.fechaDesde <= n &&
+          n < a.alojamiento.fechaHasta,
+      ),
   );
   const diasConActividad = new Set(
     actividades.filter((a) => a.estado === 'CONFIRMADA').map((a) => a.actividad.fecha),
@@ -86,6 +93,11 @@ export function calcularProgreso({
     (p) => p.estado === 'PENDIENTE',
   );
   const sinMiVoto = propuestasPendientes.filter((p) => p.miVoto === null).length;
+  const sinDia = [...alojamientos, ...actividades].filter(
+    (p) =>
+      (p.estado === 'PENDIENTE' || p.estado === 'CONFIRMADA') &&
+      (p.tipo === 'ACTIVIDAD' ? p.actividad.fecha === null : p.alojamiento.fechaDesde === null),
+  ).length;
   const pendientes = propuestasPendientes.length;
   // Sin propuestas todavía no hay nada que votar ni resolver: esos hitos no cuentan como cumplidos.
   const hayPropuestas = alojamientos.length + actividades.length > 0;
@@ -120,7 +132,7 @@ export function calcularProgreso({
     hito(
       'resueltas',
       'Propuestas resueltas',
-      hayPropuestas && pendientes === 0 ? 1 : 0,
+      hayPropuestas && pendientes === 0 && sinDia === 0 ? 1 : 0,
       1,
       !hayPropuestas
         ? sinPropuestas

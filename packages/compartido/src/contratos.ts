@@ -68,6 +68,7 @@ export interface Reacomodo {
   semanas: number;
   /** Cuántas propuestas cambiaron de día. */
   movidas: number;
+  sinDia?: number;
 }
 
 export interface RespuestaDatosViaje {
@@ -104,11 +105,17 @@ export interface PropuestaVista {
   miVoto: ValorVoto | null;
   creadaEn: string;
   resueltaEn: string | null;
+  fechaCambiadaEn?: string | null;
 }
 
 export interface AlojamientoVista extends PropuestaVista {
   tipo: 'ALOJAMIENTO';
-  alojamiento: { nombre: string; fechaDesde: string; fechaHasta: string };
+  alojamiento: {
+    nombre: string;
+    fechaDesde: string | null;
+    fechaHasta: string | null;
+    noches?: number;
+  };
 }
 
 export interface RespuestaResolucion {
@@ -121,7 +128,7 @@ export interface ActividadVista extends PropuestaVista {
   tipo: 'ACTIVIDAD';
   actividad: {
     titulo: string;
-    fecha: string;
+    fecha: string | null;
     horaInicio: string;
     /** Hora de fin calculada con la duración; puede ser del día siguiente. */
     horaFin: string;

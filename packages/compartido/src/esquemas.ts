@@ -165,7 +165,17 @@ export type DatosViajeNuevo = z.input<typeof esquemaViajeNuevo>;
 
 /** CU27: lo que el Admin cambia del viaje; la moneda no se edita (RN-V1). */
 export const esquemaDatosViaje = z
-  .object(datosViaje)
+  .object({
+    ...datosViaje,
+    eleccion: z
+      .object({
+        antes: z.object({ desde: esquemaFecha, hasta: esquemaFecha }),
+        dias: z
+          .record(esquemaFecha, esquemaFecha.nullable())
+          .refine((v) => Object.keys(v).length <= 367, 'Demasiados días'),
+      })
+      .optional(),
+  })
   .refine(...FECHAS_EN_ORDEN)
   .refine(...HASTA_UN_ANIO);
 export type DatosViaje = z.input<typeof esquemaDatosViaje>;
@@ -306,3 +316,6 @@ export const esquemaActividadNueva = z.object({
     .max(24 * 60, 'La duración puede ser de hasta 24 horas'),
 });
 export type DatosActividadNueva = z.input<typeof esquemaActividadNueva>;
+
+/** CU28: fecha de inicio, sin cambiar horarios ni noches. */
+export const esquemaUbicarPropuesta = z.object({ fecha: esquemaFecha });

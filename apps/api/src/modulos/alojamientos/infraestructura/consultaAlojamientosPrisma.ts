@@ -11,17 +11,27 @@ import type { ConsultaAlojamientos } from '../dominio/puertos.js';
 const INCLUIR = { ...INCLUIR_VISTA, alojamiento: true } as const;
 
 function aVista(
-  f: FilaPropuesta & { alojamiento: { nombre: string; fechaDesde: Date; fechaHasta: Date } | null },
+  f: FilaPropuesta & {
+    alojamiento: {
+      nombre: string;
+      fechaDesde: Date | null;
+      fechaHasta: Date | null;
+      noches: number;
+      fechaCambiadaEn: Date | null;
+    } | null;
+  },
   usuarioId: string,
 ): AlojamientoVista | null {
   if (!f.alojamiento) return null;
   return {
     ...aVistaPropuesta(f, usuarioId),
     tipo: 'ALOJAMIENTO',
+    fechaCambiadaEn: f.alojamiento.fechaCambiadaEn?.toISOString() ?? null,
     alojamiento: {
       nombre: f.alojamiento.nombre,
-      fechaDesde: aFecha(f.alojamiento.fechaDesde),
-      fechaHasta: aFecha(f.alojamiento.fechaHasta),
+      fechaDesde: f.alojamiento.fechaDesde ? aFecha(f.alojamiento.fechaDesde) : null,
+      fechaHasta: f.alojamiento.fechaHasta ? aFecha(f.alojamiento.fechaHasta) : null,
+      noches: f.alojamiento.noches,
     },
   };
 }

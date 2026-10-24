@@ -196,7 +196,8 @@ model Propuesta {
 model Actividad {
   propuestaId     String   @id @map("propuesta_id") @db.Uuid
   titulo          String
-  fecha           DateTime @db.Date
+  fecha           DateTime? @db.Date
+  fechaCambiadaEn DateTime? @map("fecha_cambiada_en") @db.Timestamptz(3)
   horaInicio      DateTime @map("hora_inicio") @db.Time(0)
   duracionMin     Int      @map("duracion_min")
   alternativaDeId String?  @map("alternativa_de_id") @db.Uuid
@@ -212,8 +213,10 @@ model Actividad {
 model Alojamiento {
   propuestaId String   @id @map("propuesta_id") @db.Uuid
   nombre      String
-  fechaDesde  DateTime @map("fecha_desde") @db.Date
-  fechaHasta  DateTime @map("fecha_hasta") @db.Date
+  fechaDesde  DateTime? @map("fecha_desde") @db.Date
+  fechaHasta  DateTime? @map("fecha_hasta") @db.Date
+  noches Int @default(0)
+  fechaCambiadaEn DateTime? @map("fecha_cambiada_en") @db.Timestamptz(3)
 
   propuesta Propuesta @relation(fields: [propuestaId], references: [id])
 

@@ -9,7 +9,7 @@ export class ConsultaItinerarioPrisma implements ConsultaItinerario {
 
   async actividadesConfirmadas(viajeId: string): Promise<ActividadDelItinerario[]> {
     const filas = await this.db.actividad.findMany({
-      where: { propuesta: { viajeId, estado: 'CONFIRMADA' } },
+      where: { fecha: { not: null }, propuesta: { viajeId, estado: 'CONFIRMADA' } },
       include: { propuesta: true },
       orderBy: [{ fecha: 'asc' }, { horaInicio: 'asc' }, { titulo: 'asc' }],
     });
@@ -19,7 +19,7 @@ export class ConsultaItinerarioPrisma implements ConsultaItinerario {
         id: f.propuestaId,
         titulo: f.titulo,
         descripcion: f.propuesta.descripcion,
-        fecha: aFecha(f.fecha),
+        fecha: aFecha(f.fecha!),
         horaInicio,
         horaFin: sumarMinutos(horaInicio, f.duracionMin),
         duracionMin: f.duracionMin,
@@ -33,7 +33,7 @@ export class ConsultaItinerarioPrisma implements ConsultaItinerario {
 
   async alojamientosConfirmados(viajeId: string): Promise<AlojamientoConfirmado[]> {
     const filas = await this.db.alojamiento.findMany({
-      where: { propuesta: { viajeId, estado: 'CONFIRMADA' } },
+      where: { fechaDesde: { not: null }, propuesta: { viajeId, estado: 'CONFIRMADA' } },
       include: { propuesta: true },
       orderBy: [{ fechaDesde: 'asc' }, { nombre: 'asc' }],
     });
@@ -41,7 +41,7 @@ export class ConsultaItinerarioPrisma implements ConsultaItinerario {
       id: f.propuestaId,
       nombre: f.nombre,
       ubicacion: f.propuesta.ubicacion,
-      estadia: RangoFechas.crear(aFecha(f.fechaDesde), aFecha(f.fechaHasta)),
+      estadia: RangoFechas.crear(aFecha(f.fechaDesde!), aFecha(f.fechaHasta!)),
     }));
   }
 }

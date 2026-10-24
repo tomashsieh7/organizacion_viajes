@@ -5,7 +5,9 @@ import type { ConsultaFechasDeViaje } from '../../propuestas/dominio/puertos.js'
 
 export interface DetalleAlojamiento {
   nombre: string;
-  estadia: RangoFechas;
+  estadia: RangoFechas | null;
+  noches?: number;
+  fechaCambiadaEn?: Date | null;
 }
 
 export interface RepositorioAlojamientos {

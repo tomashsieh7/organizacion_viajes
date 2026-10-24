@@ -61,6 +61,11 @@ export function useMapaDelDia(viajeId: () => string) {
     error.value = '';
     try {
       const vista = await propuestas!.obtenerActividad(viajeId(), id);
+      if (vista.actividad.fecha === null) {
+        elegida.value = null;
+        error.value = 'Esta propuesta está sin día. Revisala en Planificar';
+        return;
+      }
       if (pedido !== ultimoPedido || !(await cargar(vista.actividad.fecha))) return;
       const enElMapa = mapa.value?.actividades.find((a) => a.id === id);
       elegida.value = enElMapa

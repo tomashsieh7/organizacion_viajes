@@ -165,3 +165,34 @@ Espacio de nombres `/chat`, **solo con transporte WebSocket**. El handshake exig
 - **Concurrencia:** la fila de la deuda se bloquea, así dos pagos simultáneos no superan juntos el saldo. El segundo recibe `PAGO_EXCEDE_DEUDA` con el saldo actualizado.
 - **Pago exacto:** deja el saldo en cero, y la deuda deja de aparecer en las listas de los dos.
 - **Datos:** `pago` es `{ id, monto, fecha, registradoPor: { id, nombre, apodo } }`. `pagos` en cada deuda lista su historial, del más reciente al más viejo.
+
+
+## Reacomodo manual y propuestas sin día (CU27 y CU28)
+
+`PATCH /api/viajes/:viajeId` conserva los planes automáticos. Si responde `409 REACOMODO_NECESARIO`, el Admin puede enviar los datos del viaje con una elección explícita:
+
+```json
+{
+  "nombre": "Bariloche",
+  "destino": "Bariloche",
+  "fechaInicio": "2026-12-10",
+  "fechaFin": "2026-12-13",
+  "eleccion": {
+    "antes": { "desde": "2026-12-10", "hasta": "2026-12-16" },
+    "dias": { "2026-12-15": null, "2026-12-16": null }
+  }
+}
+```
+
+Cada clave es un día del rango anterior; el destino es una fecha del rango nuevo o `null` (Sin día). Los días omitidos conservan su fecha si entran. No se mezclan dos días anteriores en un mismo destino, incluidos los destinos implícitos. Un alojamiento que no entra completo queda sin día y conserva sus noches. Todo se guarda o se rechaza en una misma transacción; `409 VIAJE_MODIFICADO` indica que cambió el rango de origen y hay que revisar el plan. El resumen agrega `reacomodo.sinDia` cuando se usa un plan manual. `movidas` cuenta tanto los cambios a otro día como los que quedan sin fecha.
+
+Los listados existentes incluyen las propuestas sin fecha: `actividad.fecha` es `null`; `alojamiento.fechaDesde` y `fechaHasta` son ambas `null`, y `alojamiento.noches` conserva el largo de la estadía. `fechaCambiadaEn` informa el último cambio de fecha o `null` si nunca cambió. Las propuestas nuevas siguen requiriendo fechas.
+
+Solo el Admin puede ubicar:
+
+- `PATCH /api/viajes/:viajeId/actividades/:propuestaId/fecha`
+- `PATCH /api/viajes/:viajeId/alojamientos/:propuestaId/fechas`
+
+Ambas reciben `{ "fecha": "2026-12-10" }` y devuelven **204**. En alojamiento se elige entrada y se calcula salida conservando noches. No cambian votos, estado, hora ni duración. Repetir la misma fecha no altera el momento del cambio. Las finales responden `409 PROPUESTA_FINAL`; no se reabren alternativas. Una pendiente sin fecha no puede confirmarse (`409 SIN_DIA`). Una ubicación que no entra completa responde `422 FUERA_DEL_VIAJE`; los choques con actividades confirmadas responden `409 SUPERPOSICION_HORARIA`, con sus ids y títulos. Se verifica Admin vigente y se bloquea el viaje dentro de la transacción. Los miembros activos consultan y votan; los ajenos o quienes solo tienen acceso a saldos no acceden a la bandeja ni a sus operaciones.
+
+Lo sin día no aparece en mapa ni cronograma, ni cubre noches o permite completar el progreso. El Resumen lo muestra primero en Lo próximo, con Ubicar para Admin y Ver para miembros.

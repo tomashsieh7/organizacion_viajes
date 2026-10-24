@@ -109,10 +109,10 @@ test('CU27: el Admin corre el viaje una semana desde Gestión del grupo y las pr
   await p.getByRole('button', { name: 'Editar' }).click();
   const dialogo = p.getByRole('dialog');
 
-  // Achicado, el kayak del martes 15 queda afuera y no se puede guardar.
+  // Achicado, el kayak del martes 15 queda afuera y se ofrece elegir sus días.
   await dialogo.getByLabel('Hasta').fill('2026-12-13');
   await expect(dialogo.getByText('Quedan afuera 1 propuesta.')).toBeVisible();
-  await expect(dialogo.getByRole('button', { name: 'Guardar' })).toBeDisabled();
+  await expect(dialogo.getByRole('button', { name: 'Elegir días' })).toBeEnabled();
   await dialogo.getByText('Ver cuáles').click();
   await expect(dialogo.getByRole('link', { name: /Kayak/ })).toBeVisible();
 

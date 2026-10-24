@@ -31,6 +31,11 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Resumen' },
       },
       {
+        path: 'sin-dia',
+        component: () => import('../vistas/viajes/SinDiaVista.vue'),
+        meta: { titulo: 'Sin día' },
+      },
+      {
         path: 'participantes',
         component: () => import('../vistas/viajes/ParticipantesVista.vue'),
         meta: { titulo: 'Gestión del grupo' },

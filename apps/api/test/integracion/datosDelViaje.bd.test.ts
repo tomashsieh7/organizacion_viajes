@@ -77,6 +77,159 @@ const estadiaDe = async (id: string) => {
   return [fechaDesde, fechaHasta];
 };
 
+describe('CU28 y RN-V5 a RN-V8: Sin día y ubicación', () => {
+  const eleccion = (dias: Record<string, string | null>) => ({
+    antes: { desde: datos.fechaInicio, hasta: datos.fechaFin },
+    dias,
+  });
+
+  it('RN-V5, RN-V6 y RN-V8: aparta completas las estadías, conserva votos/estados y excluye la agenda', async () => {
+    const kayak = await actividad('Kayak', '2026-12-15');
+    const hostel = await alojamiento('Hostel', '2026-12-12', '2026-12-16');
+    await tomas.c.put(url(`/propuestas/${kayak}/voto`), { valor: 'A_FAVOR' });
+    await resolver(hostel, 'confirmar');
+    const antes = await db.voto.findMany({ where: { propuestaId: kayak } });
+    const r = await ana.c.patch(url(), {
+      ...datos,
+      fechaFin: '2026-12-13',
+      eleccion: eleccion({ '2026-12-15': null }),
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.reacomodo.sinDia).toBe(2);
+    expect(await fechaDe(kayak)).toBeNull();
+    expect(await estadiaDe(hostel)).toEqual([null, null]);
+    const vista = (await ana.c.get(url('/alojamientos'))).body.alojamientos.find(
+      (a: { id: string }) => a.id === hostel,
+    );
+    expect(vista).toMatchObject({ estado: 'CONFIRMADA', alojamiento: { noches: 4 } });
+    expect(vista.fechaCambiadaEn).toBeTruthy();
+    expect(await db.voto.findMany({ where: { propuestaId: kayak } })).toEqual(antes);
+    expect((await resolver(kayak, 'confirmar')).body.error.codigo).toBe('SIN_DIA');
+    const cronograma = (await ana.c.get(url('/cronograma'))).body;
+    expect(
+      cronograma.dias.every(
+        (d: { actividades: unknown[]; alojamientos: unknown[] }) =>
+          !d.actividades.length && !d.alojamientos.length,
+      ),
+    ).toBe(true);
+    // Cambiar otra vez las fechas no intenta mover ni perder las noches de lo ya sin día.
+    expect((await cambiar({ fechaFin: '2026-12-14' })).status).toBe(200);
+    expect(
+      (await db.alojamiento.findUniqueOrThrow({ where: { propuestaId: hostel } })).noches,
+    ).toBe(4);
+  });
+
+  it('CU28 y RN-V7: ubica con fechas válidas, permite repetir y rechaza estadías que no entran', async () => {
+    const kayak = await actividad('Kayak', '2026-12-15');
+    const hostel = await alojamiento('Hostel', '2026-12-14', '2026-12-16');
+    await ana.c.patch(url(), {
+      ...datos,
+      eleccion: eleccion({ '2026-12-15': null, '2026-12-14': null }),
+      fechaFin: '2026-12-13',
+    });
+    const ruta = url(`/actividades/${kayak}/fecha`);
+    expect((await ana.c.patch(ruta, { fecha: '2026-12-11' })).status).toBe(204);
+    const metadata = (await ana.c.get(url(`/actividades/${kayak}`))).body.actividad.fechaCambiadaEn;
+    expect((await ana.c.patch(ruta, { fecha: '2026-12-11' })).status).toBe(204);
+    expect((await ana.c.get(url(`/actividades/${kayak}`))).body.actividad.fechaCambiadaEn).toBe(
+      metadata,
+    );
+    expect(
+      (await ana.c.patch(url(`/alojamientos/${hostel}/fechas`), { fecha: '2026-12-12' })).status,
+    ).toBe(422);
+    expect(await estadiaDe(hostel)).toEqual([null, null]);
+    expect(
+      (await ana.c.patch(url(`/alojamientos/${hostel}/fechas`), { fecha: '2026-12-10' })).status,
+    ).toBe(204);
+    expect(await estadiaDe(hostel)).toEqual(['2026-12-10', '2026-12-12']);
+  });
+
+  it('RN-V7: valida sesión, Admin vigente, pertenencia del id, tipo, estado y entradas inválidas', async () => {
+    const id = await actividad('Kayak', '2026-12-11');
+    const ruta = url(`/actividades/${id}/fecha`);
+    expect((await tomas.c.patch(ruta, { fecha: '2026-12-12' })).status).toBe(403);
+    expect((await luis.c.patch(ruta, { fecha: '2026-12-12' })).status).toBe(403);
+    expect(
+      (await request(app).patch(ruta).set('Origin', ORIGEN).send({ fecha: '2026-12-12' })).status,
+    ).toBe(401);
+    for (const fecha of ['2026-02-30', 'maliciosa\u0000', '', null, 20])
+      expect((await ana.c.patch(ruta, { fecha })).status).toBe(400);
+    expect((await ana.c.patch(ruta, { fecha: '2026-12-25' })).status).toBe(422);
+    expect(
+      (await ana.c.patch(url(`/actividades/${crypto.randomUUID()}/fecha`), { fecha: '2026-12-12' }))
+        .status,
+    ).toBe(404);
+    expect(
+      (await ana.c.patch(url(`/alojamientos/${id}/fechas`), { fecha: '2026-12-12' })).status,
+    ).toBe(404);
+    await resolver(id, 'denegar');
+    expect((await ana.c.patch(ruta, { fecha: '2026-12-12' })).status).toBe(409);
+    expect(await fechaDe(id)).toBe('2026-12-11');
+  });
+
+  it('RN-V5: rechaza destinos repetidos, días ajenos y fechas de origen obsoletas sin guardar', async () => {
+    const id = await actividad('Kayak', '2026-12-11');
+    for (const dias of [
+      { '2026-12-11': '2026-12-12' },
+      { '2026-11-01': null },
+      { '2026-12-11': '2026-12-30' },
+    ]) {
+      const r = await ana.c.patch(url(), {
+        ...datos,
+        fechaFin: '2026-12-17',
+        eleccion: eleccion(dias),
+      });
+      expect([r.status, r.body.error.codigo]).toEqual([400, 'PLAN_INVALIDO']);
+    }
+    expect((await cambiar({ fechaFin: '2026-12-17' })).status).toBe(200);
+    const stale = await ana.c.patch(url(), { ...datos, eleccion: eleccion({}) });
+    expect([stale.status, stale.body.error.codigo]).toEqual([409, 'VIAJE_MODIFICADO']);
+    expect(await fechaDe(id)).toBe('2026-12-11');
+  });
+
+  it('RN-V7: controla medianoche y revierte todo el cambio si crea superposición', async () => {
+    const noche = await tomas.c.post(url('/actividades'), {
+      titulo: 'Noche',
+      ubicacion: 'Lago',
+      latitud: -41,
+      longitud: -71,
+      fecha: '2026-12-10',
+      horaInicio: '23:30',
+      duracionMin: 120,
+    });
+    const manana = await actividad('Mañana', '2026-12-12', '00:30');
+    await resolver(noche.body.actividad.id, 'confirmar');
+    await resolver(manana, 'confirmar');
+    const r = await ana.c.patch(url(), {
+      ...datos,
+      nombre: 'No guardar',
+      fechaFin: '2026-12-17',
+      eleccion: eleccion({ '2026-12-11': null, '2026-12-12': '2026-12-11' }),
+    });
+    expect([r.status, r.body.error.codigo]).toEqual([409, 'SUPERPOSICION_HORARIA']);
+    expect(r.body.error.mensaje).toContain('Noche');
+    expect(r.body.error.mensaje).toContain('Mañana');
+    expect((await ana.c.get(url())).body.viaje.nombre).toBe(datos.nombre);
+    expect(await fechaDe(manana)).toBe('2026-12-12');
+    expect(
+      (await ana.c.patch(url(`/actividades/${manana}/fecha`), { fecha: '2026-12-11' })).status,
+    ).toBe(409);
+  });
+
+  it('RN-V4 y RN-V7: ubicaciones y confirmaciones simultáneas no dejan horarios duplicados', async () => {
+    const a = await actividad('A', '2026-12-11');
+    const b = await actividad('B', '2026-12-12');
+    await Promise.all([resolver(a, 'confirmar'), resolver(b, 'confirmar')]);
+    const respuestas = await Promise.all([
+      ana.c.patch(url(`/actividades/${a}/fecha`), { fecha: '2026-12-13' }),
+      ana.c.patch(url(`/actividades/${b}/fecha`), { fecha: '2026-12-13' }),
+    ]);
+    expect(respuestas.map((r) => r.status).sort()).toEqual([204, 409]);
+    const fechas = await Promise.all([fechaDe(a), fechaDe(b)]);
+    expect(new Set(fechas).size).toBe(2);
+  });
+});
+
 describe('CU27: modificar los datos del viaje', () => {
   it('CU27 y RN-V1: el Admin cambia nombre, destino y fechas; la moneda no se edita', async () => {
     const r = await ana.c.patch(url(), {
@@ -269,7 +422,7 @@ describe('RN-V4: cambiar las fechas y proponer a la vez', () => {
       const dias = [
         ...actividades.map((a) => a.fecha),
         ...alojamientos.flatMap((a) => [a.fechaDesde, a.fechaHasta]),
-      ].map((d) => d.toISOString().slice(0, 10));
+      ].map((d) => d!.toISOString().slice(0, 10));
       for (const dia of dias) {
         expect(dia >= viaje.fechaInicio && dia <= viaje.fechaFin).toBe(true);
       }

@@ -69,3 +69,10 @@ En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, las pruebas con co
 | `npm run lint` | ESLint, verificación de formato con Prettier y chequeo de tipos. |
 | `npm run format` | Aplica el formato de Prettier. |
 | `npm run db:reset` | Resetea la base de desarrollo y carga la semilla. |
+
+
+## Cambiar las fechas de un viaje
+
+Desde Gestión del grupo → Datos del viaje → Editar, el Admin puede correr las fechas automáticamente o elegir qué días se conservan. Lo que no entra completo queda en Planificar → Sin día, conservando votos, estado, horarios y noches. Allí el Admin puede ubicarlo en una fecha o descartarlo con las acciones habituales. El Resumen recuerda qué falta ubicar.
+
+Después de actualizar el código, aplicar las migraciones con `npm exec -w apps/api -- prisma migrate deploy`, sin resetear las bases.

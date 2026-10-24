@@ -6,6 +6,7 @@ import { CrearViaje } from '../../src/modulos/viajes/casos-de-uso/crearViaje.js'
 import { EliminarParticipante } from '../../src/modulos/viajes/casos-de-uso/eliminarParticipante.js';
 import { SalirDelViaje } from '../../src/modulos/viajes/casos-de-uso/salirDelViaje.js';
 import { TransferirAdministracion } from '../../src/modulos/viajes/casos-de-uso/transferirAdministracion.js';
+import { UbicarPropuesta } from '../../src/modulos/viajes/casos-de-uso/ubicarPropuesta.js';
 import type { DependenciasViajes } from '../../src/modulos/viajes/casos-de-uso/dependencias.js';
 import type { ReposViajes } from '../../src/modulos/viajes/dominio/puertos.js';
 import { UnidadDeTrabajoEnMemoria } from '../soporte/unidadDeTrabajoEnMemoria.js';
@@ -66,6 +67,33 @@ const agregarATomas = () =>
   );
 
 describe('Casos de uso de viajes', () => {
+  it('CU28 y RN-V7: reubica en memoria sin perder votos ni noches; los errores revierten la transacción', async () => {
+    const id = crypto.randomUUID();
+    unidad.prepararEstado((base) =>
+      base.propuestas.push({
+        ...propuestaDePrueba({ id, viajeId, autorId: ana, estado: 'CONFIRMADA', votantes: [ana] }),
+        alojamiento: { nombre: 'Hostel', fechaDesde: null, fechaHasta: null, noches: 3 },
+      }),
+    );
+    const votos = unidad.confirmado.propuestas[0]!.datos.votos;
+    const ubicar = new UbicarPropuesta(deps);
+    await expect(
+      ubicar.ejecutar(viajeId, tomas, id, 'ALOJAMIENTO', '2026-12-10'),
+    ).rejects.toMatchObject({ codigo: 'SOLO_ADMIN' });
+    await expect(
+      ubicar.ejecutar(viajeId, ana, id, 'ALOJAMIENTO', '2026-12-15'),
+    ).rejects.toMatchObject({ codigo: 'FUERA_DEL_VIAJE' });
+    expect(unidad.confirmado.propuestas[0]!.alojamiento!.fechaDesde).toBeNull();
+    await ubicar.ejecutar(viajeId, ana, id, 'ALOJAMIENTO', '2026-12-11');
+    expect(unidad.confirmado.propuestas[0]).toMatchObject({
+      datos: { estado: 'CONFIRMADA', votos },
+      alojamiento: { fechaDesde: '2026-12-11', fechaHasta: '2026-12-14', noches: 3 },
+    });
+    await ubicar.ejecutar(viajeId, ana, id, 'ALOJAMIENTO', '2026-12-11');
+    expect(unidad.confirmado.propuestas[0]!.alojamiento!.fechaCambiadaEn).toEqual(
+      deps.reloj.ahora(),
+    );
+  });
   it('CU01: crea el viaje con quien lo crea como Admin; rechaza monedas inexistentes', async () => {
     expect(await consultas().obtenerAcceso(viajeId, ana)).toEqual({ rol: 'ADMIN' });
     await expect(

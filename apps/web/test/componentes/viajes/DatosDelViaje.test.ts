@@ -78,9 +78,28 @@ const fechas = async (
   await vista.find('#datos-fin').setValue(hasta);
 };
 const guardar = (vista: Awaited<ReturnType<typeof montar>>['vista']) =>
-  vista.findAll('button').find((b) => b.text() === 'Guardar')!;
+  vista.find('button[type="submit"]');
 
 describe('DatosDelViaje (CU27)', () => {
+  it('RN-V5: si el plan manual ubica todo, el resultado no anuncia propuestas sin día', async () => {
+    const modificarDatos = vi.fn(async () => ({
+      viaje: detalle('ADMIN'),
+      reacomodo: { semanas: 0, movidas: 1, sinDia: 0 },
+    }));
+    const { vista } = await montar('ADMIN', modificarDatos);
+    await editar(vista);
+    await fechas(vista, '2026-12-10', '2026-12-14');
+    await vista.get('form').trigger('submit');
+    await flushPromises();
+    await vista.get('#destino-2026-12-15').setValue('2026-12-13');
+    await vista.get('form').trigger('submit');
+    await vista.get('form').trigger('submit');
+    await flushPromises();
+    expect(modificarDatos).toHaveBeenCalled();
+    expect(vista.text()).toContain('Se guardaron las fechas.');
+    expect(vista.text()).not.toContain('Revisá las propuestas sin día');
+    vista.unmount();
+  });
   it('RN-V1: muestra los datos a todos y solo el Admin ve «Editar»', async () => {
     const admin = await montar('ADMIN');
     expect(admin.vista.text()).toContain('Bariloche');
@@ -106,7 +125,7 @@ describe('DatosDelViaje (CU27)', () => {
     vista.unmount();
   });
 
-  it('RN-V3: si algo pendiente o confirmado queda afuera, lo lista y no deja guardar; lo denegado y cancelado no cuenta', async () => {
+  it('RN-V3: si algo pendiente o confirmado queda afuera, lo lista y permite elegir días antes de guardar; lo denegado y cancelado no cuenta', async () => {
     const { vista, modificarDatos } = await montar();
     await editar(vista);
     await fechas(vista, '2026-12-12', '2026-12-14');
@@ -117,9 +136,13 @@ describe('DatosDelViaje (CU27)', () => {
       'Kayakviernes 11 dic',
       'Cenamartes 15 dic',
     ]);
-    expect(guardar(vista).attributes('disabled')).toBeDefined();
+    expect(guardar(vista).attributes('disabled')).toBeUndefined();
     await vista.find('form').trigger('submit');
     expect(modificarDatos).not.toHaveBeenCalled();
+    await flushPromises();
+    expect(vista.text()).toContain('¿Qué días se quedan?');
+    expect(vista.findAll('select')).toHaveLength(3);
+    expect(vista.text()).not.toContain('Cabaña denegada');
     vista.unmount();
   });
 
@@ -166,7 +189,7 @@ describe('DatosDelViaje (CU27)', () => {
     await flushPromises();
     expect(vista.text()).toContain('Quedan afuera 1 propuesta.');
     expect(vista.find('.afuera__fila').text()).toContain('Nueva');
-    expect(guardar(vista).attributes('disabled')).toBeDefined();
+    expect(guardar(vista).attributes('disabled')).toBeUndefined();
     await fechas(vista, '2026-12-10', '2026-12-20');
     expect(vista.find('.afuera').exists()).toBe(false);
     vista.unmount();

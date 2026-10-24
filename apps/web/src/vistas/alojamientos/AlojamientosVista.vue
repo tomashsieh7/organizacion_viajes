@@ -20,10 +20,15 @@ const propuestas = usePropuestasStore();
 /** Se cargan todos y se filtra acá, así cada botón del filtro muestra cuántos hay. */
 /** Estados prendidos en el filtro; sin ninguno se ven todos. */
 const estados = ref<EstadoPropuesta[]>([]);
+const conFecha = computed(() =>
+  propuestas.alojamientos.filter((a) => a.alojamiento.fechaDesde !== null),
+);
 const visibles = computed(() =>
-  estados.value.length
-    ? propuestas.alojamientos.filter((a) => estados.value.includes(a.estado))
-    : propuestas.alojamientos,
+  propuestas.alojamientos.filter(
+    (a) =>
+      a.alojamiento.fechaDesde !== null &&
+      (!estados.value.length || estados.value.includes(a.estado)),
+  ),
 );
 /** Errores de votar y resolver; los de la carga los maneja `useCarga`. */
 const error = ref('');
@@ -87,11 +92,7 @@ onMounted(cargar);
         >
       </RouterLink>
     </div>
-    <FiltroEstados
-      v-if="propuestas.alojamientos.length"
-      v-model="estados"
-      :propuestas="propuestas.alojamientos"
-    />
+    <FiltroEstados v-if="conFecha.length" v-model="estados" :propuestas="conFecha" />
     <AvisoMensaje v-if="error" tipo="error">{{ error }}</AvisoMensaje>
     <SiluetaCarga v-if="!cargado" />
     <AvisoMensaje v-else-if="errorDeCarga" tipo="error" :reintentar="reintentar">{{
@@ -130,8 +131,8 @@ onMounted(cargar);
       >
         <p class="fechas">
           <IconoLinea nombre="calendario" :tamano="16" />
-          {{ formatearRango(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }} ·
-          {{ noches(a.alojamiento.fechaDesde, a.alojamiento.fechaHasta) }}
+          {{ formatearRango(a.alojamiento.fechaDesde!, a.alojamiento.fechaHasta!) }} ·
+          {{ noches(a.alojamiento.fechaDesde!, a.alojamiento.fechaHasta!) }}
         </p>
       </TarjetaPropuesta>
     </div>
