@@ -1,5 +1,19 @@
+import type { Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { api, expect, nuevoViajero, test, viajeCon } from './soporte/fixtures.js';
+
+/** Axe debe medir el tema terminado, no un color intermedio de la transición del botón. */
+async function cambiarTema(p: Page, tema: string) {
+  await p.evaluate(async (t) => {
+    document.documentElement.dataset['tema'] = t;
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a instanceof CSSTransition)
+        .map((a) => a.finished.catch(() => undefined)),
+    );
+  }, tema);
+}
 
 for (const ancho of [390, 1280]) {
   test(`contador: urgencia gradual, listo y cancelación a ${ancho}px`, async ({
@@ -28,9 +42,7 @@ for (const ancho of [390, 1280]) {
     await expect(contador).toHaveAttribute('data-tono', 'listo');
     await expect(contador).toContainText('Todo listo');
     for (const tema of ['claro', 'oscuro']) {
-      await p.evaluate((t) => {
-        document.documentElement.dataset['tema'] = t;
-      }, tema);
+      await cambiarTema(p, tema);
       expect(
         (
           await new AxeBuilder({ page: p })
@@ -60,9 +72,7 @@ for (const ancho of [390, 1280]) {
       await p.reload();
       await expect(contador).toHaveAttribute('data-tono', tono!);
       for (const tema of ['claro', 'oscuro']) {
-        await p.evaluate((t) => {
-          document.documentElement.dataset['tema'] = t;
-        }, tema);
+        await cambiarTema(p, tema);
         expect(
           (
             await new AxeBuilder({ page: p })
