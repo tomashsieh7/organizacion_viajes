@@ -4,6 +4,7 @@ import type { AlojamientoVista, RespuestaDatosViaje } from '@viajes/compartido';
 import { CLIENTE_PROPUESTAS, type ClientePropuestas } from '../../../src/clientes/propuestas';
 import { ErrorDeApi } from '../../../src/clientes/http';
 import DatosDelViaje from '../../../src/componentes/viajes/DatosDelViaje.vue';
+import { usePropuestasStore } from '../../../src/stores/propuestas';
 import { useViajeStore } from '../../../src/stores/viajes';
 import {
   abrirViaje,
@@ -165,6 +166,28 @@ describe('DatosDelViaje (CU27)', () => {
     );
     expect(useViajeStore().actual?.nombre).toBe('Sur');
     expect(propuestas.listarActividades).toHaveBeenCalledTimes(2);
+    vista.unmount();
+  });
+
+  it('contador: si falla recargar después de mover fechas, usa el resumen nuevo de la API', async () => {
+    const listarActividades = vi
+      .fn()
+      .mockResolvedValueOnce(PROPUESTAS.actividades)
+      .mockRejectedValue(new Error('sin conexión'));
+    const resumen = { nochesSinAlojamiento: 1, propuestasPendientes: 0, propuestasSinDia: 1 };
+    const modificarDatos = vi.fn(
+      async (_id: string, datos: { nombre: string }): Promise<RespuestaDatosViaje> => ({
+        viaje: { ...detalle('ADMIN'), ...datos, planificacion: resumen },
+        reacomodo: { semanas: 1, movidas: 3 },
+      }),
+    );
+    const { vista } = await montar('ADMIN', modificarDatos, { listarActividades });
+    await editar(vista);
+    await fechas(vista, '2026-12-17', '2026-12-23');
+    await vista.find('form').trigger('submit');
+    await flushPromises();
+    expect(vista.find('form').exists()).toBe(false);
+    expect(usePropuestasStore().planificacion).toEqual(resumen);
     vista.unmount();
   });
 

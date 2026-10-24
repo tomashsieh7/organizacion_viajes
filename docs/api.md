@@ -52,13 +52,15 @@ Todas requieren sesión. Las rutas bajo `/api/viajes/:viajeId` requieren además
 |---|---|---|---|---|
 | `GET /api/monedas` | Con sesión | — | `200 { monedas: [{ codigo, nombre, decimales }] }` | — |
 | `POST /api/viajes` | Con sesión (queda como Admin) | `{ id?, nombre, destino, fechaInicio, fechaFin, monedaCodigo }`; `id` es un UUID que genera el formulario para que un reintento no duplique el viaje; nombre y destino sin caracteres de control ni invisibles del todo (RN-X8) | `201 { viaje }` (detalle); si ya existe un viaje con ese `id` creado por la misma persona, devuelve ese | 400 si `fechaInicio > fechaFin`, si el viaje dura más de un año o si alguna fecha cae fuera de 2000 a 2100 (RN-X7), 409 `VIAJE_EXISTENTE` si el `id` es de un viaje de otra persona, 422 `MONEDA_INEXISTENTE` |
-| `GET /api/viajes` | Con sesión | — | `200 { viajes: [{ id, nombre, destino, fechaInicio, fechaFin, monedaCodigo, miRol, miAcceso }] }`; incluye los viajes de los que se fue con saldos pendientes, con `miAcceso: "SOLO_SALDOS"` | — |
-| `GET /api/viajes/:viajeId` | Participante, o exparticipante con saldos pendientes | — | `200 { viaje: { id, nombre, destino, fechaInicio, fechaFin, moneda, miRol, miAcceso, miDeudaPendiente, cantidadParticipantes } }` | — |
+| `GET /api/viajes` | Con sesión | — | `200 { viajes: [{ id, nombre, destino, fechaInicio, fechaFin, monedaCodigo, miRol, miAcceso, planificacion }] }`; incluye los viajes de los que se fue con saldos pendientes, con `miAcceso: "SOLO_SALDOS"` | — |
+| `GET /api/viajes/:viajeId` | Participante, o exparticipante con saldos pendientes | — | `200 { viaje: { id, nombre, destino, fechaInicio, fechaFin, moneda, miRol, miAcceso, miDeudaPendiente, cantidadParticipantes, planificacion } }` | — |
 | `GET /api/viajes/:viajeId/participantes` | Participante | — | `200 { participantes: [{ usuarioId, nombre, apodo, rol }] }`, Admin primero | — |
 | `POST /api/viajes/:viajeId/participantes` | Admin | `{ email }` de un usuario registrado | `201 { participante }`; si se había ido, reactiva su membresía | 404 `USUARIO_NO_REGISTRADO`, 409 `YA_ES_PARTICIPANTE`, 429 `DEMASIADOS_EMAILS_SIN_CUENTA` tras 20 emails sin cuenta en una hora, por persona (D6) |
 | `DELETE /api/viajes/:viajeId/participantes/:usuarioId` | Admin | — | `200 { bajaConDeuda }`; baja lógica que conserva el historial y retira sus votos en propuestas pendientes | 404, 409 `NO_PUEDE_ELIMINARSE_A_SI_MISMO` |
 | `POST /api/viajes/:viajeId/salir` | Participante | `{ nuevoAdminId? }`, obligatorio si quien sale es el Admin | `200 { bajaConDeuda }` | 400 `FALTA_SUCESOR`, 409 `ADMIN_UNICO_PARTICIPANTE`, 422 `SUCESOR_INVALIDO` |
 | `POST /api/viajes/:viajeId/administracion/traspaso` | Admin | `{ nuevoAdminId }` | `204` | 422 `SUCESOR_INVALIDO` |
+
+`planificacion` contiene `{ nochesSinAlojamiento, propuestasPendientes, propuestasSinDia }`. Las noches se cubren con alojamientos confirmados, sin contar el día de salida ni duplicar superposiciones. Sin día cuenta propuestas pendientes o confirmadas; las finales no cuentan. Una propuesta pendiente Sin día pertenece a ambas categorías: no se suman para obtener un total. Para `SOLO_SALDOS` este campo es `null`; no se devuelve información de planificación. El color se calcula en la web con la fecha del dispositivo.
 
 ## Propuestas (comunes a alojamientos y actividades)
 

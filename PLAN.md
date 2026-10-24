@@ -985,3 +985,13 @@ El usuario eligió A/A/B/B: día viejo → nuevo día, bandeja conjunta en Plani
 **7.3 Pantallas:** Datos del viaje pasa a elegir días y revisar el resumen antes de guardar; Planificar suma Sin día para ambos tipos, con votos y acciones actuales (Denegar pendiente / Cancelar confirmada). Ubicar abre un diálogo: actividad elige día y conserva hora; alojamiento elige entrada y muestra salida calculada. Lo próximo prioriza Sin día; los miembros ven Ver y el Admin Ubicar.
 
 **10.2 Diagramas:** el conceptual todavía exige fechas en Actividad y Alojamiento. La implementación requiere fecha/rango opcional y noches retenidas. El XML queda pendiente de confirmación específica para actualizarlo; no se modifica por la aprobación de las opciones visuales.
+
+### Contador de urgencia — revisión aprobada de la opción A
+
+La cuenta regresiva de la portada y Mis grupos usa fondo suave. Si todas las noches están cubiertas por alojamientos confirmados, no hay propuestas pendientes ni activas Sin día, queda verde (también antes de los 30 días). Si falta algo, permanece neutra antes de los últimos 30 días. Dentro de esa ventana avanza hacia rojo cada 15 puntos de tiempo transcurrido: 30–26, 25–22, 21–17, 16–13, 12–8, 7–4 y 3–1 días. El porcentaje es temporal, independiente del anillo de progreso. Durante y después del viaje se mantienen los textos actuales y el estado neutro.
+
+En 5.3, las lecturas de lista/detalle agregan `planificacion: { nochesSinAlojamiento, propuestasPendientes, propuestasSinDia }`; es `null` para SOLO_SALDOS. No se exponen propuestas ni datos de planificación a exmiembros. En 7.3, ambas pantallas reutilizan `ContadorViaje`, con detalle breve visible para explicar el color. Los datos desconocidos permanecen neutros.
+
+El cálculo puro compartido usa fechas y estados mínimos, cubre noches con salida exclusiva y evita duplicar coberturas. La consulta Prisma carga propuestas agrupadas de viajes autorizados, sin consultas por tarjeta. En el viaje abierto el resumen se recalcula tras cambios solo cuando ambas listas están cargadas; mientras tanto se conserva el resumen de la API. No cambia el modelo persistido, los permisos ni las reglas de resolución; sin migración ni patrón GoF. Los diagramas quedan a cargo del usuario según su instrucción. La separación entre consulta, cálculo y presentación evita duplicar reglas o crear una entidad de estado artificial.
+
+Validación: límites de cada tramo, cero noches, coberturas parciales/superpuestas, finales y Sin día, acceso SOLO_SALDOS/ajeno, cargas incompletas y navegación, mutaciones, móvil/escritorio, claro/oscuro y contraste; modelo aleatorio independiente, contratos memoria/Prisma, controles completos y E2E.

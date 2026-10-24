@@ -42,6 +42,10 @@ export function detalle(
     miRol,
     miAcceso,
     miDeudaPendiente,
+    planificacion:
+      miAcceso === 'SOLO_SALDOS'
+        ? null
+        : { nochesSinAlojamiento: 6, propuestasPendientes: 0, propuestasSinDia: 0 },
     cantidadParticipantes: 2,
   };
 }

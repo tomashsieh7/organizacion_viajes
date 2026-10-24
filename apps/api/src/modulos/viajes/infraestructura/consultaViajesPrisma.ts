@@ -1,4 +1,11 @@
-import type { DetalleViaje, Moneda, Participante, ResumenViaje } from '@viajes/compartido';
+import { resumirPlanificacion } from '@viajes/compartido';
+import type {
+  DetalleViaje,
+  Moneda,
+  Participante,
+  ResumenViaje,
+  PropuestaParaPlanificacion,
+} from '@viajes/compartido';
 import type { ClientePrisma } from '../../../comun/infraestructura/clientePrisma.js';
 import { aFecha } from '../../../comun/infraestructura/conversiones.js';
 import type { Acceso, ConsultaViajes } from '../dominio/puertos.js';
@@ -36,6 +43,10 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
       usuarioId,
       membresias.filter((m) => m.estado !== 'ACTIVA').map((m) => m.viajeId),
     );
+    // Una lectura agrupada para todos los viajes activos; SOLO_SALDOS no consulta propuestas.
+    const propuestas = await this.leerPlanificacion(
+      membresias.filter((m) => m.estado === 'ACTIVA').map((m) => m.viajeId),
+    );
     return membresias.flatMap(({ viaje: v, rol, estado }) => {
       const miAcceso = tipoDeAcceso(estado, saldos.has(v.id));
       return miAcceso
@@ -49,6 +60,13 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
               monedaCodigo: v.monedaCodigo,
               miRol: rol,
               miAcceso,
+              planificacion:
+                miAcceso === 'COMPLETO'
+                  ? resumirPlanificacion(
+                      { fechaInicio: aFecha(v.fechaInicio), fechaFin: aFecha(v.fechaFin) },
+                      propuestas.get(v.id) ?? [],
+                    )
+                  : null,
             },
           ]
         : [];
@@ -78,8 +96,43 @@ export class ConsultaViajesPrisma implements ConsultaViajes {
       moneda: v.moneda,
       miRol: mia.rol,
       miAcceso,
+      planificacion:
+        miAcceso === 'COMPLETO'
+          ? resumirPlanificacion(
+              { fechaInicio: aFecha(v.fechaInicio), fechaFin: aFecha(v.fechaFin) },
+              (await this.leerPlanificacion([viajeId])).get(viajeId) ?? [],
+            )
+          : null,
       cantidadParticipantes: v.membresias.filter((m) => m.estado === 'ACTIVA').length,
     };
+  }
+
+  private async leerPlanificacion(viajeIds: string[]) {
+    const porViaje = new Map<string, PropuestaParaPlanificacion[]>();
+    if (!viajeIds.length) return porViaje;
+    const filas = await this.db.propuesta.findMany({
+      where: { viajeId: { in: viajeIds }, estado: { in: ['PENDIENTE', 'CONFIRMADA'] } },
+      select: {
+        viajeId: true,
+        estado: true,
+        actividad: { select: { fecha: true } },
+        alojamiento: { select: { fechaDesde: true, fechaHasta: true } },
+      },
+    });
+    const fecha = (v: Date | null) => (v === null ? null : aFecha(v));
+    for (const p of filas) {
+      const lista = porViaje.get(p.viajeId) ?? [];
+      lista.push({
+        estado: p.estado,
+        actividad: p.actividad && { fecha: fecha(p.actividad.fecha) },
+        alojamiento: p.alojamiento && {
+          fechaDesde: fecha(p.alojamiento.fechaDesde),
+          fechaHasta: fecha(p.alojamiento.fechaHasta),
+        },
+      });
+      porViaje.set(p.viajeId, lista);
+    }
+    return porViaje;
   }
 
   async listarParticipantes(viajeId: string): Promise<Participante[]> {

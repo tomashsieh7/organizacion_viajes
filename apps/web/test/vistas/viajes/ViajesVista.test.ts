@@ -18,6 +18,7 @@ const viaje = (id: string, cambios: Partial<ResumenViaje> = {}): ResumenViaje =>
   monedaCodigo: 'ARS',
   miRol: 'VIAJERO',
   miAcceso: 'COMPLETO',
+  planificacion: null,
   ...cambios,
 });
 
@@ -48,7 +49,7 @@ describe('ViajesVista', () => {
     expect(tarjetas[0]!.text()).toContain('Bariloche');
     expect(tarjetas[0]!.text()).toContain('10 al 16 dic 2026');
     expect(tarjetas[0]!.text()).toContain('Admin');
-    expect(tarjetas[0]!.find('.tarjeta__cuenta').text()).toBe('Faltan 57 días');
+    expect(tarjetas[0]!.find('.contador__cuenta').text()).toBe('Faltan 57 días');
     expect(tarjetas[1]!.text()).toContain('Solo saldos');
   });
 

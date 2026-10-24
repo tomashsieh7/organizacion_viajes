@@ -5,6 +5,7 @@
  */
 import {
   sumarMinutos,
+  resumirPlanificacion,
   diasEntre,
   type CategoriaGasto,
   type DeudaVista,
@@ -313,6 +314,7 @@ export class ConsultaViajesEnMemoria implements ConsultaViajes {
                 monedaCodigo: v.monedaCodigo,
                 miRol: m.rol,
                 miAcceso,
+                planificacion: miAcceso === 'COMPLETO' ? this.planificacion(v) : null,
               },
             ]
           : [];
@@ -338,8 +340,22 @@ export class ConsultaViajesEnMemoria implements ConsultaViajes {
       moneda,
       miRol: m.rol,
       miAcceso,
+      planificacion: miAcceso === 'COMPLETO' ? this.planificacion(v) : null,
       cantidadParticipantes: v.membresias.filter((x) => x.estado === 'ACTIVA').length,
     };
+  }
+
+  private planificacion(v: DatosViaje) {
+    return resumirPlanificacion(
+      v,
+      this.base.propuestas
+        .filter((p) => p.datos.viajeId === v.id)
+        .map((p) => ({
+          estado: p.datos.estado,
+          actividad: p.actividad ?? null,
+          alojamiento: p.alojamiento ?? null,
+        })),
+    );
   }
 
   async listarParticipantes(viajeId: string): Promise<Participante[]> {

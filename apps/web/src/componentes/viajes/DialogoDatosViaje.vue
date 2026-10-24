@@ -184,7 +184,11 @@ async function guardar() {
           }
         : {}),
     });
-    if (movidas > 0) await propuestas.cargarTodo().catch(() => undefined);
+    if (movidas > 0) {
+      // Las fechas locales ya no sirven: hasta recargar se usa el resumen nuevo de la API.
+      propuestas.limpiar();
+      await propuestas.cargarTodo().catch(() => undefined);
+    }
     emit(
       'guardado',
       manual.value

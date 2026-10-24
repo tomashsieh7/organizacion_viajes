@@ -1,3 +1,4 @@
+import { resumirPlanificacion } from '@viajes/compartido';
 import { defineStore } from 'pinia';
 import { computed, inject, ref } from 'vue';
 import type {
@@ -26,6 +27,24 @@ export const usePropuestasStore = defineStore('propuestas', () => {
   const alojamientos = ref<AlojamientoVista[]>([]);
   const actividades = ref<ActividadVista[]>([]);
 
+  let generacion = 0;
+  const alojamientosCargados = ref(false);
+  const actividadesCargadas = ref(false);
+  const planificacion = computed(() => {
+    if (!viaje.actual || viaje.actual.miAcceso === 'SOLO_SALDOS') return null;
+    if (!alojamientosCargados.value || !actividadesCargadas.value)
+      return viaje.actual.planificacion;
+    return resumirPlanificacion(viaje.actual, [...alojamientos.value, ...actividades.value]);
+  });
+
+  // Si hubo un cambio con una lista todavía sin cargar, el resumen previo ya no es fiable.
+  function registrarCambio() {
+    // Una lectura iniciada antes de guardar no debe sobrescribir el resultado de ese cambio.
+    generacion++;
+    if (viaje.actual && (!alojamientosCargados.value || !actividadesCargadas.value))
+      viaje.actual.planificacion = null;
+  }
+
   const sinDia = computed(() =>
     [...alojamientos.value, ...actividades.value].filter(
       (p) =>
@@ -35,25 +54,35 @@ export const usePropuestasStore = defineStore('propuestas', () => {
   );
   async function ubicar(p: ActividadVista | AlojamientoVista, fecha: string) {
     await cliente!.ubicar(viajeId(), p.id, p.tipo, fecha);
+    registrarCambio();
     await cargarTodo();
   }
 
   async function cargarAlojamientos() {
     const id = viajeId();
+    const carga = generacion;
     const lista = await cliente!.listarAlojamientos(id);
-    if (viaje.actual?.id === id) alojamientos.value = lista;
+    if (viaje.actual?.id === id && carga === generacion) {
+      alojamientos.value = lista;
+      alojamientosCargados.value = true;
+    }
   }
 
   async function proponerAlojamiento(datos: DatosAlojamientoNuevo) {
     const nuevo = await cliente!.proponerAlojamiento(viajeId(), datos);
+    registrarCambio();
     alojamientos.value = [...alojamientos.value, nuevo];
     return nuevo;
   }
 
   async function cargarActividades() {
     const id = viajeId();
+    const carga = generacion;
     const lista = await cliente!.listarActividades(id);
-    if (viaje.actual?.id === id) actividades.value = lista;
+    if (viaje.actual?.id === id && carga === generacion) {
+      actividades.value = lista;
+      actividadesCargadas.value = true;
+    }
   }
 
   /** Para el Resumen: todos los alojamientos y actividades. */
@@ -67,12 +96,14 @@ export const usePropuestasStore = defineStore('propuestas', () => {
 
   async function proponerActividad(datos: DatosActividadNueva) {
     const nueva = await cliente!.proponerActividad(viajeId(), datos);
+    registrarCambio();
     actividades.value = [...actividades.value, nueva];
     return nueva;
   }
 
   async function proponerAlternativa(actividadId: string, datos: DatosActividadNueva) {
     const nueva = await cliente!.proponerAlternativa(viajeId(), actividadId, datos);
+    registrarCambio();
     actividades.value = [...actividades.value, nueva];
     return nueva;
   }
@@ -104,17 +135,22 @@ export const usePropuestasStore = defineStore('propuestas', () => {
    */
   async function resolver(propuestaId: string, accion: AccionSobrePropuesta) {
     const { propuesta, afectadas } = await cliente!.resolver(viajeId(), propuestaId, accion);
+    registrarCambio();
     actualizar(propuesta);
     if (afectadas.length > 0 && propuesta.tipo === 'ACTIVIDAD') await cargarActividades();
   }
 
   function limpiar() {
+    generacion++;
+    alojamientosCargados.value = false;
+    actividadesCargadas.value = false;
     alojamientos.value = [];
     actividades.value = [];
   }
 
   return {
     limpiar,
+    planificacion,
     sinDia,
     ubicar,
     alojamientos,

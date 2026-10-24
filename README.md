@@ -76,3 +76,5 @@ En GitHub, el flujo `.github/workflows/ci.yml` corre el lint, las pruebas con co
 Desde Gestión del grupo → Datos del viaje → Editar, el Admin puede correr las fechas automáticamente o elegir qué días se conservan. Lo que no entra completo queda en Planificar → Sin día, conservando votos, estado, horarios y noches. Allí el Admin puede ubicarlo en una fecha o descartarlo con las acciones habituales. El Resumen recuerda qué falta ubicar.
 
 Después de actualizar el código, aplicar las migraciones con `npm exec -w apps/api -- prisma migrate deploy`, sin resetear las bases.
+
+La cuenta regresiva de la portada y de Mis grupos queda verde cuando todas las noches tienen alojamiento confirmado y no quedan propuestas pendientes ni Sin día. Si falta algo, los últimos 30 días aumentan la urgencia del amarillo suave al rojo en siete escalones (cada 15% de ese período, aproximadamente 4 o 5 días), con un detalle breve de lo que falta. Antes de esa ventana permanece neutra; durante y después del viaje conserva el contador actual.
